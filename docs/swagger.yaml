@@ -1,0 +1,338 @@
+basePath: /api/v1
+definitions:
+  Station:
+    properties:
+      address:
+        type: string
+      date_installed:
+        type: string
+      elevation:
+        type: number
+      id:
+        type: integer
+      lat:
+        type: number
+      lon:
+        type: number
+      mobile_number:
+        type: string
+      name:
+        type: string
+      province:
+        type: string
+      region:
+        type: string
+      station_type:
+        type: string
+      station_type2:
+        type: string
+      station_url:
+        type: string
+      status:
+        type: string
+    type: object
+  StationObservation:
+    properties:
+      hi:
+        type: number
+      id:
+        type: integer
+      mslp:
+        type: number
+      pres:
+        type: number
+      qc_level:
+        type: integer
+      rh:
+        type: number
+      rr:
+        type: number
+      srad:
+        type: number
+      station_id:
+        type: integer
+      td:
+        type: number
+      temp:
+        type: number
+      timestamp:
+        type: string
+      wchill:
+        type: number
+      wdir:
+        type: number
+      wspd:
+        type: number
+      wspdx:
+        type: number
+    type: object
+  db.CreateStationObservationAndHealthTxResult:
+    properties:
+      health:
+        $ref: '#/definitions/db.ObservationsStationhealth'
+      obs:
+        $ref: '#/definitions/db.ObservationsObservation'
+      station:
+        $ref: '#/definitions/db.ObservationsStation'
+    type: object
+  db.ObservationsObservation:
+    properties:
+      created_at:
+        type: string
+      hi:
+        type: number
+      id:
+        type: integer
+      mslp:
+        type: number
+      pres:
+        type: number
+      qc_level:
+        type: integer
+      rh:
+        type: number
+      rr:
+        type: number
+      srad:
+        type: number
+      station_id:
+        type: integer
+      td:
+        type: number
+      temp:
+        type: number
+      timestamp:
+        type: string
+      updated_at:
+        type: string
+      wchill:
+        type: number
+      wdir:
+        type: number
+      wspd:
+        type: number
+      wspdx:
+        type: number
+    type: object
+  db.ObservationsStation:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      date_installed:
+        type: string
+      deleted_at:
+        type: string
+      elevation:
+        type: number
+      id:
+        type: integer
+      lat:
+        type: number
+      logger_version:
+        type: string
+      lon:
+        type: number
+      mo_station_id:
+        type: string
+      mobile_number:
+        type: string
+      name:
+        type: string
+      priority_level:
+        type: string
+      provider_id:
+        type: string
+      province:
+        type: string
+      region:
+        type: string
+      sms_system_type:
+        type: string
+      station_type:
+        type: string
+      station_type2:
+        type: string
+      station_url:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  db.ObservationsStationhealth:
+    properties:
+      bp1:
+        type: number
+      bp2:
+        type: number
+      cm:
+        type: string
+      created_at:
+        type: string
+      curr:
+        type: number
+      data_count:
+        type: number
+      data_status:
+        type: string
+      error_msg:
+        type: string
+      fpm:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      minutes_difference:
+        type: number
+      rh_arq:
+        type: number
+      ss:
+        type: number
+      station_id:
+        type: integer
+      temp_arq:
+        type: number
+      timestamp:
+        type: string
+      updated_at:
+        type: string
+      vb1:
+        type: number
+      vb2:
+        type: number
+    type: object
+info:
+  contact: {}
+  title: Panahon API
+  version: "1.0"
+paths:
+  /sm:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.CreateStationObservationAndHealthTxResult'
+      summary: Store Lufft
+      tags:
+      - SM
+  /stations:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Station'
+            type: array
+      summary: List stations
+      tags:
+      - stations
+    post:
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Station'
+      summary: Create station
+      tags:
+      - stations
+  /stations/{station_id}:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Delete station
+      tags:
+      - stations
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Station'
+      summary: Get station
+      tags:
+      - stations
+    put:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Station'
+      summary: Update station
+      tags:
+      - stations
+  /stations/{station_id}/observations:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/StationObservation'
+            type: array
+      summary: List station observations
+      tags:
+      - observations
+    post:
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/StationObservation'
+      summary: Create station observation
+      tags:
+      - observations
+  /stations/{station_id}/observations/{id}:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Delete station observation
+      tags:
+      - observations
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/StationObservation'
+      summary: Get station observation
+      tags:
+      - observations
+    put:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/StationObservation'
+      summary: Update station observation
+      tags:
+      - observations
+swagger: "2.0"

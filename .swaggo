@@ -1,0 +1,6 @@
+replace util.NullFloat4 number
+replace util.NullInt4 number
+replace util.NullString string
+replace pgtype.Text string
+replace pgtype.Date string
+replace pgtype.Timestamptz string

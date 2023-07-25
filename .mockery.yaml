@@ -1,0 +1,8 @@
+packages:
+  github.com/emiliogozo/panahon-api-go/db/sqlc:
+    interfaces:
+      Store:
+        config:
+          dir: "db/mocks"
+          filename: "store.go"
+          outpkg: "mockdb"
