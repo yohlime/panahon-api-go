@@ -1,7 +1,7 @@
 FROM golang:1.20-alpine3.18 AS builder
 WORKDIR /app
 COPY . .
-RUN go build -o main main.go
+RUN go build -ldflags "-s" -o main main.go
 
 FROM alpine:3.18
 WORKDIR /app
