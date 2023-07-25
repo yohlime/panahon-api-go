@@ -44,12 +44,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 func (s *Server) setupRouter() {
 	r := gin.Default()
 
-	var api *gin.RouterGroup
-	if len(s.config.APIBasePath) > 0 {
-		api = r.Group("/api/v1")
-	} else {
-		api = r.Group("/")
-	}
+	api := r.Group(s.config.APIBasePath)
 
 	users := api.Group("/users")
 	{
@@ -125,7 +120,7 @@ func (s *Server) setupRouter() {
 		lufft.GET(":station_id/logs", s.LufftMsgLog)
 	}
 
-	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	api.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	s.router = r
 }

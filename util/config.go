@@ -28,6 +28,8 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
 
+	viper.SetDefault("APIBasePath", "/")
+
 	viper.AutomaticEnv()
 
 	err = viper.ReadInConfig()
