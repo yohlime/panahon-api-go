@@ -22,9 +22,8 @@ const (
 var testStore Store
 
 func TestMain(m *testing.M) {
-	config, err := util.LoadConfig("../..")
-	if err != nil {
-		log.Fatalf("cannot load config: %s", err)
+	config := util.Config{
+		MigrationPath: "../../db/migration",
 	}
 
 	connPool, dbCleanUp, err := newDBTest(&config)
@@ -32,7 +31,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("cannot connect to db: %s", err)
 	}
 
-	util.RunDBMigration("../../"+config.MigrationPath, config.DBSource)
+	util.RunDBMigration(config.MigrationPath, config.DBSource)
 
 	testStore = NewStore(connPool)
 
