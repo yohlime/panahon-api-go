@@ -1,4 +1,4 @@
-include app.env
+-include app.env
 
 createdb:
 	docker exec -it pg12 createdb --username=${POSTGRES_ADMIN_USER} --owner=${POSTGRES_DB_USER} ${POSTGRES_DB}
