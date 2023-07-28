@@ -18,7 +18,7 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 		APIBasePath:         "/api/v1",
 	}
 
-	server, err := NewServer(config, store)
+	server, err := NewServer(config, store, nil)
 	require.NoError(t, err)
 
 	return server

@@ -8,7 +8,6 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/rs/zerolog/log"
 )
 
 type pTexterStoreLufftReq struct {
@@ -28,7 +27,7 @@ type pTexterStoreLufftReq struct {
 func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 	var req pTexterStoreLufftReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Msg("[PromoTexter] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -36,7 +35,7 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	lufft, err := util.NewLufftFromString(req.Msg)
 	if err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Invalid string")
@@ -52,14 +51,14 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			log.Error().Err(err).
+			s.logger.Error().Err(err).
 				Str("sender", req.Number).
 				Str("msg", req.Msg).
 				Msg("[PromoTexter] No station found")
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station not found")))
 			return
 		}
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] AN error occured")
@@ -86,7 +85,7 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	obs, err := s.store.CreateStationObservation(ctx, obsArg)
 	if err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Cannot store station observation")
@@ -116,7 +115,7 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	health, err := s.store.CreateStationHealth(ctx, healthArg)
 	if err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Cannot store station status")
@@ -125,6 +124,6 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	res := newLufftResponse(station, obs, health)
 
-	log.Debug().Str("sender", req.Number).Msg("[PromoTexter] Data saved successfully")
+	s.logger.Debug().Str("sender", req.Number).Msg("[PromoTexter] Data saved successfully")
 	ctx.JSON(http.StatusCreated, res)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -54,7 +53,7 @@ func newGLabsOptInResponse(res db.FirstOrCreateSimAccessTokenTxResult) gLabsOptI
 func (s *Server) GLabsOptIn(ctx *gin.Context) {
 	var req gLabsOptInReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Msg("[GLabs] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -62,10 +61,10 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 
 	// Opt-in via web form
 	if req.Code != "" {
-		log.Debug().Msg("[GLabs] Opt-in via web form")
+		s.logger.Debug().Msg("[GLabs] Opt-in via web form")
 		err := req.fetchGLabsAccessToken(s.config.GlabsAppID, s.config.GlabsAppSecret)
 		if err != nil {
-			log.Error().Err(err).
+			s.logger.Error().Err(err).
 				Msg("[GLabs] Cannot retrieve access token")
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
@@ -74,7 +73,7 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 
 	// Opt-in via SMS
 	if req.SubscriberNumber != "" && req.AccessToken != "" {
-		log.Debug().Msg("[GLabs] Opt-in via SMS")
+		s.logger.Debug().Msg("[GLabs] Opt-in via SMS")
 
 		arg := db.FirstOrCreateSimAccessTokenTxParams{
 			AccessToken:     req.AccessToken,
@@ -90,14 +89,14 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 
 		simAccessToken, err := s.store.FirstOrCreateSimAccessTokenTx(ctx, arg)
 		if err != nil {
-			log.Error().Err(err).
+			s.logger.Error().Err(err).
 				Str("mobile_number", req.SubscriberNumber).
 				Msg("[GLabs] Cannot retrieve or create access token")
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
 
-		log.Debug().
+		s.logger.Debug().
 			Str("mobile_number", req.SubscriberNumber).
 			Msg("[GLabs] Mobile number registered successfully")
 		ctx.JSON(http.StatusCreated, newGLabsOptInResponse(simAccessToken))
@@ -147,13 +146,13 @@ func newGLabsLoadResponse(res db.GlabsLoad) gLabsLoadRes {
 func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 	var req gLabsLoadReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Msg("[GLabsLoad] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	log.Debug().
+	s.logger.Debug().
 		Str("subscriber", req.OutboundRewardRequest.Address).
 		Str("promo", req.OutboundRewardRequest.Promo).
 		Str("status", req.OutboundRewardRequest.Status).
@@ -168,7 +167,7 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			log.Warn().Err(err).
+			s.logger.Warn().Err(err).
 				Str("subscriber", mobileNumber).
 				Str("promo", req.OutboundRewardRequest.Promo).
 				Str("status", req.OutboundRewardRequest.Status).
@@ -198,7 +197,7 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 		MobileNumber: mobileNumber,
 	})
 	if err != nil {
-		log.Error().Err(err).
+		s.logger.Error().Err(err).
 			Str("sender", mobileNumber).
 			Str("promo", req.OutboundRewardRequest.Promo).
 			Str("status", req.OutboundRewardRequest.Status).

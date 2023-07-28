@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
 
 	"github.com/emiliogozo/panahon-api-go/api"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
@@ -15,13 +14,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//	@title			Panahon API
-//	@version		1.0
-//	@description	Panahon API.
-
-//	@contact.name	Emilio Gozo
-//	@contact.email	emiliogozo@proton.me
-
+// PanahonAPI
+//
+//	@title						Panahon API
+//	@version					1.0
+//	@description				Panahon API.
+//	@contact.name				Emilio Gozo
+//	@contact.email				emiliogozo@proton.me
+//
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
@@ -31,32 +31,30 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
-	if config.Environment == "development" {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
+	logger := util.NewLogger(config)
 
 	docs.SwaggerInfo.BasePath = config.SwagAPIBasePath
 
 	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
-		log.Fatal().Err(err).Msg("cannot connect to db")
+		logger.Fatal().Err(err).Msg("cannot connect to db")
 	}
 
 	util.RunDBMigration(config.MigrationPath, config.DBSource)
 
 	store := db.NewStore(connPool)
 
-	runGinServer(config, store)
+	runGinServer(config, store, logger)
 }
 
-func runGinServer(config util.Config, store db.Store) {
-	server, err := api.NewServer(config, store)
+func runGinServer(config util.Config, store db.Store, logger *zerolog.Logger) {
+	server, err := api.NewServer(config, store, logger)
 	if err != nil {
-		log.Fatal().Err(err).Msg("cannot create server")
+		logger.Fatal().Err(err).Msg("cannot create server")
 	}
 
 	err = server.Start(config.HTTPServerAddress)
 	if err != nil {
-		log.Fatal().Err(err).Msg("cannot start server")
+		logger.Fatal().Err(err).Msg("cannot start server")
 	}
 }

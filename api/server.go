@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/rs/zerolog"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -18,10 +19,11 @@ type Server struct {
 	router     *gin.Engine
 	store      db.Store
 	tokenMaker token.Maker
+	logger     *zerolog.Logger
 }
 
 // NewServer creates a new HTTP server and setup routing
-func NewServer(config util.Config, store db.Store) (*Server, error) {
+func NewServer(config util.Config, store db.Store, logger *zerolog.Logger) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -30,6 +32,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		config:     config,
 		store:      store,
 		tokenMaker: tokenMaker,
+		logger:     logger,
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {

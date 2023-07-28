@@ -20,6 +20,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.1
 	golang.org/x/crypto v0.10.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (

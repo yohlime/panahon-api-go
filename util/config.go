@@ -21,6 +21,13 @@ type Config struct {
 	SwagAPIBasePath      string        `mapstructure:"SWAG_API_BASE_PATH"`
 	GlabsAppID           string        `mapstructure:"GLABS_APP_ID"`
 	GlabsAppSecret       string        `mapstructure:"GLABS_APP_SECRET"`
+	EnableConsoleLogging bool          `mapstructure:"ENABLE_CONSOLE_LOGGING"`
+	EnableFileLogging    bool          `mapstructure:"ENABLE_FILE_LOGGING"`
+	LogDirectory         string        `mapstructure:"LOG_DIRECTORY"`
+	LogFilename          string        `mapstructure:"LOG_FILENAME"`
+	LogMaxSize           int           `mapstructure:"LOG_MAX_SIZE"`
+	LogMaxBackups        int           `mapstructure:"LOG_MAX_BACKUPS"`
+	LogMaxAge            int           `mapstructure:"LOG_MAX_AGE"`
 }
 
 // LoadConfig read configuration from file or environment variables.
@@ -31,6 +38,8 @@ func LoadConfig(path string) (config Config, err error) {
 
 	viper.SetDefault("APIBasePath", "/")
 	viper.SetDefault("SwagAPIBasePath", "/")
+	viper.SetDefault("LogDirectory", "./logs")
+	viper.SetDefault("LogFilename", "./log")
 
 	viper.AutomaticEnv()
 
