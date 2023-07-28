@@ -16,9 +16,12 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 		TokenSymmetricKey:   util.RandomString(32),
 		AccessTokenDuration: time.Minute,
 		APIBasePath:         "/api/v1",
+		EnableFileLogging:   false,
 	}
 
-	server, err := NewServer(config, store, nil)
+	logger := util.NewLogger(config)
+
+	server, err := NewServer(config, store, logger)
 	require.NoError(t, err)
 
 	return server
