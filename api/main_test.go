@@ -1,7 +1,6 @@
 package api
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 
 func newTestServer(t *testing.T, store db.Store) *Server {
 	config := util.Config{
+		GinMode:             gin.TestMode,
 		TokenSymmetricKey:   util.RandomString(32),
 		AccessTokenDuration: time.Minute,
 		APIBasePath:         "/api/v1",
@@ -25,9 +25,4 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 	require.NoError(t, err)
 
 	return server
-}
-
-func TestMain(m *testing.M) {
-	gin.SetMode(gin.TestMode)
-	os.Exit(m.Run())
 }

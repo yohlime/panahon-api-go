@@ -45,6 +45,7 @@ func NewServer(config util.Config, store db.Store, logger *zerolog.Logger) (*Ser
 }
 
 func (s *Server) setupRouter() {
+	gin.SetMode(s.config.GinMode)
 	r := gin.Default()
 
 	api := r.Group(s.config.APIBasePath)

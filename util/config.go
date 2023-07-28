@@ -10,6 +10,7 @@ import (
 // Values are read by viper from a config file or environment variables.
 type Config struct {
 	Environment          string        `mapstructure:"ENVIRONMENT"`
+	GinMode              string        `mapstructure:"GIN_MODE"`
 	DBDriver             string        `mapstructure:"DB_DRIVER"`
 	DBSource             string        `mapstructure:"DB_SOURCE"`
 	MigrationPath        string        `mapstructure:"MIGRATION_PATH"`
@@ -36,6 +37,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
 
+	viper.SetDefault("GinMode", "debug")
 	viper.SetDefault("APIBasePath", "/")
 	viper.SetDefault("SwagAPIBasePath", "/")
 	viper.SetDefault("LogDirectory", "./logs")
