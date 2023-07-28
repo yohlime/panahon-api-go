@@ -39,7 +39,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("APIBasePath", "/")
 	viper.SetDefault("SwagAPIBasePath", "/")
 	viper.SetDefault("LogDirectory", "./logs")
-	viper.SetDefault("LogFilename", "./log")
+	viper.SetDefault("LogFilename", "log")
 
 	viper.AutomaticEnv()
 
