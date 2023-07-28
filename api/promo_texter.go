@@ -11,28 +11,25 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type lufftSMSReq struct {
+type pTexterStoreLufftReq struct {
 	Number string `json:"number" binding:"required,mobile_number"`
 	Msg    string `json:"msg" binding:"required"`
-}
+} //@name LufftSMSParams
 
-type lufftSMSRes struct {
-	Station db.ObservationsStation       `json:"station"`
-	Obs     db.ObservationsObservation   `json:"observation"`
-	Health  db.ObservationsStationhealth `json:"health"`
-}
-
-// CreateLufftObservationHealth godoc
-// @Summary      Store Lufft observation and health
-// @Tags         Lufft
-// @Produce      json
-// @Success      200 {object} db.CreateStationObservationAndHealthTxResult
-// @Router       /sm [post]
-func (s *Server) CreateLufftObservationHealth(ctx *gin.Context) {
-	var req lufftSMSReq
+// PromoTexterStoreLufft godoc
+//
+//	@Summary	Store Lufft observation and health
+//	@Tags		promotexter
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query		pTexterStoreLufftReq	true	"Promo Texter query"
+//	@Success	200	{object}	lufftRes
+//	@Router		/ptexter [post]
+func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
+	var req pTexterStoreLufftReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Error().Err(err).
-			Msg("[SM] Bad request")
+			Msg("[PromoTexter] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -42,7 +39,7 @@ func (s *Server) CreateLufftObservationHealth(ctx *gin.Context) {
 		log.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
-			Msg("[SM] Invalid string")
+			Msg("[PromoTexter] Invalid string")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -58,14 +55,14 @@ func (s *Server) CreateLufftObservationHealth(ctx *gin.Context) {
 			log.Error().Err(err).
 				Str("sender", req.Number).
 				Str("msg", req.Msg).
-				Msg("[SM] No station found")
+				Msg("[PromoTexter] No station found")
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station not found")))
 			return
 		}
 		log.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
-			Msg("[SM] AN error occured")
+			Msg("[PromoTexter] AN error occured")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -92,7 +89,7 @@ func (s *Server) CreateLufftObservationHealth(ctx *gin.Context) {
 		log.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
-			Msg("[SM] Cannot store station observation")
+			Msg("[PromoTexter] Cannot store station observation")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -122,16 +119,12 @@ func (s *Server) CreateLufftObservationHealth(ctx *gin.Context) {
 		log.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
-			Msg("[SM] Cannot store station status")
+			Msg("[PromoTexter] Cannot store station status")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 	}
 
-	res := lufftSMSRes{
-		Station: station,
-		Obs:     obs,
-		Health:  health,
-	}
+	res := newLufftResponse(station, obs, health)
 
-	log.Debug().Str("sender", req.Number).Msg("[SM] Data saved successfully")
+	log.Debug().Str("sender", req.Number).Msg("[PromoTexter] Data saved successfully")
 	ctx.JSON(http.StatusCreated, res)
 }

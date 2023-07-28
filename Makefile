@@ -31,6 +31,7 @@ mock:
 	mockery
 
 swag:
+	swag fmt -d main.go,./api
 	swag init
 
 test:

@@ -21,7 +21,7 @@ type userResponse struct {
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	Roles             []string           `json:"roles,omitempty"`
-}
+} //@name UserResponse
 
 func newUserResponse(user db.User, roleNames []string) userResponse {
 	ret := userResponse{
@@ -42,14 +42,18 @@ func newUserResponse(user db.User, roleNames []string) userResponse {
 type listUserReq struct {
 	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
 	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
-}
+} //@name ListUsersParams
 
 // ListUsers godoc
-// @Summary      List users
-// @Tags         users
-// @Produce      json
-// @Success      200 {array} userResponse
-// @Router       /users [get]
+//
+//	@Summary	List users
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	listUserReq	false	"List users parameters"
+//	@Security	BearerAuth
+//	@Success	200	{array}	userResponse
+//	@Router		/users [get]
 func (s *Server) ListUsers(ctx *gin.Context) {
 	var req listUserReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -86,11 +90,15 @@ type getUserReq struct {
 }
 
 // GetUser godoc
-// @Summary      Get user
-// @Tags         users
-// @Produce      json
-// @Success      200 {object} userResponse
-// @Router       /users/{id} [get]
+//
+//	@Summary	Get user
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int	true	"User ID"
+//	@Security	BearerAuth
+//	@Success	200	{object}	userResponse
+//	@Router		/users/{id} [get]
 func (s *Server) GetUser(ctx *gin.Context) {
 	var req getUserReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -119,14 +127,18 @@ type createUserReq struct {
 	FullName string   `json:"full_name" binding:"required"`
 	Email    string   `json:"email" binding:"required,email"`
 	Roles    []string `json:"roles"`
-}
+} //@name CreateUserParams
 
 // CreateUser godoc
-// @Summary      Create user
-// @Tags         users
-// @Produce      json
-// @Success      200 {object} userResponse
-// @Router       /users/{id} [post]
+//
+//	@Summary	Create user
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body	createUserReq	true	"Create user parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	userResponse
+//	@Router		/users/{id} [post]
 func (s *Server) CreateUser(ctx *gin.Context) {
 	var req createUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -185,14 +197,19 @@ type updateUserReq struct {
 	FullName util.NullString `json:"full_name"`
 	Email    util.NullString `json:"email" binding:"omitempty,email"`
 	Roles    []string        `json:"roles"`
-}
+} //@name UpdateUserParams
 
 // UpdateUser godoc
-// @Summary      Update user
-// @Tags         users
-// @Produce      json
-// @Success      200 {object} userResponse
-// @Router       /users/{id} [put]
+//
+//	@Summary	Update user
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int				true	"User ID"
+//	@Param		req	body	updateUserReq	true	"Update user parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	userResponse
+//	@Router		/users/{id} [put]
 func (s *Server) UpdateUser(ctx *gin.Context) {
 	var uri updateUserUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -284,11 +301,15 @@ type deleteUserReq struct {
 }
 
 // DeleteUser godoc
-// @Summary      Delete user
-// @Tags         users
-// @Produce      json
-// @Success      204
-// @Router       /users/{id} [delete]
+//
+//	@Summary	Delete user
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int	true	"User ID"
+//	@Security	BearerAuth
+//	@Success	204
+//	@Router		/users/{id} [delete]
 func (s *Server) DeleteUser(ctx *gin.Context) {
 	var req deleteUserReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -305,34 +326,23 @@ func (s *Server) DeleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusNoContent, nil)
 }
 
-type loginUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-type loginUserResponse struct {
-	SessionID             uuid.UUID    `json:"session_id"`
-	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
-	AccessToken           string       `json:"access_token"`
-	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
-	RefreshToken          string       `json:"refresh_token"`
-	User                  userResponse `json:"user"`
-}
-
 type registerUserReq struct {
 	Username        string `json:"username" binding:"required,alphanum"`
 	Password        string `json:"password" binding:"required,min=6,eqfield=ConfirmPassword"`
 	ConfirmPassword string `json:"confirm_password" binding:"required,min=6"`
 	FullName        string `json:"full_name" binding:"required"`
 	Email           string `json:"email" binding:"required,email"`
-}
+} //@name RegisterUserParams
 
 // RegisterUser godoc
-// @Summary      Register user
-// @Tags         users
-// @Produce      json
-// @Success      200 {object} userResponse
-// @Router       /users/register [post]
+//
+//	@Summary	Register user
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body		registerUserReq	true	"Register user parameters"
+//	@Success	200	{object}	userResponse
+//	@Router		/users/register [post]
 func (s *Server) RegisterUser(ctx *gin.Context) {
 	var req registerUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -376,12 +386,29 @@ func (s *Server) RegisterUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, newUserResponse(user, roleNames))
 }
 
+type loginUserRequest struct {
+	Username string `json:"username" binding:"required,alphanum"`
+	Password string `json:"password" binding:"required,min=6"`
+} //@name LoginUserParams
+
+type loginUserResponse struct {
+	SessionID             uuid.UUID    `json:"session_id"`
+	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
+	AccessToken           string       `json:"access_token"`
+	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
+	RefreshToken          string       `json:"refresh_token"`
+	User                  userResponse `json:"user"`
+} //@name LoginUserResponse
+
 // LoginUser godoc
-// @Summary      User login
-// @Tags         users
-// @Produce      json
-// @Success      204
-// @Router       /users/login [post]
+//
+//	@Summary	User login
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body	loginUserRequest	true	"Login user parameters"
+//	@Success	200
+//	@Router		/users/login [post]
 func (s *Server) LoginUser(ctx *gin.Context) {
 	var req loginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

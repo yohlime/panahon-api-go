@@ -18,6 +18,7 @@ type Config struct {
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	APIBasePath          string        `mapstructure:"API_BASE_PATH"`
+	SwagAPIBasePath      string        `mapstructure:"SWAG_API_BASE_PATH"`
 	GlabsAppID           string        `mapstructure:"GLABS_APP_ID"`
 	GlabsAppSecret       string        `mapstructure:"GLABS_APP_SECRET"`
 }
@@ -29,6 +30,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetConfigType("env")
 
 	viper.SetDefault("APIBasePath", "/")
+	viper.SetDefault("SwagAPIBasePath", "/")
 
 	viper.AutomaticEnv()
 

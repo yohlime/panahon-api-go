@@ -306,13 +306,13 @@ func requireBodyMatchGlabsAccessToken(t *testing.T, body *bytes.Buffer, accessTo
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotAccesToken db.FirstOrCreateSimAccessTokenTxResult
+	var gotAccesToken gLabsOptInRes
 	err = json.Unmarshal(data, &gotAccesToken)
 
 	require.NoError(t, err)
-	require.Equal(t, accessToken.AccessToken, gotAccesToken.AccessToken.AccessToken)
-	require.Equal(t, accessToken.MobileNumber, gotAccesToken.AccessToken.MobileNumber)
-	require.Equal(t, accessToken.Type, gotAccesToken.AccessToken.Type)
+	require.Equal(t, accessToken.AccessToken, gotAccesToken.AccessToken)
+	require.Equal(t, accessToken.MobileNumber, gotAccesToken.MobileNumber)
+	require.Equal(t, accessToken.Type, gotAccesToken.Type)
 }
 
 func randomGLabsLoad() db.GlabsLoad {

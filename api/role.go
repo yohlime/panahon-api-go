@@ -16,7 +16,7 @@ type roleResponse struct {
 	Description util.NullString    `json:"description"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-}
+} //@name RoleResponse
 
 func newRoleResponse(role db.Role) roleResponse {
 	return roleResponse{
@@ -30,14 +30,18 @@ func newRoleResponse(role db.Role) roleResponse {
 type listRoleReq struct {
 	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
 	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
-}
+} //@name ListRolesParams
 
 // ListRoles godoc
-// @Summary      List roles
-// @Tags         roles
-// @Produce      json
-// @Success      200 {array} roleResponse
-// @Router       /roles [get]
+//
+//	@Summary	List roles
+//	@Tags		roles
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	listRoleReq	false	"List roles parameters"
+//	@Security	BearerAuth
+//	@Success	200	{array}	roleResponse
+//	@Router		/roles [get]
 func (s *Server) ListRoles(ctx *gin.Context) {
 	var req listRoleReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -74,11 +78,15 @@ type getRoleReq struct {
 }
 
 // GetRole godoc
-// @Summary      Get role
-// @Tags         roles
-// @Produce      json
-// @Success      200 {object} roleResponse
-// @Router       /roles/{id} [get]
+//
+//	@Summary	Get role
+//	@Tags		roles
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int	true	"Role ID"
+//	@Security	BearerAuth
+//	@Success	200	{object}	roleResponse
+//	@Router		/roles/{id} [get]
 func (s *Server) GetRole(ctx *gin.Context) {
 	var req getRoleReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -102,14 +110,18 @@ func (s *Server) GetRole(ctx *gin.Context) {
 type createRoleReq struct {
 	Name        string          `json:"name" binding:"required,alphanum"`
 	Description util.NullString `json:"description" binding:"omitempty,alphanum"`
-}
+} //@name CreateRoleParams
 
 // CreateRole godoc
-// @Summary      Create role
-// @Tags         roles
-// @Produce      json
-// @Success      200 {object} roleResponse
-// @Router       /roles/{id} [post]
+//
+//	@Summary	Create role
+//	@Tags		roles
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body	createRoleReq	true	"Create role parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	roleResponse
+//	@Router		/roles/{id} [post]
 func (s *Server) CreateRole(ctx *gin.Context) {
 	var req createRoleReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -142,14 +154,19 @@ type updateRoleUri struct {
 type updateRoleReq struct {
 	Name        util.NullString `json:"name" binding:"omitempty,alphanum"`
 	Description util.NullString `json:"description" binding:"omitempty,alphanum"`
-}
+} //@name UpdateRoleParams
 
 // UpdateRole godoc
-// @Summary      Update role
-// @Tags         roles
-// @Produce      json
-// @Success      200 {object} roleResponse
-// @Router       /roles/{id} [put]
+//
+//	@Summary	Update role
+//	@Tags		roles
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int				true	"Role ID"
+//	@Param		req	body	updateRoleReq	true	"Update role parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	roleResponse
+//	@Router		/roles/{id} [put]
 func (s *Server) UpdateRole(ctx *gin.Context) {
 	var uri updateRoleUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -194,11 +211,15 @@ type deleteRoleReq struct {
 }
 
 // DeleteRole godoc
-// @Summary      Delete role
-// @Tags         roles
-// @Produce      json
-// @Success      204
-// @Router       /roles/{id} [delete]
+//
+//	@Summary	Delete role
+//	@Accept		json
+//	@Tags		roles
+//	@Produce	json
+//	@Param		id	path	int	true	"Role ID"
+//	@Security	BearerAuth
+//	@Success	204
+//	@Router		/roles/{id} [delete]
 func (s *Server) DeleteRole(ctx *gin.Context) {
 	var req deleteRoleReq
 	if err := ctx.ShouldBindUri(&req); err != nil {

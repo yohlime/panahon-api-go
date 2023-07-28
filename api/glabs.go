@@ -24,14 +24,33 @@ type gLabsOptInReq struct {
 	AccessToken      string `form:"access_token" json:"access_token" binding:"required_with=SubscriberNumber"`
 	SubscriberNumber string `form:"subscriber_number" json:"subscriber_number" binding:"required_with=AccessToken,omitempty,number,len=10"`
 	Code             string `form:"code" json:"code"`
+} //@name GlobeLabsOptInParams
+
+type gLabsOptInRes struct {
+	AccessToken  string `json:"access_token"`
+	Type         string `json:"type"`
+	MobileNumber string `json:"mobile_number"`
+	IsCreated    bool   `json:"is_created"`
+} //@name GlobeLabsOptInResponse
+
+func newGLabsOptInResponse(res db.FirstOrCreateSimAccessTokenTxResult) gLabsOptInRes {
+	return gLabsOptInRes{
+		AccessToken:  res.AccessToken.AccessToken,
+		Type:         res.AccessToken.Type,
+		MobileNumber: res.AccessToken.MobileNumber,
+		IsCreated:    res.IsCreated,
+	}
 }
 
 // GLabsOptIn godoc
-// @Summary      Globe Labs opt-in
-// @Tags         GLabs
-// @Produce      json
-// @Success      200 {object} simAccessToken
-// @Router       /glabs/optin [get]
+//
+//	@Summary	Globe Labs opt-in
+//	@Tags		globelabs
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query		gLabsOptInReq	true	"Globe Labs Opt-in query"
+//	@Success	200	{object}	gLabsOptInRes
+//	@Router		/glabs/optin [get]
 func (s *Server) GLabsOptIn(ctx *gin.Context) {
 	var req gLabsOptInReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -81,7 +100,7 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 		log.Debug().
 			Str("mobile_number", req.SubscriberNumber).
 			Msg("[GLabs] Mobile number registered successfully")
-		ctx.JSON(http.StatusCreated, simAccessToken)
+		ctx.JSON(http.StatusCreated, newGLabsOptInResponse(simAccessToken))
 		return
 	}
 
@@ -96,14 +115,35 @@ type gLabsLoadReq struct {
 		Promo         string `json:"promo"`
 		Timestamp     string `json:"timestamp"`
 	} `json:"outboundRewardRequest"`
+} //@name GlobeLabsLoadParams
+
+type gLabsLoadRes struct {
+	Status        util.NullString    `json:"status"`
+	Promo         util.NullString    `json:"promo"`
+	TransactionID util.NullInt4      `json:"transaction_id"`
+	MobileNumber  string             `json:"mobile_number"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+} //@name GlobeLabsLoadResponse
+
+func newGLabsLoadResponse(res db.GlabsLoad) gLabsLoadRes {
+	return gLabsLoadRes{
+		Status:        res.Status,
+		Promo:         res.Promo,
+		TransactionID: res.TransactionID,
+		MobileNumber:  res.MobileNumber,
+		CreatedAt:     res.CreatedAt,
+	}
 }
 
 // CreateGLabsLoad godoc
-// @Summary      Create Globe Labs entry
-// @Tags         GLabs
-// @Produce      json
-// @Success      200 {object} db.GLabsLoad
-// @Router       /glabs/load [post]
+//
+//	@Summary	Create Globe Labs entry
+//	@Tags		globelabs
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query		gLabsLoadReq	true	"Globe Labs Load query"
+//	@Success	200	{object}	gLabsLoadRes
+//	@Router		/glabs/load [post]
 func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 	var req gLabsLoadReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -167,7 +207,7 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gLabsLoad)
+	ctx.JSON(http.StatusCreated, newGLabsLoadResponse(gLabsLoad))
 }
 
 type fetchGLabsAccessTokenReq struct {

@@ -1,6 +1,45 @@
-basePath: /api/v1
 definitions:
-  Station:
+  CreateRoleParams:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  CreateStationObservationParams:
+    properties:
+      hi:
+        type: number
+      mslp:
+        type: number
+      pres:
+        type: number
+      qc_level:
+        type: integer
+      rh:
+        type: number
+      rr:
+        type: number
+      srad:
+        type: number
+      td:
+        type: number
+      temp:
+        type: number
+      timestamp:
+        type: string
+      wchill:
+        type: number
+      wdir:
+        type: number
+      wspd:
+        type: number
+      wspdx:
+        type: number
+    type: object
+  CreateStationParams:
     properties:
       address:
         type: string
@@ -8,8 +47,6 @@ definitions:
         type: string
       elevation:
         type: number
-      id:
-        type: integer
       lat:
         type: number
       lon:
@@ -30,146 +67,134 @@ definitions:
         type: string
       status:
         type: string
+    required:
+    - name
     type: object
-  StationObservation:
+  CreateUserParams:
     properties:
-      hi:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    - username
+    type: object
+  GlobeLabsLoadResponse:
+    properties:
+      created_at:
+        type: string
+      mobile_number:
+        type: string
+      promo:
+        type: string
+      status:
+        type: string
+      transaction_id:
         type: number
-      id:
-        type: integer
-      mslp:
-        type: number
-      pres:
-        type: number
-      qc_level:
-        type: integer
-      rh:
-        type: number
-      rr:
-        type: number
-      srad:
-        type: number
-      station_id:
-        type: integer
-      td:
-        type: number
-      temp:
-        type: number
+    type: object
+  GlobeLabsOptInResponse:
+    properties:
+      access_token:
+        type: string
+      is_created:
+        type: boolean
+      mobile_number:
+        type: string
+      type:
+        type: string
+    type: object
+  LoginUserParams:
+    properties:
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  LufftMsgLogResponse:
+    properties:
+      message:
+        type: string
       timestamp:
         type: string
-      wchill:
-        type: number
-      wdir:
-        type: number
-      wspd:
-        type: number
-      wspdx:
-        type: number
     type: object
-  db.CreateStationObservationAndHealthTxResult:
+  LufftResponse:
     properties:
       health:
-        $ref: '#/definitions/db.ObservationsStationhealth'
-      obs:
-        $ref: '#/definitions/db.ObservationsObservation'
+        $ref: '#/definitions/StationHealthResponse'
+      observation:
+        $ref: '#/definitions/StationObservationResponse'
       station:
-        $ref: '#/definitions/db.ObservationsStation'
+        $ref: '#/definitions/StationResponse'
     type: object
-  db.ObservationsObservation:
+  RegisterUserParams:
+    properties:
+      confirm_password:
+        minLength: 6
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - confirm_password
+    - email
+    - full_name
+    - password
+    - username
+    type: object
+  RenewAccessTokenParams:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  RenewAccessTokenResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+    type: object
+  RoleResponse:
     properties:
       created_at:
         type: string
-      hi:
-        type: number
-      id:
-        type: integer
-      mslp:
-        type: number
-      pres:
-        type: number
-      qc_level:
-        type: integer
-      rh:
-        type: number
-      rr:
-        type: number
-      srad:
-        type: number
-      station_id:
-        type: integer
-      td:
-        type: number
-      temp:
-        type: number
-      timestamp:
-        type: string
-      updated_at:
-        type: string
-      wchill:
-        type: number
-      wdir:
-        type: number
-      wspd:
-        type: number
-      wspdx:
-        type: number
-    type: object
-  db.ObservationsStation:
-    properties:
-      address:
-        type: string
-      created_at:
-        type: string
-      date_installed:
-        type: string
-      deleted_at:
-        type: string
-      elevation:
-        type: number
-      id:
-        type: integer
-      lat:
-        type: number
-      logger_version:
-        type: string
-      lon:
-        type: number
-      mo_station_id:
-        type: string
-      mobile_number:
+      description:
         type: string
       name:
         type: string
-      priority_level:
-        type: string
-      provider_id:
-        type: string
-      province:
-        type: string
-      region:
-        type: string
-      sms_system_type:
-        type: string
-      station_type:
-        type: string
-      station_type2:
-        type: string
-      station_url:
-        type: string
-      status:
-        type: string
       updated_at:
         type: string
     type: object
-  db.ObservationsStationhealth:
+  StationHealthResponse:
     properties:
       bp1:
         type: number
       bp2:
         type: number
       cm:
-        type: string
-      created_at:
         type: string
       curr:
         type: number
@@ -185,8 +210,6 @@ definitions:
         type: integer
       message:
         type: string
-      minutes_difference:
-        type: number
       rh_arq:
         type: number
       ss:
@@ -197,32 +220,240 @@ definitions:
         type: number
       timestamp:
         type: string
-      updated_at:
-        type: string
       vb1:
         type: number
       vb2:
         type: number
     type: object
+  StationObservationResponse:
+    properties:
+      hi:
+        type: number
+      id:
+        type: integer
+      mslp:
+        type: number
+      pres:
+        type: number
+      qc_level:
+        type: integer
+      rh:
+        type: number
+      rr:
+        type: number
+      srad:
+        type: number
+      station_id:
+        type: integer
+      td:
+        type: number
+      temp:
+        type: number
+      timestamp:
+        type: string
+      wchill:
+        type: number
+      wdir:
+        type: number
+      wspd:
+        type: number
+      wspdx:
+        type: number
+    type: object
+  StationResponse:
+    properties:
+      address:
+        type: string
+      date_installed:
+        type: string
+      elevation:
+        type: number
+      id:
+        type: integer
+      lat:
+        type: number
+      lon:
+        type: number
+      mobile_number:
+        type: string
+      name:
+        type: string
+      province:
+        type: string
+      region:
+        type: string
+      station_type:
+        type: string
+      station_type2:
+        type: string
+      station_url:
+        type: string
+      status:
+        type: string
+    type: object
+  UpdateRoleParams:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  UpdateStationObservationParams:
+    properties:
+      hi:
+        type: number
+      mslp:
+        type: number
+      pres:
+        type: number
+      qc_level:
+        type: number
+      rh:
+        type: number
+      rr:
+        type: number
+      srad:
+        type: number
+      td:
+        type: number
+      temp:
+        type: number
+      timestamp:
+        type: string
+      wchill:
+        type: number
+      wdir:
+        type: number
+      wspd:
+        type: number
+      wspdx:
+        type: number
+    type: object
+  UpdateStationParams:
+    properties:
+      address:
+        type: string
+      date_installed:
+        type: string
+      elevation:
+        type: number
+      lat:
+        type: number
+      lon:
+        type: number
+      mobile_number:
+        type: string
+      name:
+        type: string
+      province:
+        type: string
+      region:
+        type: string
+      station_type:
+        type: string
+      station_type2:
+        type: string
+      station_url:
+        type: string
+      status:
+        type: string
+    type: object
+  UpdateUserParams:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+    type: object
+  UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password_changed_at:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
 info:
-  contact: {}
+  contact:
+    email: emiliogozo@proton.me
+    name: Emilio Gozo
+  description: Panahon API.
   title: Panahon API
   version: "1.0"
 paths:
-  /sm:
+  /glabs/load:
     post:
+      consumes:
+      - application/json
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.CreateStationObservationAndHealthTxResult'
-      summary: Store Lufft
+            $ref: '#/definitions/GlobeLabsLoadResponse'
+      summary: Create Globe Labs entry
       tags:
-      - SM
-  /stations:
+      - globelabs
+  /glabs/optin:
     get:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        name: access_token
+        type: string
+      - in: query
+        name: code
+        type: string
+      - in: query
+        name: subscriber_number
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GlobeLabsOptInResponse'
+      summary: Globe Labs opt-in
+      tags:
+      - globelabs
+  /lufft/{station_id}/logs:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      - in: query
+        maximum: 30
+        minimum: 1
+        name: limit
+        type: integer
+      - in: query
+        minimum: 1
+        name: page
+        type: integer
       produces:
       - application/json
       responses:
@@ -230,56 +461,284 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/Station'
+              $ref: '#/definitions/LufftMsgLogResponse'
+            type: array
+      summary: Lufft Message Logs
+      tags:
+      - lufft
+  /ptexter:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        name: msg
+        required: true
+        type: string
+      - in: query
+        name: number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/LufftResponse'
+      summary: Store Lufft observation and health
+      tags:
+      - promotexter
+  /roles:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        maximum: 30
+        minimum: 1
+        name: limit
+        type: integer
+      - in: query
+        minimum: 1
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/RoleResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List roles
+      tags:
+      - roles
+  /roles/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete role
+      tags:
+      - roles
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RoleResponse'
+      security:
+      - BearerAuth: []
+      summary: Get role
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create role parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CreateRoleParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RoleResponse'
+      security:
+      - BearerAuth: []
+      summary: Create role
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update role parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateRoleParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RoleResponse'
+      security:
+      - BearerAuth: []
+      summary: Update role
+      tags:
+      - roles
+  /stations:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: limit
+        in: query
+        maximum: 30
+        minimum: 1
+        name: limit
+        type: integer
+      - description: page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/StationResponse'
             type: array
       summary: List stations
       tags:
       - stations
     post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create station parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CreateStationParams'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/Station'
+            $ref: '#/definitions/StationResponse'
+      security:
+      - BearerAuth: []
       summary: Create station
       tags:
       - stations
   /stations/{station_id}:
     delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "204":
           description: No Content
+      security:
+      - BearerAuth: []
       summary: Delete station
       tags:
       - stations
     get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/Station'
+            $ref: '#/definitions/StationResponse'
       summary: Get station
       tags:
       - stations
     put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      - description: Update station parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateStationParams'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/Station'
+            $ref: '#/definitions/StationResponse'
+      security:
+      - BearerAuth: []
       summary: Update station
       tags:
       - stations
   /stations/{station_id}/observations:
     get:
+      consumes:
+      - application/json
+      parameters:
+      - description: limit
+        in: query
+        maximum: 30
+        minimum: 1
+        name: limit
+        type: integer
+      - description: page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
       produces:
       - application/json
       responses:
@@ -287,52 +746,299 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/StationObservation'
+              $ref: '#/definitions/StationObservationResponse'
             type: array
       summary: List station observations
       tags:
       - observations
     post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      - description: Create station observation parameters
+        in: body
+        name: stnObs
+        required: true
+        schema:
+          $ref: '#/definitions/CreateStationObservationParams'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/StationObservation'
+            $ref: '#/definitions/StationObservationResponse'
+      security:
+      - BearerAuth: []
       summary: Create station observation
       tags:
       - observations
   /stations/{station_id}/observations/{id}:
     delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      - description: Station Observation ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "204":
           description: No Content
+      security:
+      - BearerAuth: []
       summary: Delete station observation
       tags:
       - observations
     get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      - description: Station Observation ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/StationObservation'
+            $ref: '#/definitions/StationObservationResponse'
       summary: Get station observation
       tags:
       - observations
     put:
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      - description: Station Observation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update station observation parameters
+        in: body
+        name: stnObs
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateStationObservationParams'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/StationObservation'
+            $ref: '#/definitions/StationObservationResponse'
+      security:
+      - BearerAuth: []
       summary: Update station observation
       tags:
       - observations
+  /tokens/renew:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Renew access token parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/RenewAccessTokenParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RenewAccessTokenResponse'
+      summary: Renew access token
+      tags:
+      - users
+  /users:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        maximum: 30
+        minimum: 1
+        name: limit
+        type: integer
+      - in: query
+        minimum: 1
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/UserResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create user parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CreateUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update user parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login user parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/LoginUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: User login
+      tags:
+      - users
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Register user parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/RegisterUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+      summary: Register user
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

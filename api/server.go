@@ -110,9 +110,9 @@ func (s *Server) setupRouter() {
 		glabs.POST("/load", s.CreateGLabsLoad)
 	}
 
-	sm := api.Group("/sm")
+	ptexter := api.Group("/ptexter")
 	{
-		sm.POST("", s.CreateLufftObservationHealth)
+		ptexter.POST("", s.PromoTexterStoreLufft)
 	}
 
 	lufft := api.Group("/lufft")

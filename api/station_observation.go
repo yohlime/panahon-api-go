@@ -27,7 +27,7 @@ type stationObsResponse struct {
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
 	Wchill    util.NullFloat4    `json:"wchill"`
 	QcLevel   int32              `json:"qc_level"`
-} //@name StationObservation
+} //@name StationObservationResponse
 
 func newStationObsResponse(obs db.ObservationsObservation) stationObsResponse {
 	return stationObsResponse{
@@ -55,16 +55,19 @@ type listStationObsUri struct {
 }
 
 type listStationObsReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
-}
+	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`         // page number
+	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"` // limit
+} //name ListStationObservationsParams
 
 // ListStationObservations godoc
-// @Summary      List station observations
-// @Tags         observations
-// @Produce      json
-// @Success      200 {array} stationObsResponse
-// @Router       /stations/{station_id}/observations [get]
+//
+//	@Summary	List station observations
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	listStationObsReq	false	"List station observations parameters"
+//	@Success	200	{array}	stationObsResponse
+//	@Router		/stations/{station_id}/observations [get]
 func (s *Server) ListStationObservations(ctx *gin.Context) {
 	var uri listStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -109,11 +112,15 @@ type getStationObsReq struct {
 }
 
 // GetStationObservation godoc
-// @Summary      Get station observation
-// @Tags         observations
-// @Produce      json
-// @Success      200 {object} stationObsResponse
-// @Router       /stations/{station_id}/observations/{id} [get]
+//
+//	@Summary	Get station observation
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path		int	true	"Station ID"
+//	@Param		id			path		int	true	"Station Observation ID"
+//	@Success	200			{object}	stationObsResponse
+//	@Router		/stations/{station_id}/observations/{id} [get]
 func (s *Server) GetStationObservation(ctx *gin.Context) {
 	var req getStationObsReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -158,14 +165,19 @@ type createStationObsReq struct {
 	Wchill    util.NullFloat4    `json:"wchill" binding:"omitempty,numeric"`
 	QcLevel   int32              `json:"qc_level" binding:"omitempty,numeric"`
 	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"omitempty,numeric"`
-}
+} //@name CreateStationObservationParams
 
 // CreateStationObservation godoc
-// @Summary      Create station observation
-// @Tags         observations
-// @Produce      json
-// @Success      201 {object} stationObsResponse
-// @Router       /stations/{station_id}/observations [post]
+//
+//	@Summary	Create station observation
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path	int					true	"Station ID"
+//	@Param		stnObs		body	createStationObsReq	true	"Create station observation parameters"
+//	@Security	BearerAuth
+//	@Success	201	{object}	stationObsResponse
+//	@Router		/stations/{station_id}/observations [post]
 func (s *Server) CreateStationObservation(ctx *gin.Context) {
 	var uri createStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -226,14 +238,19 @@ type updateStationObsReq struct {
 	Wchill    util.NullFloat4    `json:"wchill" binding:"omitempty,numeric"`
 	QcLevel   util.NullInt4      `json:"qc_level" binding:"omitempty,numeric"`
 	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"omitempty,numeric"`
-}
+} //@name UpdateStationObservationParams
 
 // UpdateStationObservation godoc
-// @Summary      Update station observation
-// @Tags         observations
-// @Produce      json
-// @Success      200 {object} stationObsResponse
-// @Router       /stations/{station_id}/observations/{id} [put]
+//
+//	@Summary	Update station observation
+//	@Tags		observations
+//	@Produce	json
+//	@Param		station_id	path	int					true	"Station ID"
+//	@Param		id			path	int					true	"Station Observation ID"
+//	@Param		stnObs		body	updateStationObsReq	true	"Update station observation parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	stationObsResponse
+//	@Router		/stations/{station_id}/observations/{id} [put]
 func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 	var uri updateStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -285,11 +302,16 @@ type deleteStationObsReq struct {
 }
 
 // DeleteStationObservation godoc
-// @Summary      Delete station observation
-// @Tags         observations
-// @Produce      json
-// @Success      204
-// @Router       /stations/{station_id}/observations/{id} [delete]
+//
+//	@Summary	Delete station observation
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path	int	true	"Station ID"
+//	@Param		id			path	int	true	"Station Observation ID"
+//	@Security	BearerAuth
+//	@Success	204
+//	@Router		/stations/{station_id}/observations/{id} [delete]
 func (s *Server) DeleteStationObservation(ctx *gin.Context) {
 	var req deleteStationObsReq
 	if err := ctx.ShouldBindUri(&req); err != nil {

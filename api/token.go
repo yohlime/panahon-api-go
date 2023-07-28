@@ -14,13 +14,22 @@ import (
 
 type renewAccessTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
-}
+} //@name RenewAccessTokenParams
 
 type renewAccessTokenResponse struct {
 	AccessTokenExpiresAt pgtype.Timestamptz `json:"access_token_expires_at"`
 	AccessToken          string             `json:"access_token"`
-}
+} //@name RenewAccessTokenResponse
 
+// RenewAccessToken godoc
+//
+//	@Summary	Renew access token
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body		renewAccessTokenRequest	true	"Renew access token parameters"
+//	@Success	200	{object}	renewAccessTokenResponse
+//	@Router		/tokens/renew [post]
 func (s *Server) RenewAccessToken(c *gin.Context) {
 	var req renewAccessTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

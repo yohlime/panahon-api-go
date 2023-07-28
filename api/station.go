@@ -25,7 +25,7 @@ type stationResponse struct {
 	Province      util.NullString `json:"province"`
 	Region        util.NullString `json:"region"`
 	Address       util.NullString `json:"address"`
-} //@name Station
+} //@name StationResponse
 
 func newStationResponse(station db.ObservationsStation) stationResponse {
 	return stationResponse{
@@ -46,16 +46,19 @@ func newStationResponse(station db.ObservationsStation) stationResponse {
 }
 
 type listStationReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
-}
+	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`         // page number
+	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"` // limit
+} //@name ListStationsParams
 
 // ListStations godoc
-// @Summary      List stations
-// @Tags         stations
-// @Produce      json
-// @Success      200 {array} stationResponse
-// @Router       /stations [get]
+//
+//	@Summary	List stations
+//	@Tags		stations
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	listStationReq	false	"List stations parameters"
+//	@Success	200	{array}	stationResponse
+//	@Router		/stations [get]
 func (s *Server) ListStations(ctx *gin.Context) {
 	var req listStationReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -89,15 +92,18 @@ func (s *Server) ListStations(ctx *gin.Context) {
 }
 
 type getStationReq struct {
-	ID int64 `uri:"station_id" binding:"required,min=1"`
+	ID int64 `uri:"station_id" binding:"required,min=1"` // station id
 }
 
 // GetStation godoc
-// @Summary      Get station
-// @Tags         stations
-// @Produce      json
-// @Success      200 {object} stationResponse
-// @Router       /stations/{station_id} [get]
+//
+//	@Summary	Get station
+//	@Tags		stations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path		int	true	"Station ID"
+//	@Success	200			{object}	stationResponse
+//	@Router		/stations/{station_id} [get]
 func (s *Server) GetStation(ctx *gin.Context) {
 	var req getStationReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -124,22 +130,26 @@ type createStationReq struct {
 	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
 	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
 	DateInstalled pgtype.Date     `json:"date_installed"`
-	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty,min=1"`
-	StationType   util.NullString `json:"station_type" binding:"omitempty,min=1"`
-	StationType2  util.NullString `json:"station_type2" binding:"omitempty,min=1"`
-	StationUrl    util.NullString `json:"station_url" binding:"omitempty,min=1"`
-	Status        util.NullString `json:"status" binding:"omitempty,min=1"`
-	Province      util.NullString `json:"province" binding:"omitempty,min=1"`
-	Region        util.NullString `json:"region" binding:"omitempty,min=1"`
-	Address       util.NullString `json:"address" binding:"omitempty,min=1"`
-}
+	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty"`
+	StationType   util.NullString `json:"station_type" binding:"omitempty"`
+	StationType2  util.NullString `json:"station_type2" binding:"omitempty"`
+	StationUrl    util.NullString `json:"station_url" binding:"omitempty"`
+	Status        util.NullString `json:"status" binding:"omitempty"`
+	Province      util.NullString `json:"province" binding:"omitempty"`
+	Region        util.NullString `json:"region" binding:"omitempty"`
+	Address       util.NullString `json:"address" binding:"omitempty"`
+} //@name CreateStationParams
 
 // CreateStation godoc
-// @Summary      Create station
-// @Tags         stations
-// @Produce      json
-// @Success      201 {object} stationResponse
-// @Router       /stations [post]
+//
+//	@Summary	Create station
+//	@Tags		stations
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body	createStationReq	true	"Create station parameters"
+//	@Security	BearerAuth
+//	@Success	201	{object}	stationResponse
+//	@Router		/stations [post]
 func (s *Server) CreateStation(ctx *gin.Context) {
 	var req createStationReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -182,22 +192,27 @@ type updateStationReq struct {
 	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
 	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
 	DateInstalled pgtype.Date     `json:"date_installed"`
-	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty,min=1"`
-	StationType   util.NullString `json:"station_type" binding:"omitempty,min=1"`
-	StationType2  util.NullString `json:"station_type2" binding:"omitempty,min=1"`
-	StationUrl    util.NullString `json:"station_url" binding:"omitempty,min=1"`
-	Status        util.NullString `json:"status" binding:"omitempty,min=1"`
-	Province      util.NullString `json:"province" binding:"omitempty,min=1"`
-	Region        util.NullString `json:"region" binding:"omitempty,min=1"`
-	Address       util.NullString `json:"address" binding:"omitempty,min=1"`
-}
+	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty"`
+	StationType   util.NullString `json:"station_type" binding:"omitempty"`
+	StationType2  util.NullString `json:"station_type2" binding:"omitempty"`
+	StationUrl    util.NullString `json:"station_url" binding:"omitempty"`
+	Status        util.NullString `json:"status" binding:"omitempty"`
+	Province      util.NullString `json:"province" binding:"omitempty"`
+	Region        util.NullString `json:"region" binding:"omitempty"`
+	Address       util.NullString `json:"address" binding:"omitempty"`
+} //@name UpdateStationParams
 
 // UpdateStation godoc
-// @Summary      Update station
-// @Tags         stations
-// @Produce      json
-// @Success      200 {object} stationResponse
-// @Router       /stations/{station_id} [put]
+//
+//	@Summary	Update station
+//	@Tags		stations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path	int					true	"Station ID"
+//	@Param		req			body	updateStationReq	true	"Update station parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	stationResponse
+//	@Router		/stations/{station_id} [put]
 func (s *Server) UpdateStation(ctx *gin.Context) {
 	var uri updateStationUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -245,11 +260,15 @@ type deleteStationReq struct {
 }
 
 // DeleteStation godoc
-// @Summary      Delete station
-// @Tags         stations
-// @Produce      json
-// @Success      204
-// @Router       /stations/{station_id} [delete]
+//
+//	@Summary	Delete station
+//	@Tags		stations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path	int	true	"Station ID"
+//	@Security	BearerAuth
+//	@Success	204
+//	@Router		/stations/{station_id} [delete]
 func (s *Server) DeleteStation(ctx *gin.Context) {
 	var req deleteStationReq
 	if err := ctx.ShouldBindUri(&req); err != nil {

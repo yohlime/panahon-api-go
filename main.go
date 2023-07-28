@@ -6,7 +6,7 @@ import (
 
 	"github.com/emiliogozo/panahon-api-go/api"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	_ "github.com/emiliogozo/panahon-api-go/docs"
+	docs "github.com/emiliogozo/panahon-api-go/docs"
 	"github.com/emiliogozo/panahon-api-go/util"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -15,9 +15,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// @title Panahon API
-// @version 1.0
-// @BasePath /api/v1
+//	@title			Panahon API
+//	@version		1.0
+//	@description	Panahon API.
+
+//	@contact.name	Emilio Gozo
+//	@contact.email	emiliogozo@proton.me
+
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {
@@ -27,6 +34,8 @@ func main() {
 	if config.Environment == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
+
+	docs.SwaggerInfo.BasePath = config.SwagAPIBasePath
 
 	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {

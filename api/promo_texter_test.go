@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLufftSMSApi(t *testing.T) {
+func TestPromoTexterStoreLufft(t *testing.T) {
 	mobileNum := fmt.Sprintf("63%d", util.RandomInt(9000000000, 9999999999))
 	lufft := util.RandomLufft()
 	testCases := []struct {
@@ -91,7 +91,7 @@ func TestLufftSMSApi(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/sm", server.config.APIBasePath)
+			url := fmt.Sprintf("%s/ptexter", server.config.APIBasePath)
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 

@@ -10,33 +10,355 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "Emilio Gozo",
+            "email": "emiliogozo@proton.me"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/sm": {
+        "/glabs/load": {
             "post": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "SM"
+                    "globelabs"
                 ],
-                "summary": "Store Lufft",
+                "summary": "Create Globe Labs entry",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.CreateStationObservationAndHealthTxResult"
+                            "$ref": "#/definitions/GlobeLabsLoadResponse"
                         }
+                    }
+                }
+            }
+        },
+        "/glabs/optin": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "globelabs"
+                ],
+                "summary": "Globe Labs opt-in",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "access_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "subscriber_number",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GlobeLabsOptInResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lufft/{station_id}/logs": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lufft"
+                ],
+                "summary": "Lufft Message Logs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LufftMsgLogResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ptexter": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "promotexter"
+                ],
+                "summary": "Store Lufft observation and health",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "msg",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "number",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/LufftResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "List roles",
+                "parameters": [
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/RoleResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RoleResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Update role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update role parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateRoleParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RoleResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Create role",
+                "parameters": [
+                    {
+                        "description": "Create role parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateRoleParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RoleResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Delete role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
         },
         "/stations": {
             "get": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -44,19 +366,44 @@ const docTemplate = `{
                     "stations"
                 ],
                 "summary": "List stations",
+                "parameters": [
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/Station"
+                                "$ref": "#/definitions/StationResponse"
                             }
                         }
                     }
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -64,11 +411,22 @@ const docTemplate = `{
                     "stations"
                 ],
                 "summary": "Create station",
+                "parameters": [
+                    {
+                        "description": "Create station parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateStationParams"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/Station"
+                            "$ref": "#/definitions/StationResponse"
                         }
                     }
                 }
@@ -76,6 +434,9 @@ const docTemplate = `{
         },
         "/stations/{station_id}": {
             "get": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -83,16 +444,33 @@ const docTemplate = `{
                     "stations"
                 ],
                 "summary": "Get station",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/Station"
+                            "$ref": "#/definitions/StationResponse"
                         }
                     }
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -100,16 +478,42 @@ const docTemplate = `{
                     "stations"
                 ],
                 "summary": "Update station",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update station parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateStationParams"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/Station"
+                            "$ref": "#/definitions/StationResponse"
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -117,6 +521,15 @@ const docTemplate = `{
                     "stations"
                 ],
                 "summary": "Delete station",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -126,6 +539,9 @@ const docTemplate = `{
         },
         "/stations/{station_id}/observations": {
             "get": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -133,19 +549,44 @@ const docTemplate = `{
                     "observations"
                 ],
                 "summary": "List station observations",
+                "parameters": [
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/StationObservation"
+                                "$ref": "#/definitions/StationObservationResponse"
                             }
                         }
                     }
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -153,11 +594,29 @@ const docTemplate = `{
                     "observations"
                 ],
                 "summary": "Create station observation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Create station observation parameters",
+                        "name": "stnObs",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateStationObservationParams"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/StationObservation"
+                            "$ref": "#/definitions/StationObservationResponse"
                         }
                     }
                 }
@@ -165,6 +624,9 @@ const docTemplate = `{
         },
         "/stations/{station_id}/observations/{id}": {
             "get": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -172,16 +634,37 @@ const docTemplate = `{
                     "observations"
                 ],
                 "summary": "Get station observation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Station Observation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationObservation"
+                            "$ref": "#/definitions/StationObservationResponse"
                         }
                     }
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -189,16 +672,49 @@ const docTemplate = `{
                     "observations"
                 ],
                 "summary": "Update station observation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Station Observation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update station observation parameters",
+                        "name": "stnObs",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateStationObservationParams"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationObservation"
+                            "$ref": "#/definitions/StationObservationResponse"
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -206,6 +722,309 @@ const docTemplate = `{
                     "observations"
                 ],
                 "summary": "Delete station observation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Station Observation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/tokens/renew": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Renew access token",
+                "parameters": [
+                    {
+                        "description": "Renew access token parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RenewAccessTokenParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RenewAccessTokenResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List users",
+                "parameters": [
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/UserResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login user parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LoginUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/users/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Register user",
+                "parameters": [
+                    {
+                        "description": "Register user parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RegisterUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update user parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create user",
+                "parameters": [
+                    {
+                        "description": "Create user parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -215,8 +1034,72 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "Station": {
+        "CreateRoleParams": {
             "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreateStationObservationParams": {
+            "type": "object",
+            "properties": {
+                "hi": {
+                    "type": "number"
+                },
+                "mslp": {
+                    "type": "number"
+                },
+                "pres": {
+                    "type": "number"
+                },
+                "qc_level": {
+                    "type": "integer"
+                },
+                "rh": {
+                    "type": "number"
+                },
+                "rr": {
+                    "type": "number"
+                },
+                "srad": {
+                    "type": "number"
+                },
+                "td": {
+                    "type": "number"
+                },
+                "temp": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "wchill": {
+                    "type": "number"
+                },
+                "wdir": {
+                    "type": "number"
+                },
+                "wspd": {
+                    "type": "number"
+                },
+                "wspdx": {
+                    "type": "number"
+                }
+            }
+        },
+        "CreateStationParams": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "address": {
                     "type": "string"
@@ -226,9 +1109,6 @@ const docTemplate = `{
                 },
                 "elevation": {
                     "type": "number"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "lat": {
                     "type": "number"
@@ -262,204 +1142,183 @@ const docTemplate = `{
                 }
             }
         },
-        "StationObservation": {
+        "CreateUserParams": {
             "type": "object",
+            "required": [
+                "email",
+                "full_name",
+                "password",
+                "username"
+            ],
             "properties": {
-                "hi": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mslp": {
-                    "type": "number"
-                },
-                "pres": {
-                    "type": "number"
-                },
-                "qc_level": {
-                    "type": "integer"
-                },
-                "rh": {
-                    "type": "number"
-                },
-                "rr": {
-                    "type": "number"
-                },
-                "srad": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "td": {
-                    "type": "number"
-                },
-                "temp": {
-                    "type": "number"
-                },
-                "timestamp": {
+                "email": {
                     "type": "string"
                 },
-                "wchill": {
-                    "type": "number"
+                "full_name": {
+                    "type": "string"
                 },
-                "wdir": {
-                    "type": "number"
+                "password": {
+                    "type": "string",
+                    "minLength": 6
                 },
-                "wspd": {
-                    "type": "number"
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
-                "wspdx": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "GlobeLabsLoadResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "promo": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction_id": {
                     "type": "number"
                 }
             }
         },
-        "db.CreateStationObservationAndHealthTxResult": {
+        "GlobeLabsOptInResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "is_created": {
+                    "type": "boolean"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "LoginUserParams": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "LufftMsgLogResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "LufftResponse": {
             "type": "object",
             "properties": {
                 "health": {
-                    "$ref": "#/definitions/db.ObservationsStationhealth"
+                    "$ref": "#/definitions/StationHealthResponse"
                 },
-                "obs": {
-                    "$ref": "#/definitions/db.ObservationsObservation"
+                "observation": {
+                    "$ref": "#/definitions/StationObservationResponse"
                 },
                 "station": {
-                    "$ref": "#/definitions/db.ObservationsStation"
+                    "$ref": "#/definitions/StationResponse"
                 }
             }
         },
-        "db.ObservationsObservation": {
+        "RegisterUserParams": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "email",
+                "full_name",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "RenewAccessTokenParams": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "RenewAccessTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "access_token_expires_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "RoleResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
                     "type": "string"
                 },
-                "hi": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mslp": {
-                    "type": "number"
-                },
-                "pres": {
-                    "type": "number"
-                },
-                "qc_level": {
-                    "type": "integer"
-                },
-                "rh": {
-                    "type": "number"
-                },
-                "rr": {
-                    "type": "number"
-                },
-                "srad": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "td": {
-                    "type": "number"
-                },
-                "temp": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "wchill": {
-                    "type": "number"
-                },
-                "wdir": {
-                    "type": "number"
-                },
-                "wspd": {
-                    "type": "number"
-                },
-                "wspdx": {
-                    "type": "number"
-                }
-            }
-        },
-        "db.ObservationsStation": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "date_installed": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "elevation": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "lat": {
-                    "type": "number"
-                },
-                "logger_version": {
-                    "type": "string"
-                },
-                "lon": {
-                    "type": "number"
-                },
-                "mo_station_id": {
-                    "type": "string"
-                },
-                "mobile_number": {
+                "description": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "priority_level": {
-                    "type": "string"
-                },
-                "provider_id": {
-                    "type": "string"
-                },
-                "province": {
-                    "type": "string"
-                },
-                "region": {
-                    "type": "string"
-                },
-                "sms_system_type": {
-                    "type": "string"
-                },
-                "station_type": {
-                    "type": "string"
-                },
-                "station_type2": {
-                    "type": "string"
-                },
-                "station_url": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "db.ObservationsStationhealth": {
+        "StationHealthResponse": {
             "type": "object",
             "properties": {
                 "bp1": {
@@ -469,9 +1328,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "cm": {
-                    "type": "string"
-                },
-                "created_at": {
                     "type": "string"
                 },
                 "curr": {
@@ -495,9 +1351,6 @@ const docTemplate = `{
                 "message": {
                     "type": "string"
                 },
-                "minutes_difference": {
-                    "type": "number"
-                },
                 "rh_arq": {
                     "type": "number"
                 },
@@ -513,9 +1366,6 @@ const docTemplate = `{
                 "timestamp": {
                     "type": "string"
                 },
-                "updated_at": {
-                    "type": "string"
-                },
                 "vb1": {
                     "type": "number"
                 },
@@ -523,6 +1373,262 @@ const docTemplate = `{
                     "type": "number"
                 }
             }
+        },
+        "StationObservationResponse": {
+            "type": "object",
+            "properties": {
+                "hi": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mslp": {
+                    "type": "number"
+                },
+                "pres": {
+                    "type": "number"
+                },
+                "qc_level": {
+                    "type": "integer"
+                },
+                "rh": {
+                    "type": "number"
+                },
+                "rr": {
+                    "type": "number"
+                },
+                "srad": {
+                    "type": "number"
+                },
+                "station_id": {
+                    "type": "integer"
+                },
+                "td": {
+                    "type": "number"
+                },
+                "temp": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "wchill": {
+                    "type": "number"
+                },
+                "wdir": {
+                    "type": "number"
+                },
+                "wspd": {
+                    "type": "number"
+                },
+                "wspdx": {
+                    "type": "number"
+                }
+            }
+        },
+        "StationResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "date_installed": {
+                    "type": "string"
+                },
+                "elevation": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lon": {
+                    "type": "number"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "station_type": {
+                    "type": "string"
+                },
+                "station_type2": {
+                    "type": "string"
+                },
+                "station_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateRoleParams": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateStationObservationParams": {
+            "type": "object",
+            "properties": {
+                "hi": {
+                    "type": "number"
+                },
+                "mslp": {
+                    "type": "number"
+                },
+                "pres": {
+                    "type": "number"
+                },
+                "qc_level": {
+                    "type": "number"
+                },
+                "rh": {
+                    "type": "number"
+                },
+                "rr": {
+                    "type": "number"
+                },
+                "srad": {
+                    "type": "number"
+                },
+                "td": {
+                    "type": "number"
+                },
+                "temp": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "wchill": {
+                    "type": "number"
+                },
+                "wdir": {
+                    "type": "number"
+                },
+                "wspd": {
+                    "type": "number"
+                },
+                "wspdx": {
+                    "type": "number"
+                }
+            }
+        },
+        "UpdateStationParams": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "date_installed": {
+                    "type": "string"
+                },
+                "elevation": {
+                    "type": "number"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lon": {
+                    "type": "number"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "station_type": {
+                    "type": "string"
+                },
+                "station_type2": {
+                    "type": "string"
+                },
+                "station_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateUserParams": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "password_changed_at": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
@@ -531,10 +1637,10 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/api/v1",
+	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Panahon API",
-	Description:      "",
+	Description:      "Panahon API.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
