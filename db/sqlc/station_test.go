@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/emiliogozo/panahon-api-go/util"
@@ -87,7 +86,7 @@ func TestUpdateStation(t *testing.T) {
 				oldStation = createRandomStation(t)
 				newMobileNumber = util.NullString{
 					Text: pgtype.Text{
-						String: randomStationMobileNumber(),
+						String: util.RandomMobileNumber(),
 						Valid:  true,
 					},
 				}
@@ -149,7 +148,7 @@ func TestDeleteStation(t *testing.T) {
 }
 
 func createRandomStation(t *testing.T) ObservationsStation {
-	mobileNum := randomStationMobileNumber()
+	mobileNum := util.RandomMobileNumber()
 
 	arg := CreateStationParams{
 		Name: util.RandomString(16),
@@ -171,8 +170,4 @@ func createRandomStation(t *testing.T) ObservationsStation {
 	require.NotZero(t, station.CreatedAt.Time)
 
 	return station
-}
-
-func randomStationMobileNumber() string {
-	return fmt.Sprintf("63%d", util.RandomInt(9000000000, 9999999999))
 }

@@ -18,7 +18,7 @@ import (
 )
 
 func TestPromoTexterStoreLufft(t *testing.T) {
-	mobileNum := fmt.Sprintf("63%d", util.RandomInt(9000000000, 9999999999))
+	mobileNum := util.RandomMobileNumber()
 	lufft := util.RandomLufft()
 	testCases := []struct {
 		name          string

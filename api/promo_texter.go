@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
@@ -11,7 +12,7 @@ import (
 )
 
 type pTexterStoreLufftReq struct {
-	Number string `json:"number" binding:"required,mobile_number"`
+	Number string `json:"number" binding:"required"`
 	Msg    string `json:"msg" binding:"required"`
 } //@name LufftSMSParams
 
@@ -43,9 +44,20 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 		return
 	}
 
+	mobileNumber, ok := util.ParseMobileNumber(req.Number)
+	if !ok {
+		err := fmt.Errorf("invalid mobile number: %s", req.Number)
+		s.logger.Error().Err(err).
+			Str("sender", req.Number).
+			Str("msg", req.Msg).
+			Msg("[PromoTexter] Invalid mobile number")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	station, err := s.store.GetStationByMobileNumber(ctx, util.NullString{
 		Text: pgtype.Text{
-			String: req.Number,
+			String: mobileNumber,
 			Valid:  true,
 		},
 	})
