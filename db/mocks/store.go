@@ -738,6 +738,49 @@ func (_c *MockStore_DeleteRole_Call) RunAndReturn(run func(context.Context, int6
 	return _c
 }
 
+// DeleteSimAccessToken provides a mock function with given fields: ctx, accessToken
+func (_m *MockStore) DeleteSimAccessToken(ctx context.Context, accessToken string) error {
+	ret := _m.Called(ctx, accessToken)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, accessToken)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockStore_DeleteSimAccessToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteSimAccessToken'
+type MockStore_DeleteSimAccessToken_Call struct {
+	*mock.Call
+}
+
+// DeleteSimAccessToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - accessToken string
+func (_e *MockStore_Expecter) DeleteSimAccessToken(ctx interface{}, accessToken interface{}) *MockStore_DeleteSimAccessToken_Call {
+	return &MockStore_DeleteSimAccessToken_Call{Call: _e.mock.On("DeleteSimAccessToken", ctx, accessToken)}
+}
+
+func (_c *MockStore_DeleteSimAccessToken_Call) Run(run func(ctx context.Context, accessToken string)) *MockStore_DeleteSimAccessToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockStore_DeleteSimAccessToken_Call) Return(_a0 error) *MockStore_DeleteSimAccessToken_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockStore_DeleteSimAccessToken_Call) RunAndReturn(run func(context.Context, string) error) *MockStore_DeleteSimAccessToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteStation provides a mock function with given fields: ctx, id
 func (_m *MockStore) DeleteStation(ctx context.Context, id int64) error {
 	ret := _m.Called(ctx, id)

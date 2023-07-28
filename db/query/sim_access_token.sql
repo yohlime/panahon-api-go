@@ -10,3 +10,6 @@ INSERT INTO sim_access_tokens (
 -- name: GetSimAccessToken :one
 SELECT * FROM sim_access_tokens
 WHERE access_token = $1 LIMIT 1;
+
+-- name: DeleteSimAccessToken :exec
+DELETE FROM sim_access_tokens WHERE access_token = $1;

@@ -2,12 +2,14 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
@@ -192,6 +194,98 @@ func TestGLabsOptInApi(t *testing.T) {
 	}
 }
 
+func TestGLabsUnsubscribeApi(t *testing.T) {
+	glabsOptInRes := randomGlabsOptInRes()
+	simAccessToken := db.SimAccessToken{
+		AccessToken:  glabsOptInRes.AccessToken,
+		MobileNumber: fmt.Sprintf("63%s", glabsOptInRes.SubscriberNumber),
+		Type:         GLabsAccessTokenType,
+	}
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name: "Ok",
+			body: gin.H{
+				"unsubscribed": gin.H{
+					"subscriber_number": simAccessToken.MobileNumber[2:],
+					"access_token":      simAccessToken.AccessToken,
+					"time_stamp":        time.Now(),
+				},
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().DeleteSimAccessToken(mock.AnythingOfType("*gin.Context"), simAccessToken.AccessToken).
+					Return(nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNoContent, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"unsubscribed": gin.H{
+					"subscriber_number": simAccessToken.MobileNumber[2:],
+					"access_token":      simAccessToken.AccessToken,
+					"time_stamp":        time.Now(),
+				},
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().DeleteSimAccessToken(mock.AnythingOfType("*gin.Context"), simAccessToken.AccessToken).
+					Return(sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "NoAccessToken",
+			body: gin.H{
+				"unsubscribed": gin.H{
+					"subscriber_number": simAccessToken.MobileNumber[2:],
+					"time_stamp":        time.Now(),
+				},
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "DeleteSimAccessToken", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("%s/glabs", server.config.APIBasePath)
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
 func TestCreateGLabsLoadApi(t *testing.T) {
 	gLabsLoad := randomGLabsLoad()
 
@@ -295,10 +389,11 @@ func TestCreateGLabsLoadApi(t *testing.T) {
 }
 
 func randomGlabsOptInRes() gLabsOptInReq {
+	subNumber := util.RandomMobileNumber()
 	return gLabsOptInReq{
 		AccessToken:      util.RandomString(32),
 		Code:             util.RandomString(8),
-		SubscriberNumber: fmt.Sprintf("%d", util.RandomInt(9000000000, 9999999999)),
+		SubscriberNumber: subNumber[2:],
 	}
 }
 
@@ -331,7 +426,7 @@ func randomGLabsLoad() db.GlabsLoad {
 				Valid:  true,
 			},
 		},
-		MobileNumber: fmt.Sprintf("63%s", fmt.Sprintf("%d", util.RandomInt(9000000000, 9999999999))),
+		MobileNumber: util.RandomMobileNumber(),
 	}
 }
 

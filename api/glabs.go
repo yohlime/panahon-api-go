@@ -21,7 +21,7 @@ const (
 
 type gLabsOptInReq struct {
 	AccessToken      string `form:"access_token" json:"access_token" binding:"required_with=SubscriberNumber"`
-	SubscriberNumber string `form:"subscriber_number" json:"subscriber_number" binding:"required_with=AccessToken,omitempty,number,len=10"`
+	SubscriberNumber string `form:"subscriber_number" json:"subscriber_number" binding:"required_with=AccessToken,omitempty"`
 	Code             string `form:"code" json:"code"`
 } //@name GlobeLabsOptInParams
 
@@ -75,10 +75,20 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 	if req.SubscriberNumber != "" && req.AccessToken != "" {
 		s.logger.Debug().Msg("[GLabs] Opt-in via SMS")
 
+		mobileNumber, ok := util.ParseMobileNumber(req.SubscriberNumber)
+		if !ok {
+			err := fmt.Errorf("invalid mobile number: %s", req.SubscriberNumber)
+			s.logger.Error().Err(err).
+				Str("mobile_number", req.SubscriberNumber).
+				Msg("[GLabs] Cannot create access token")
+			ctx.JSON(http.StatusBadRequest, errorResponse(err))
+			return
+		}
+
 		arg := db.FirstOrCreateSimAccessTokenTxParams{
 			AccessToken:     req.AccessToken,
 			AccessTokenType: GLabsAccessTokenType,
-			MobileNumber:    fmt.Sprintf("63%s", req.SubscriberNumber),
+			MobileNumber:    mobileNumber,
 			MobileNumberType: util.NullString{
 				Text: pgtype.Text{
 					String: GLabsMobileNumberType,
@@ -104,6 +114,60 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("missing parameters")))
+}
+
+type gLabsUnsubscribeReq struct {
+	Unsubscribed struct {
+		SubscriberNumber string `json:"subscriber_number" binding:"required"`
+		AccessToken      string `json:"access_token" binding:"required"`
+		Timestamp        string `json:"time_stamp"`
+	} `json:"unsubscribed"`
+} //@name GlobeLabsUnsubscribeParams
+
+// GLabsUnsubscribe
+//
+//	@Summary	Globe Labs unsubscribe
+//	@Tags		globelabs
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	gLabsUnsubscribeReq	true	"Globe Labs unsubscribe params"
+//	@Success	204
+//	@Router		/glabs [post]
+func (s *Server) GLabsUnsubscribe(ctx *gin.Context) {
+	var req gLabsUnsubscribeReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		s.logger.Error().Err(err).
+			Msg("[GLabs] Bad request")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	mobileNumber, ok := util.ParseMobileNumber(req.Unsubscribed.SubscriberNumber)
+	if !ok {
+		err := fmt.Errorf("invalid mobile number: %s", req.Unsubscribed.SubscriberNumber)
+		s.logger.Error().Err(err).
+			Str("mobile_number", req.Unsubscribed.SubscriberNumber).
+			Str("access_token_type", GLabsAccessTokenType).
+			Msg("[GLabs] Cannot remove access token")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err := s.store.DeleteSimAccessToken(ctx, req.Unsubscribed.AccessToken)
+	if err != nil {
+		s.logger.Error().Err(err).
+			Str("mobile_number", mobileNumber).
+			Str("access_token_type", GLabsAccessTokenType).
+			Msg("[GLabs] Cannot remove access token")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	s.logger.Debug().
+		Str("mobile_number", mobileNumber).
+		Str("access_token_type", GLabsAccessTokenType).
+		Msg("[GLabs] Mobile number unregistered successfully")
+	ctx.JSON(http.StatusNoContent, nil)
 }
 
 type gLabsLoadReq struct {
@@ -158,7 +222,16 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 		Str("status", req.OutboundRewardRequest.Status).
 		Msg("[GLabsLoad] Top up detected")
 
-	mobileNumber := "63" + req.OutboundRewardRequest.Address
+	mobileNumber, ok := util.ParseMobileNumber(req.OutboundRewardRequest.Address)
+	if !ok {
+		err := fmt.Errorf("invalid mobile number: %s", req.OutboundRewardRequest.Address)
+		s.logger.Error().Err(err).
+			Str("mobile_number", req.OutboundRewardRequest.Address).
+			Msg("[GLabsLoad] Invalid number")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	_, err := s.store.GetStationByMobileNumber(ctx, util.NullString{
 		Text: pgtype.Text{
 			String: mobileNumber,

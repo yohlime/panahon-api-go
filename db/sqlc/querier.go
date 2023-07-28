@@ -24,6 +24,7 @@ type Querier interface {
 	CreateStationObservation(ctx context.Context, arg CreateStationObservationParams) (ObservationsObservation, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteRole(ctx context.Context, id int64) error
+	DeleteSimAccessToken(ctx context.Context, accessToken string) error
 	DeleteStation(ctx context.Context, id int64) error
 	DeleteStationHealth(ctx context.Context, arg DeleteStationHealthParams) error
 	DeleteStationObservation(ctx context.Context, arg DeleteStationObservationParams) error

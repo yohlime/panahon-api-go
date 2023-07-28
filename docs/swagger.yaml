@@ -421,6 +421,17 @@ paths:
       summary: Globe Labs opt-in
       tags:
       - globelabs
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Globe Labs unsubscribe
+      tags:
+      - globelabs
   /glabs/load:
     post:
       consumes:

@@ -38,6 +38,15 @@ func (q *Queries) CreateSimAccessToken(ctx context.Context, arg CreateSimAccessT
 	return i, err
 }
 
+const deleteSimAccessToken = `-- name: DeleteSimAccessToken :exec
+DELETE FROM sim_access_tokens WHERE access_token = $1
+`
+
+func (q *Queries) DeleteSimAccessToken(ctx context.Context, accessToken string) error {
+	_, err := q.db.Exec(ctx, deleteSimAccessToken, accessToken)
+	return err
+}
+
 const getSimAccessToken = `-- name: GetSimAccessToken :one
 SELECT access_token, type, mobile_number, created_at, updated_at FROM sim_access_tokens
 WHERE access_token = $1 LIMIT 1

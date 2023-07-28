@@ -18,15 +18,23 @@ func TestCreateSimAccessToken(t *testing.T) {
 func TestGetSimAccessToken(t *testing.T) {
 	simCard := createRandomSimCard(t)
 	accTkn := createRandomSimAccessToken(t, simCard.MobileNumber)
-	accTkn2, err := testStore.GetSimAccessToken(context.Background(), accTkn.AccessToken)
+	gotAccTkn, err := testStore.GetSimAccessToken(context.Background(), accTkn.AccessToken)
 	require.NoError(t, err)
-	require.NotEmpty(t, accTkn2)
+	require.NotEmpty(t, gotAccTkn)
 
-	require.Equal(t, accTkn.AccessToken, accTkn2.AccessToken)
-	require.Equal(t, accTkn.Type, accTkn2.Type)
-	require.Equal(t, accTkn.MobileNumber, accTkn2.MobileNumber)
-	require.WithinDuration(t, accTkn.CreatedAt.Time, accTkn2.CreatedAt.Time, time.Second)
-	require.WithinDuration(t, accTkn.UpdatedAt.Time, accTkn2.UpdatedAt.Time, time.Second)
+	require.Equal(t, accTkn.AccessToken, gotAccTkn.AccessToken)
+	require.Equal(t, accTkn.Type, gotAccTkn.Type)
+	require.Equal(t, accTkn.MobileNumber, gotAccTkn.MobileNumber)
+	require.WithinDuration(t, accTkn.CreatedAt.Time, gotAccTkn.CreatedAt.Time, time.Second)
+	require.WithinDuration(t, accTkn.UpdatedAt.Time, gotAccTkn.UpdatedAt.Time, time.Second)
+}
+
+func TestDeleteSimAccessToken(t *testing.T) {
+	simCard := createRandomSimCard(t)
+	accTkn := createRandomSimAccessToken(t, simCard.MobileNumber)
+
+	err := testStore.DeleteSimAccessToken(context.Background(), accTkn.AccessToken)
+	require.NoError(t, err)
 }
 
 func createRandomSimAccessToken(t *testing.T, mobileNumber string) SimAccessToken {

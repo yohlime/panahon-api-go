@@ -111,6 +111,7 @@ func (s *Server) setupRouter() {
 	glabs := api.Group("/glabs")
 	{
 		glabs.GET("", s.GLabsOptIn)
+		glabs.POST("", s.GLabsUnsubscribe)
 		glabs.POST("/load", s.CreateGLabsLoad)
 	}
 
