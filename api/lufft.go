@@ -30,7 +30,7 @@ func newLufftMsgLoResponse(res db.ListLufftStationMsgRow) lufftMsgLogRes {
 	}
 }
 
-// LufftMsgLog godoc
+// LufftMsgLog
 //
 //	@Summary	Lufft Message Logs
 //	@Tags		lufft

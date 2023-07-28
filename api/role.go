@@ -32,7 +32,7 @@ type listRoleReq struct {
 	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
 } //@name ListRolesParams
 
-// ListRoles godoc
+// ListRoles
 //
 //	@Summary	List roles
 //	@Tags		roles
@@ -77,7 +77,7 @@ type getRoleReq struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-// GetRole godoc
+// GetRole
 //
 //	@Summary	Get role
 //	@Tags		roles
@@ -112,7 +112,7 @@ type createRoleReq struct {
 	Description util.NullString `json:"description" binding:"omitempty,alphanum"`
 } //@name CreateRoleParams
 
-// CreateRole godoc
+// CreateRole
 //
 //	@Summary	Create role
 //	@Tags		roles
@@ -156,7 +156,7 @@ type updateRoleReq struct {
 	Description util.NullString `json:"description" binding:"omitempty,alphanum"`
 } //@name UpdateRoleParams
 
-// UpdateRole godoc
+// UpdateRole
 //
 //	@Summary	Update role
 //	@Tags		roles
@@ -210,7 +210,7 @@ type deleteRoleReq struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-// DeleteRole godoc
+// DeleteRole
 //
 //	@Summary	Delete role
 //	@Accept		json

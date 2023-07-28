@@ -41,7 +41,7 @@ func newGLabsOptInResponse(res db.FirstOrCreateSimAccessTokenTxResult) gLabsOptI
 	}
 }
 
-// GLabsOptIn godoc
+// GLabsOptIn
 //
 //	@Summary	Globe Labs opt-in
 //	@Tags		globelabs
@@ -134,7 +134,7 @@ func newGLabsLoadResponse(res db.GlabsLoad) gLabsLoadRes {
 	}
 }
 
-// CreateGLabsLoad godoc
+// CreateGLabsLoad
 //
 //	@Summary	Create Globe Labs entry
 //	@Tags		globelabs

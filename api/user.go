@@ -44,7 +44,7 @@ type listUserReq struct {
 	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
 } //@name ListUsersParams
 
-// ListUsers godoc
+// ListUsers
 //
 //	@Summary	List users
 //	@Tags		users
@@ -89,7 +89,7 @@ type getUserReq struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-// GetUser godoc
+// GetUser
 //
 //	@Summary	Get user
 //	@Tags		users
@@ -129,7 +129,7 @@ type createUserReq struct {
 	Roles    []string `json:"roles"`
 } //@name CreateUserParams
 
-// CreateUser godoc
+// CreateUser
 //
 //	@Summary	Create user
 //	@Tags		users
@@ -199,7 +199,7 @@ type updateUserReq struct {
 	Roles    []string        `json:"roles"`
 } //@name UpdateUserParams
 
-// UpdateUser godoc
+// UpdateUser
 //
 //	@Summary	Update user
 //	@Tags		users
@@ -300,7 +300,7 @@ type deleteUserReq struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-// DeleteUser godoc
+// DeleteUser
 //
 //	@Summary	Delete user
 //	@Tags		users
@@ -334,7 +334,7 @@ type registerUserReq struct {
 	Email           string `json:"email" binding:"required,email"`
 } //@name RegisterUserParams
 
-// RegisterUser godoc
+// RegisterUser
 //
 //	@Summary	Register user
 //	@Tags		users
@@ -400,7 +400,7 @@ type loginUserResponse struct {
 	User                  userResponse `json:"user"`
 } //@name LoginUserResponse
 
-// LoginUser godoc
+// LoginUser
 //
 //	@Summary	User login
 //	@Tags		users

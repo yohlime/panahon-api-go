@@ -21,7 +21,7 @@ type renewAccessTokenResponse struct {
 	AccessToken          string             `json:"access_token"`
 } //@name RenewAccessTokenResponse
 
-// RenewAccessToken godoc
+// RenewAccessToken
 //
 //	@Summary	Renew access token
 //	@Tags		users

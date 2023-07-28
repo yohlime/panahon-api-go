@@ -59,7 +59,7 @@ type listStationObsReq struct {
 	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"` // limit
 } //name ListStationObservationsParams
 
-// ListStationObservations godoc
+// ListStationObservations
 //
 //	@Summary	List station observations
 //	@Tags		observations
@@ -111,7 +111,7 @@ type getStationObsReq struct {
 	ID        int64 `uri:"id" binding:"required,min=1"`
 }
 
-// GetStationObservation godoc
+// GetStationObservation
 //
 //	@Summary	Get station observation
 //	@Tags		observations
@@ -167,7 +167,7 @@ type createStationObsReq struct {
 	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"omitempty,numeric"`
 } //@name CreateStationObservationParams
 
-// CreateStationObservation godoc
+// CreateStationObservation
 //
 //	@Summary	Create station observation
 //	@Tags		observations
@@ -240,7 +240,7 @@ type updateStationObsReq struct {
 	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"omitempty,numeric"`
 } //@name UpdateStationObservationParams
 
-// UpdateStationObservation godoc
+// UpdateStationObservation
 //
 //	@Summary	Update station observation
 //	@Tags		observations
@@ -301,7 +301,7 @@ type deleteStationObsReq struct {
 	ID        int64 `uri:"id" binding:"required,min=1"`
 }
 
-// DeleteStationObservation godoc
+// DeleteStationObservation
 //
 //	@Summary	Delete station observation
 //	@Tags		observations

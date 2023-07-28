@@ -15,7 +15,7 @@ type pTexterStoreLufftReq struct {
 	Msg    string `json:"msg" binding:"required"`
 } //@name LufftSMSParams
 
-// PromoTexterStoreLufft godoc
+// PromoTexterStoreLufft
 //
 //	@Summary	Store Lufft observation and health
 //	@Tags		promotexter

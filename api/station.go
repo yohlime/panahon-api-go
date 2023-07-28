@@ -50,7 +50,7 @@ type listStationReq struct {
 	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"` // limit
 } //@name ListStationsParams
 
-// ListStations godoc
+// ListStations
 //
 //	@Summary	List stations
 //	@Tags		stations
@@ -95,7 +95,7 @@ type getStationReq struct {
 	ID int64 `uri:"station_id" binding:"required,min=1"` // station id
 }
 
-// GetStation godoc
+// GetStation
 //
 //	@Summary	Get station
 //	@Tags		stations
@@ -140,7 +140,7 @@ type createStationReq struct {
 	Address       util.NullString `json:"address" binding:"omitempty"`
 } //@name CreateStationParams
 
-// CreateStation godoc
+// CreateStation
 //
 //	@Summary	Create station
 //	@Tags		stations
@@ -202,7 +202,7 @@ type updateStationReq struct {
 	Address       util.NullString `json:"address" binding:"omitempty"`
 } //@name UpdateStationParams
 
-// UpdateStation godoc
+// UpdateStation
 //
 //	@Summary	Update station
 //	@Tags		stations
@@ -259,7 +259,7 @@ type deleteStationReq struct {
 	ID int64 `uri:"station_id" binding:"required,min=1"`
 }
 
-// DeleteStation godoc
+// DeleteStation
 //
 //	@Summary	Delete station
 //	@Tags		stations
