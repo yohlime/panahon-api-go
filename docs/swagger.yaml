@@ -397,21 +397,7 @@ info:
   title: Panahon API
   version: "1.0"
 paths:
-  /glabs/load:
-    post:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/GlobeLabsLoadResponse'
-      summary: Create Globe Labs entry
-      tags:
-      - globelabs
-  /glabs/optin:
+  /glabs:
     get:
       consumes:
       - application/json
@@ -433,6 +419,20 @@ paths:
           schema:
             $ref: '#/definitions/GlobeLabsOptInResponse'
       summary: Globe Labs opt-in
+      tags:
+      - globelabs
+  /glabs/load:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GlobeLabsLoadResponse'
+      summary: Create Globe Labs entry
       tags:
       - globelabs
   /lufft/{station_id}/logs:

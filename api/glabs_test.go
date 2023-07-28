@@ -174,7 +174,7 @@ func TestGLabsOptInApi(t *testing.T) {
 			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/glabs/optin", server.config.APIBasePath)
+			url := fmt.Sprintf("%s/glabs", server.config.APIBasePath)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 

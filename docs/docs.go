@@ -19,29 +19,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/glabs/load": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "globelabs"
-                ],
-                "summary": "Create Globe Labs entry",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/GlobeLabsLoadResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/glabs/optin": {
+        "/glabs": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -75,6 +53,28 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/GlobeLabsOptInResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/glabs/load": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "globelabs"
+                ],
+                "summary": "Create Globe Labs entry",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GlobeLabsLoadResponse"
                         }
                     }
                 }

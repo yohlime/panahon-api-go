@@ -49,7 +49,7 @@ func newGLabsOptInResponse(res db.FirstOrCreateSimAccessTokenTxResult) gLabsOptI
 //	@Produce	json
 //	@Param		req	query		gLabsOptInReq	true	"Globe Labs Opt-in query"
 //	@Success	200	{object}	gLabsOptInRes
-//	@Router		/glabs/optin [get]
+//	@Router		/glabs [get]
 func (s *Server) GLabsOptIn(ctx *gin.Context) {
 	var req gLabsOptInReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {

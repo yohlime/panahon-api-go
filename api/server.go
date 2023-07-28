@@ -110,7 +110,7 @@ func (s *Server) setupRouter() {
 
 	glabs := api.Group("/glabs")
 	{
-		glabs.GET("/optin", s.GLabsOptIn)
+		glabs.GET("", s.GLabsOptIn)
 		glabs.POST("/load", s.CreateGLabsLoad)
 	}
 
