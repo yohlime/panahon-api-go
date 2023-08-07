@@ -71,3 +71,23 @@ func roleMiddleware(role string) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func adminMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+		isAdmin := false
+		for _, roleName := range authPayload.User.Roles {
+			if isAdmin = isAdminRole(roleName); isAdmin {
+				break
+			}
+		}
+
+		if !isAdmin {
+			err := fmt.Errorf("user has no admin access")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+		}
+
+		ctx.Next()
+	}
+}

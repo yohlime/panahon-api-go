@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -10,6 +11,29 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type adminRoleType string
+
+const (
+	adminRole      adminRoleType = "ADMIN"
+	superAdminRole adminRoleType = "SUPERADMIN"
+)
+
+func (rt adminRoleType) IsValid() error {
+	switch rt {
+	case adminRole, superAdminRole:
+		return nil
+	}
+	return fmt.Errorf("invalid admin_role type")
+}
+
+func isAdminRole(role string) bool {
+	rt := adminRoleType(role)
+	if err := rt.IsValid(); err != nil {
+		return false
+	}
+	return true
+}
 
 type roleResponse struct {
 	Name        string             `json:"name"`

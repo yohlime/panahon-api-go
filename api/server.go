@@ -57,7 +57,7 @@ func (s *Server) setupRouter() {
 
 		usersAuth := addMiddleware(users,
 			authMiddleware(s.tokenMaker),
-			roleMiddleware("SUPERADMIN"))
+			roleMiddleware(string(superAdminRole)))
 		usersAuth.GET("", s.ListUsers)
 		usersAuth.GET(":id", s.GetUser)
 		usersAuth.POST("", s.CreateUser)
@@ -71,7 +71,7 @@ func (s *Server) setupRouter() {
 	{
 		rolesAuth := addMiddleware(roles,
 			authMiddleware(s.tokenMaker),
-			roleMiddleware("SUPERADMIN"))
+			roleMiddleware(string(superAdminRole)))
 		rolesAuth.GET("", s.ListRoles)
 		rolesAuth.GET(":id", s.GetRole)
 		rolesAuth.POST("", s.CreateRole)
@@ -92,14 +92,14 @@ func (s *Server) setupRouter() {
 
 		stationsAuth := addMiddleware(stations,
 			authMiddleware(s.tokenMaker),
-			roleMiddleware("ADMIN"))
+			adminMiddleware())
 		stationsAuth.POST("", s.CreateStation)
 		stationsAuth.PUT(":station_id", s.UpdateStation)
 		stationsAuth.DELETE(":station_id", s.DeleteStation)
 
 		stnObservationsAuth := addMiddleware(stnObservations,
 			authMiddleware(s.tokenMaker),
-			roleMiddleware("ADMIN"))
+			adminMiddleware())
 		{
 			stnObservationsAuth.POST("", s.CreateStationObservation)
 			stnObservationsAuth.PUT(":id", s.UpdateStationObservation)
