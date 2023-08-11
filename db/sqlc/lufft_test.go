@@ -12,8 +12,10 @@ import (
 
 func TestListLufftStationMsg(t *testing.T) {
 	station := createRandomStation(t)
-	for i := 0; i < 10; i++ {
-		createRandomLufftStationMsg(t, station.ID)
+	n := 10
+	stnMsgs := make([]ObservationsStationhealth, n)
+	for i := 0; i < n; i++ {
+		stnMsgs[i] = createRandomLufftStationMsg(t, station.ID)
 	}
 
 	arg := ListLufftStationMsgParams{
@@ -22,12 +24,41 @@ func TestListLufftStationMsg(t *testing.T) {
 		Offset:    5,
 	}
 
-	healths, err := testStore.ListLufftStationMsg(context.Background(), arg)
+	gotStnMsgs, err := testStore.ListLufftStationMsg(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, healths, 5)
+	require.Len(t, gotStnMsgs, 5)
 
-	for _, h := range healths {
-		require.NotEmpty(t, h)
+	for _, msg := range gotStnMsgs {
+		require.NotEmpty(t, msg)
+	}
+
+	// cleanup
+	for _, msg := range stnMsgs {
+		_deleteStationHealth(t, DeleteStationHealthParams{
+			StationID: msg.StationID,
+			ID:        msg.ID,
+		})
+	}
+}
+
+func TestCountLufftStationMsg(t *testing.T) {
+	station := createRandomStation(t)
+	n := 10
+	stnMsgs := make([]ObservationsStationhealth, n)
+	for i := 0; i < n; i++ {
+		stnMsgs[i] = createRandomLufftStationMsg(t, station.ID)
+	}
+
+	numHealth, err := testStore.CountLufftStationMsg(context.Background(), station.ID)
+	require.NoError(t, err)
+	require.Equal(t, numHealth, int64(n))
+
+	// cleanup
+	for _, msg := range stnMsgs {
+		_deleteStationHealth(t, DeleteStationHealthParams{
+			StationID: msg.StationID,
+			ID:        msg.ID,
+		})
 	}
 }
 

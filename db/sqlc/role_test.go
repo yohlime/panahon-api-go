@@ -11,7 +11,10 @@ import (
 )
 
 func TestCreateRole(t *testing.T) {
-	createRandomRole(t)
+	role := createRandomRole(t)
+
+	// cleanup
+	_deleteRole(t, role.ID)
 }
 
 func TestGetRole(t *testing.T) {
@@ -21,11 +24,16 @@ func TestGetRole(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, gotRole)
 	requireRoleEqual(t, role, gotRole)
+
+	// cleanup
+	_deleteRole(t, role.ID)
 }
 
 func TestListRole(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		createRandomRole(t)
+	n := 10
+	roles := make([]Role, n)
+	for i := 0; i < n; i++ {
+		roles[i] = createRandomRole(t)
 	}
 
 	arg := ListRolesParams{
@@ -33,12 +41,34 @@ func TestListRole(t *testing.T) {
 		Offset: 5,
 	}
 
-	roles, err := testStore.ListRoles(context.Background(), arg)
+	gotRoles, err := testStore.ListRoles(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, roles, 5)
+	require.Len(t, gotRoles, 5)
 
-	for _, role := range roles {
+	for _, role := range gotRoles {
 		require.NotEmpty(t, role)
+	}
+
+	// cleanup
+	for _, role := range roles {
+		_deleteRole(t, role.ID)
+	}
+}
+
+func TestCountRole(t *testing.T) {
+	n := 10
+	roles := make([]Role, n)
+	for i := 0; i < n; i++ {
+		roles[i] = createRandomRole(t)
+	}
+
+	numRoles, err := testStore.CountRoles(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, numRoles, int64(n))
+
+	// cleanup
+	for _, role := range roles {
+		_deleteRole(t, role.ID)
 	}
 }
 
@@ -130,6 +160,9 @@ func TestUpdateRole(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedRole, err := testStore.UpdateRole(context.Background(), tc.buildArg())
 			tc.checkResult(updatedRole, err)
+
+			// cleanup
+			_deleteRole(t, updatedRole.ID)
 		})
 	}
 }
@@ -137,12 +170,8 @@ func TestUpdateRole(t *testing.T) {
 func TestDeleteRole(t *testing.T) {
 	role := createRandomRole(t)
 
-	err := testStore.DeleteRole(context.Background(), role.ID)
-	require.NoError(t, err)
-
-	gotRole, err := testStore.GetRole(context.Background(), role.ID)
-	require.Error(t, err)
-	require.Empty(t, gotRole)
+	// cleanup
+	_deleteRole(t, role.ID)
 }
 
 func createRandomRole(t *testing.T) Role {
@@ -168,6 +197,17 @@ func createRandomRole(t *testing.T) Role {
 	require.NotZero(t, role.CreatedAt.Time)
 
 	return role
+}
+
+func _deleteRole(t *testing.T, roleID int64) {
+	ctx := context.Background()
+
+	err := testStore.DeleteRole(ctx, roleID)
+	require.NoError(t, err)
+
+	gotRole, err := testStore.GetRole(ctx, roleID)
+	require.Error(t, err)
+	require.Empty(t, gotRole)
 }
 
 func requireRoleEqual(t *testing.T, r1, r2 Role) {

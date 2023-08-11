@@ -28,8 +28,8 @@ func TestListRolesAPI(t *testing.T) {
 	}
 
 	type Query struct {
-		Page  int32
-		Limit int32
+		Page    int32
+		PerPage int32
 	}
 
 	testCases := []struct {
@@ -41,12 +41,14 @@ func TestListRolesAPI(t *testing.T) {
 		{
 			name: "OK",
 			query: Query{
-				Page:  1,
-				Limit: int32(n),
+				Page:    1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(roles, nil)
+				store.EXPECT().CountRoles(mock.AnythingOfType("*gin.Context")).
+					Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -57,8 +59,8 @@ func TestListRolesAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			query: Query{
-				Page:  1,
-				Limit: int32(n),
+				Page:    1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -72,8 +74,8 @@ func TestListRolesAPI(t *testing.T) {
 		{
 			name: "InvalidPage",
 			query: Query{
-				Page:  -1,
-				Limit: int32(n),
+				Page:    -1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -85,14 +87,49 @@ func TestListRolesAPI(t *testing.T) {
 		{
 			name: "InvalidLimit",
 			query: Query{
-				Page:  1,
-				Limit: 10000,
+				Page:    1,
+				PerPage: 10000,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertNotCalled(t, "ListRoles", mock.AnythingOfType("*gin.Context"), mock.Anything)
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "EmptySlice",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.Role{}, nil)
+				store.EXPECT().CountRoles(mock.AnythingOfType("*gin.Context")).
+					Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchRoles(t, recorder.Body, []db.Role{})
+			},
+		},
+		{
+			name: "CountInternalError",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.Role{}, nil)
+				store.EXPECT().CountRoles(mock.AnythingOfType("*gin.Context")).
+					Return(int64(n), sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
@@ -114,7 +151,7 @@ func TestListRolesAPI(t *testing.T) {
 			// Add query parameters to request URL
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
-			q.Add("limit", fmt.Sprintf("%d", tc.query.Limit))
+			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)
@@ -468,12 +505,12 @@ func requireBodyMatchRoles(t *testing.T, body *bytes.Buffer, roles []db.Role) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotRoles []db.Role
+	var gotRoles listRolesRes
 	err = json.Unmarshal(data, &gotRoles)
 
 	require.NoError(t, err)
 	for i, role := range roles {
-		require.Equal(t, role.Name, gotRoles[i].Name)
-		require.Equal(t, role.Description, gotRoles[i].Description)
+		require.Equal(t, role.Name, gotRoles.Data[i].Name)
+		require.Equal(t, role.Description, gotRoles.Data[i].Description)
 	}
 }

@@ -30,6 +30,10 @@ ORDER BY id
 LIMIT $2
 OFFSET $3;
 
+-- name: CountStationObservations :one
+SELECT count(*) FROM observations_observation
+WHERE station_id = $1;
+
 -- name: UpdateStationObservation :one
 UPDATE observations_observation
 SET

@@ -20,6 +20,9 @@ ORDER BY id
 LIMIT $1
 OFFSET $2;
 
+-- name: CountRoles :one
+SELECT count(*) FROM roles;
+
 -- name: UpdateRole :one
 UPDATE roles
 SET

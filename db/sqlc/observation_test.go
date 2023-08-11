@@ -12,7 +12,13 @@ import (
 
 func TestCreateStationObservation(t *testing.T) {
 	station := createRandomStation(t)
-	createRandomObservation(t, station.ID)
+	obs := createRandomObservation(t, station.ID)
+
+	// cleanup
+	_deleteStationObservation(t, DeleteStationObservationParams{
+		StationID: obs.StationID,
+		ID:        obs.ID,
+	})
 }
 
 func TestGetStationObservation(t *testing.T) {
@@ -29,12 +35,20 @@ func TestGetStationObservation(t *testing.T) {
 	require.NotEmpty(t, gotObs)
 
 	require.Equal(t, obs, gotObs)
+
+	// cleanup
+	_deleteStationObservation(t, DeleteStationObservationParams{
+		StationID: obs.StationID,
+		ID:        obs.ID,
+	})
 }
 
 func TestListStationObservations(t *testing.T) {
 	station := createRandomStation(t)
-	for i := 0; i < 10; i++ {
-		createRandomObservation(t, station.ID)
+	n := 10
+	observations := make([]ObservationsObservation, n)
+	for i := 0; i < n; i++ {
+		observations[i] = createRandomObservation(t, station.ID)
 	}
 
 	arg := ListStationObservationsParams{
@@ -43,12 +57,41 @@ func TestListStationObservations(t *testing.T) {
 		Offset:    5,
 	}
 
-	observations, err := testStore.ListStationObservations(context.Background(), arg)
+	gotObservations, err := testStore.ListStationObservations(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, observations, 5)
+	require.Len(t, gotObservations, 5)
 
-	for _, obs := range observations {
+	for _, obs := range gotObservations {
 		require.NotEmpty(t, obs)
+	}
+
+	// cleanup
+	for _, obs := range observations {
+		_deleteStationObservation(t, DeleteStationObservationParams{
+			StationID: obs.StationID,
+			ID:        obs.ID,
+		})
+	}
+}
+
+func TestCountStationObservations(t *testing.T) {
+	station := createRandomStation(t)
+	n := 10
+	observations := make([]ObservationsObservation, n)
+	for i := 0; i < n; i++ {
+		createRandomObservation(t, station.ID)
+	}
+
+	numObservations, err := testStore.CountStationObservations(context.Background(), station.ID)
+	require.NoError(t, err)
+	require.Equal(t, numObservations, int64(n))
+
+	// cleanup
+	for _, obs := range observations {
+		_deleteStationObservation(t, DeleteStationObservationParams{
+			StationID: obs.StationID,
+			ID:        obs.ID,
+		})
 	}
 }
 
@@ -98,6 +141,12 @@ func TestUpdateStationObservation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedObs, err := testStore.UpdateStationObservation(context.Background(), tc.buildArg())
 			tc.checkResult(updatedObs, err)
+
+			// cleanup
+			_deleteStationObservation(t, DeleteStationObservationParams{
+				StationID: updatedObs.StationID,
+				ID:        updatedObs.ID,
+			})
 		})
 	}
 }
@@ -106,20 +155,11 @@ func TestDeleteStationObservation(t *testing.T) {
 	station := createRandomStation(t)
 	obs := createRandomObservation(t, station.ID)
 
-	delArg := DeleteStationObservationParams{
+	// cleanup
+	_deleteStationObservation(t, DeleteStationObservationParams{
 		StationID: obs.StationID,
 		ID:        obs.ID,
-	}
-	err := testStore.DeleteStationObservation(context.Background(), delArg)
-	require.NoError(t, err)
-
-	getArg := GetStationObservationParams{
-		StationID: obs.StationID,
-		ID:        obs.ID,
-	}
-	gotObs, err := testStore.GetStationObservation(context.Background(), getArg)
-	require.Error(t, err)
-	require.Empty(t, gotObs)
+	})
 }
 
 func createRandomObservation(t *testing.T, stationID int64) ObservationsObservation {
@@ -148,4 +188,14 @@ func createRandomObservation(t *testing.T, stationID int64) ObservationsObservat
 	require.NotZero(t, obs.CreatedAt.Time)
 
 	return obs
+}
+
+func _deleteStationObservation(t *testing.T, arg DeleteStationObservationParams) {
+	err := testStore.DeleteStationObservation(context.Background(), arg)
+	require.NoError(t, err)
+
+	getArg := GetStationObservationParams(arg)
+	gotObs, err := testStore.GetStationObservation(context.Background(), getArg)
+	require.Error(t, err)
+	require.Empty(t, gotObs)
 }

@@ -12,7 +12,13 @@ import (
 
 func TestCreateStationHealth(t *testing.T) {
 	station := createRandomStation(t)
-	createRandomStationHealth(t, station.ID)
+	health := createRandomStationHealth(t, station.ID)
+
+	// cleanup
+	_deleteStationHealth(t, DeleteStationHealthParams{
+		StationID: health.StationID,
+		ID:        health.ID,
+	})
 }
 
 func TestGetStationHealth(t *testing.T) {
@@ -29,12 +35,20 @@ func TestGetStationHealth(t *testing.T) {
 	require.NotEmpty(t, gotHealth)
 
 	require.Equal(t, health, gotHealth)
+
+	// cleanup
+	_deleteStationHealth(t, DeleteStationHealthParams{
+		StationID: health.StationID,
+		ID:        health.ID,
+	})
 }
 
 func TestListStationHealths(t *testing.T) {
 	station := createRandomStation(t)
-	for i := 0; i < 10; i++ {
-		createRandomStationHealth(t, station.ID)
+	n := 10
+	healths := make([]ObservationsStationhealth, n)
+	for i := 0; i < n; i++ {
+		healths[i] = createRandomStationHealth(t, station.ID)
 	}
 
 	arg := ListStationHealthsParams{
@@ -43,12 +57,20 @@ func TestListStationHealths(t *testing.T) {
 		Offset:    5,
 	}
 
-	healths, err := testStore.ListStationHealths(context.Background(), arg)
+	gotHealths, err := testStore.ListStationHealths(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, healths, 5)
+	require.Len(t, gotHealths, 5)
 
-	for _, h := range healths {
+	for _, h := range gotHealths {
 		require.NotEmpty(t, h)
+	}
+
+	// cleanup
+	for _, h := range healths {
+		_deleteStationHealth(t, DeleteStationHealthParams{
+			StationID: h.StationID,
+			ID:        h.ID,
+		})
 	}
 }
 
@@ -95,6 +117,12 @@ func TestUpdateStationHealth(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedHealth, err := testStore.UpdateStationHealth(context.Background(), tc.buildArg())
 			tc.checkResult(updatedHealth, err)
+
+			// cleanup
+			_deleteStationHealth(t, DeleteStationHealthParams{
+				StationID: updatedHealth.StationID,
+				ID:        updatedHealth.ID,
+			})
 		})
 	}
 }
@@ -103,20 +131,11 @@ func TestDeleteStationHealth(t *testing.T) {
 	station := createRandomStation(t)
 	health := createRandomStationHealth(t, station.ID)
 
-	delArg := DeleteStationHealthParams{
+	// cleanup
+	_deleteStationHealth(t, DeleteStationHealthParams{
 		StationID: health.StationID,
 		ID:        health.ID,
-	}
-	err := testStore.DeleteStationHealth(context.Background(), delArg)
-	require.NoError(t, err)
-
-	getArg := GetStationHealthParams{
-		StationID: health.StationID,
-		ID:        health.ID,
-	}
-	gotHealth, err := testStore.GetStationHealth(context.Background(), getArg)
-	require.Error(t, err)
-	require.Empty(t, gotHealth)
+	})
 }
 
 func createRandomStationHealth(t *testing.T, stationID int64) ObservationsStationhealth {
@@ -143,4 +162,13 @@ func createRandomStationHealth(t *testing.T, stationID int64) ObservationsStatio
 	require.NotZero(t, health.CreatedAt.Time)
 
 	return health
+}
+
+func _deleteStationHealth(t *testing.T, arg DeleteStationHealthParams) {
+	err := testStore.DeleteStationHealth(context.Background(), arg)
+	require.NoError(t, err)
+
+	gotHealth, err := testStore.GetStationHealth(context.Background(), GetStationHealthParams(arg))
+	require.Error(t, err)
+	require.Empty(t, gotHealth)
 }

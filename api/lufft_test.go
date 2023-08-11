@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,8 +32,8 @@ func TestLufftMsgLog(t *testing.T) {
 	}
 
 	type Query struct {
-		Page  int32
-		Limit int32
+		Page    int32
+		PerPage int32
 	}
 
 	testCases := []struct {
@@ -44,17 +45,95 @@ func TestLufftMsgLog(t *testing.T) {
 		{
 			name: "OK",
 			query: Query{
-				Page:  1,
-				Limit: int32(n),
+				Page:    1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListLufftStationMsg(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(lufftStationMsgs, nil)
+				store.EXPECT().CountLufftStationMsg(mock.AnythingOfType("*gin.Context"), stationID).
+					Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
 				requireBodyMatchLufftMsgLogs(t, recorder.Body, lufftStationMsgs)
+			},
+		},
+		{
+			name: "InternalError",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListLufftStationMsg(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.ListLufftStationMsgRow{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidPage",
+			query: Query{
+				Page:    -1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListLufftStationMsg", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidLimit",
+			query: Query{
+				Page:    1,
+				PerPage: 10000,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListLufftStationMsg", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "EmptySlice",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListLufftStationMsg(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.ListLufftStationMsgRow{}, nil)
+				store.EXPECT().CountLufftStationMsg(mock.AnythingOfType("*gin.Context"), stationID).
+					Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchLufftMsgLogs(t, recorder.Body, []db.ListLufftStationMsgRow{})
+			},
+		},
+		{
+			name: "CountInternalError",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListLufftStationMsg(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.ListLufftStationMsgRow{}, nil)
+				store.EXPECT().CountLufftStationMsg(mock.AnythingOfType("*gin.Context"), stationID).
+					Return(0, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
@@ -76,7 +155,7 @@ func TestLufftMsgLog(t *testing.T) {
 			// Add query parameters to request URL
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
-			q.Add("limit", fmt.Sprintf("%d", tc.query.Limit))
+			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)
@@ -107,12 +186,12 @@ func requireBodyMatchLufftMsgLogs(t *testing.T, body *bytes.Buffer, lufftStation
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotLufftStationMsgs []db.ListLufftStationMsgRow
+	var gotLufftStationMsgs lufftMsgLogsRes
 	err = json.Unmarshal(data, &gotLufftStationMsgs)
 	require.NoError(t, err)
 	for m, msg := range lufftStationMsgs {
-		require.Equal(t, msg.Message, gotLufftStationMsgs[m].Message)
-		require.WithinDuration(t, msg.Timestamp.Time, gotLufftStationMsgs[m].Timestamp.Time, time.Second)
+		require.Equal(t, msg.Message, gotLufftStationMsgs.Data[m].Message)
+		require.WithinDuration(t, msg.Timestamp.Time, gotLufftStationMsgs.Data[m].Timestamp.Time, time.Second)
 	}
 
 }

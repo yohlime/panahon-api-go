@@ -39,10 +39,17 @@ func newUserResponse(user db.User, roleNames []string) userResponse {
 	return ret
 }
 
-type listUserReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
+type listUsersReq struct {
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
 } //@name ListUsersParams
+
+type listUsersRes struct {
+	Page    int32          `json:"page"`
+	PerPage int32          `json:"per_page"`
+	Total   int64          `json:"total"`
+	Data    []userResponse `json:"data"`
+} //@name ListUsersResponse
 
 // ListUsers
 //
@@ -50,20 +57,20 @@ type listUserReq struct {
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query	listUserReq	false	"List users parameters"
+//	@Param		req	query	listUsersReq	false	"List users parameters"
 //	@Security	BearerAuth
-//	@Success	200	{array}	userResponse
+//	@Success	200	{object}	listUsersRes
 //	@Router		/users [get]
 func (s *Server) ListUsers(ctx *gin.Context) {
-	var req listUserReq
+	var req listUsersReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	offset := (req.Page - 1) * req.Limit
+	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListUsersParams{
-		Limit:  req.Limit,
+		Limit:  req.PerPage,
 		Offset: offset,
 	}
 	users, err := s.store.ListUsers(ctx, arg)
@@ -73,13 +80,22 @@ func (s *Server) ListUsers(ctx *gin.Context) {
 	}
 
 	numUsers := len(users)
-	if numUsers <= 0 {
-		ctx.JSON(http.StatusOK, nil)
+	usersRes := make([]userResponse, numUsers)
+	for i, user := range users {
+		usersRes[i] = newUserResponse(user, nil)
 	}
 
-	rsp := make([]userResponse, numUsers)
-	for i, user := range users {
-		rsp[i] = newUserResponse(user, nil)
+	totalUsers, err := s.store.CountUsers(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := listUsersRes{
+		Page:    req.Page,
+		PerPage: req.PerPage,
+		Total:   totalUsers,
+		Data:    usersRes,
 	}
 
 	ctx.JSON(http.StatusOK, rsp)

@@ -14,8 +14,8 @@ type lufftMsgLogUri struct {
 }
 
 type lufftMsgLogReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
 } //@name LufftMsgLogParams
 
 type lufftMsgLogRes struct {
@@ -30,15 +30,22 @@ func newLufftMsgLoResponse(res db.ListLufftStationMsgRow) lufftMsgLogRes {
 	}
 }
 
+type lufftMsgLogsRes struct {
+	Page    int32            `json:"page"`
+	PerPage int32            `json:"per_page"`
+	Total   int64            `json:"total"`
+	Data    []lufftMsgLogRes `json:"data"`
+} //@name LufftMsgLogsResponse
+
 // LufftMsgLog
 //
 //	@Summary	Lufft Message Logs
 //	@Tags		lufft
 //	@Accept		json
 //	@Produce	json
-//	@Param		station_id	path	int				true	"Station ID"
-//	@Param		req			query	lufftMsgLogReq	false	"Lufft Message log query"
-//	@Success	200			{array}	lufftMsgLogRes
+//	@Param		station_id	path		int				true	"Station ID"
+//	@Param		req			query		lufftMsgLogReq	false	"Lufft Message log query"
+//	@Success	200			{object}	lufftMsgLogsRes
 //	@Router		/lufft/{station_id}/logs [get]
 func (s *Server) LufftMsgLog(ctx *gin.Context) {
 	var uri lufftMsgLogUri
@@ -52,10 +59,10 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 		return
 	}
 
-	offset := (req.Page - 1) * req.Limit
+	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListLufftStationMsgParams{
 		StationID: uri.StationID,
-		Limit:     req.Limit,
+		Limit:     req.PerPage,
 		Offset:    offset,
 	}
 
@@ -66,16 +73,25 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 	}
 
 	numMsg := len(msgs)
-	if numMsg <= 0 {
-		ctx.JSON(http.StatusOK, nil)
-	}
-
-	res := make([]lufftMsgLogRes, numMsg)
+	msgsRes := make([]lufftMsgLogRes, numMsg)
 	for m, msg := range msgs {
-		res[m] = newLufftMsgLoResponse(msg)
+		msgsRes[m] = newLufftMsgLoResponse(msg)
 	}
 
-	ctx.JSON(http.StatusOK, res)
+	totalMsgs, err := s.store.CountLufftStationMsg(ctx, uri.StationID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := lufftMsgLogsRes{
+		Page:    req.Page,
+		PerPage: req.PerPage,
+		Total:   totalMsgs,
+		Data:    msgsRes,
+	}
+
+	ctx.JSON(http.StatusOK, rsp)
 }
 
 type lufftRes struct {

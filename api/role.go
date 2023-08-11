@@ -51,10 +51,17 @@ func newRoleResponse(role db.Role) roleResponse {
 	}
 }
 
-type listRoleReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"`
+type listRolesReq struct {
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
 } //@name ListRolesParams
+
+type listRolesRes struct {
+	Page    int32          `json:"page"`
+	PerPage int32          `json:"per_page"`
+	Total   int64          `json:"total"`
+	Data    []roleResponse `json:"data"`
+} //@name ListRolessResponse
 
 // ListRoles
 //
@@ -62,20 +69,20 @@ type listRoleReq struct {
 //	@Tags		roles
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query	listRoleReq	false	"List roles parameters"
+//	@Param		req	query	listRolesReq	false	"List roles parameters"
 //	@Security	BearerAuth
-//	@Success	200	{array}	roleResponse
+//	@Success	200	{object}	listRolesRes
 //	@Router		/roles [get]
 func (s *Server) ListRoles(ctx *gin.Context) {
-	var req listRoleReq
+	var req listRolesReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	offset := (req.Page - 1) * req.Limit
+	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListRolesParams{
-		Limit:  req.Limit,
+		Limit:  req.PerPage,
 		Offset: offset,
 	}
 	roles, err := s.store.ListRoles(ctx, arg)
@@ -85,13 +92,22 @@ func (s *Server) ListRoles(ctx *gin.Context) {
 	}
 
 	numRoles := len(roles)
-	if numRoles <= 0 {
-		ctx.JSON(http.StatusOK, nil)
+	rolesRes := make([]roleResponse, numRoles)
+	for i, role := range roles {
+		rolesRes[i] = newRoleResponse(role)
 	}
 
-	rsp := make([]roleResponse, numRoles)
-	for i, role := range roles {
-		rsp[i] = newRoleResponse(role)
+	totalRoles, err := s.store.CountRoles(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := listRolesRes{
+		Page:    req.Page,
+		PerPage: req.PerPage,
+		Total:   totalRoles,
+		Data:    rolesRes,
 	}
 
 	ctx.JSON(http.StatusOK, rsp)

@@ -27,8 +27,8 @@ func TestListStationsAPI(t *testing.T) {
 	}
 
 	type Query struct {
-		Page  int32
-		Limit int32
+		Page    int32
+		PerPage int32
 	}
 
 	testCases := []struct {
@@ -40,12 +40,13 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "OK",
 			query: Query{
-				Page:  1,
-				Limit: int32(n),
+				Page:    1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(stations, nil)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context")).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -56,8 +57,8 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			query: Query{
-				Page:  1,
-				Limit: int32(n),
+				Page:    1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -71,8 +72,8 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "InvalidPage",
 			query: Query{
-				Page:  -1,
-				Limit: int32(n),
+				Page:    -1,
+				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -84,14 +85,47 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "InvalidLimit",
 			query: Query{
-				Page:  1,
-				Limit: 10000,
+				Page:    1,
+				PerPage: 10000,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertNotCalled(t, "ListStations", mock.AnythingOfType("*gin.Context"), mock.Anything)
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "EmptySlice",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.ObservationsStation{}, nil)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context")).Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchStations(t, recorder.Body, []db.ObservationsStation{})
+			},
+		},
+		{
+			name: "CountInternalError",
+			query: Query{
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.ObservationsStation{}, nil)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context")).Return(0, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
@@ -113,7 +147,7 @@ func TestListStationsAPI(t *testing.T) {
 			// Add query parameters to request URL
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
-			q.Add("limit", fmt.Sprintf("%d", tc.query.Limit))
+			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)
@@ -447,18 +481,23 @@ func requireBodyMatchStation(t *testing.T, body *bytes.Buffer, station db.Observ
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStation db.ObservationsStation
+	var gotStation stationResponse
 	err = json.Unmarshal(data, &gotStation)
 	require.NoError(t, err)
-	require.Equal(t, station, gotStation)
+	require.Equal(t, newStationResponse(station), gotStation)
 }
 
 func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.ObservationsStation) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStations []db.ObservationsStation
+	var gotStations listStationsRes
 	err = json.Unmarshal(data, &gotStations)
 	require.NoError(t, err)
-	require.Equal(t, stations, gotStations)
+
+	stationsRes := make([]stationResponse, len(stations))
+	for i, stn := range stations {
+		stationsRes[i] = newStationResponse(stn)
+	}
+	require.Equal(t, stationsRes, gotStations.Data)
 }

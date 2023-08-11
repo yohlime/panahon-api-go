@@ -115,6 +115,58 @@ definitions:
       type:
         type: string
     type: object
+  ListRolessResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/RoleResponse'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ListStationObservationsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/StationObservationResponse'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ListStationsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/StationResponse'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ListUsersResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/UserResponse'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
   LoginUserParams:
     properties:
       password:
@@ -132,6 +184,19 @@ definitions:
         type: string
       timestamp:
         type: string
+    type: object
+  LufftMsgLogsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/LufftMsgLogResponse'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
     type: object
   LufftResponse:
     properties:
@@ -457,13 +522,13 @@ paths:
         required: true
         type: integer
       - in: query
-        maximum: 30
-        minimum: 1
-        name: limit
-        type: integer
-      - in: query
         minimum: 1
         name: page
+        type: integer
+      - in: query
+        maximum: 30
+        minimum: 1
+        name: per_page
         type: integer
       produces:
       - application/json
@@ -471,9 +536,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/LufftMsgLogResponse'
-            type: array
+            $ref: '#/definitions/LufftMsgLogsResponse'
       summary: Lufft Message Logs
       tags:
       - lufft
@@ -506,13 +569,13 @@ paths:
       - application/json
       parameters:
       - in: query
-        maximum: 30
-        minimum: 1
-        name: limit
-        type: integer
-      - in: query
         minimum: 1
         name: page
+        type: integer
+      - in: query
+        maximum: 30
+        minimum: 1
+        name: per_page
         type: integer
       produces:
       - application/json
@@ -520,9 +583,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/RoleResponse'
-            type: array
+            $ref: '#/definitions/ListRolessResponse'
       security:
       - BearerAuth: []
       summary: List roles
@@ -623,16 +684,16 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: limit
-        in: query
-        maximum: 30
-        minimum: 1
-        name: limit
-        type: integer
       - description: page number
         in: query
         minimum: 1
         name: page
+        type: integer
+      - description: limit
+        in: query
+        maximum: 30
+        minimum: 1
+        name: per_page
         type: integer
       produces:
       - application/json
@@ -640,9 +701,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/StationResponse'
-            type: array
+            $ref: '#/definitions/ListStationsResponse'
       summary: List stations
       tags:
       - stations
@@ -739,16 +798,16 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: limit
-        in: query
-        maximum: 30
-        minimum: 1
-        name: limit
-        type: integer
       - description: page number
         in: query
         minimum: 1
         name: page
+        type: integer
+      - description: limit
+        in: query
+        maximum: 30
+        minimum: 1
+        name: per_page
         type: integer
       produces:
       - application/json
@@ -756,9 +815,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/StationObservationResponse'
-            type: array
+            $ref: '#/definitions/ListStationObservationsResponse'
       summary: List station observations
       tags:
       - observations
@@ -895,13 +952,13 @@ paths:
       - application/json
       parameters:
       - in: query
-        maximum: 30
-        minimum: 1
-        name: limit
-        type: integer
-      - in: query
         minimum: 1
         name: page
+        type: integer
+      - in: query
+        maximum: 30
+        minimum: 1
+        name: per_page
         type: integer
       produces:
       - application/json
@@ -909,9 +966,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/UserResponse'
-            type: array
+            $ref: '#/definitions/ListUsersResponse'
       security:
       - BearerAuth: []
       summary: List users

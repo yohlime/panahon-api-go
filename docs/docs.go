@@ -118,16 +118,16 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "maximum": 30,
-                        "minimum": 1,
-                        "type": "integer",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
                         "minimum": 1,
                         "type": "integer",
                         "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
@@ -135,10 +135,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/LufftMsgLogResponse"
-                            }
+                            "$ref": "#/definitions/LufftMsgLogsResponse"
                         }
                     }
                 }
@@ -199,16 +196,16 @@ const docTemplate = `{
                 "summary": "List roles",
                 "parameters": [
                     {
-                        "maximum": 30,
-                        "minimum": 1,
-                        "type": "integer",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
                         "minimum": 1,
                         "type": "integer",
                         "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
@@ -216,10 +213,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/RoleResponse"
-                            }
+                            "$ref": "#/definitions/ListRolessResponse"
                         }
                     }
                 }
@@ -385,18 +379,18 @@ const docTemplate = `{
                 "summary": "List stations",
                 "parameters": [
                     {
-                        "maximum": 30,
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
                         "minimum": 1,
                         "type": "integer",
                         "description": "page number",
                         "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
@@ -404,10 +398,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/StationResponse"
-                            }
+                            "$ref": "#/definitions/ListStationsResponse"
                         }
                     }
                 }
@@ -568,18 +559,18 @@ const docTemplate = `{
                 "summary": "List station observations",
                 "parameters": [
                     {
-                        "maximum": 30,
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
                         "minimum": 1,
                         "type": "integer",
                         "description": "page number",
                         "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
@@ -587,10 +578,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/StationObservationResponse"
-                            }
+                            "$ref": "#/definitions/ListStationObservationsResponse"
                         }
                     }
                 }
@@ -814,16 +802,16 @@ const docTemplate = `{
                 "summary": "List users",
                 "parameters": [
                     {
-                        "maximum": 30,
-                        "minimum": 1,
-                        "type": "integer",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
                         "minimum": 1,
                         "type": "integer",
                         "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
@@ -831,10 +819,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/UserResponse"
-                            }
+                            "$ref": "#/definitions/ListUsersResponse"
                         }
                     }
                 }
@@ -1226,6 +1211,86 @@ const docTemplate = `{
                 }
             }
         },
+        "ListRolessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RoleResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ListStationObservationsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StationObservationResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ListStationsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StationResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ListUsersResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UserResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "LoginUserParams": {
             "type": "object",
             "required": [
@@ -1250,6 +1315,26 @@ const docTemplate = `{
                 },
                 "timestamp": {
                     "type": "string"
+                }
+            }
+        },
+        "LufftMsgLogsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LufftMsgLogResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

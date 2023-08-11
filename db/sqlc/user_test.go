@@ -11,7 +11,10 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	createRandomUser(t)
+	user := createRandomUser(t)
+
+	// cleanup
+	_deleteUser(t, user.ID)
 }
 
 func TestGetUser(t *testing.T) {
@@ -21,11 +24,16 @@ func TestGetUser(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, gotUser)
 	requireUserEqual(t, user, gotUser)
+
+	// cleanup
+	_deleteUser(t, user.ID)
 }
 
-func TestListUser(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		createRandomUser(t)
+func TestListUsers(t *testing.T) {
+	n := 10
+	users := make([]User, n)
+	for i := 0; i < n; i++ {
+		users[i] = createRandomUser(t)
 	}
 
 	arg := ListUsersParams{
@@ -33,12 +41,34 @@ func TestListUser(t *testing.T) {
 		Offset: 5,
 	}
 
-	users, err := testStore.ListUsers(context.Background(), arg)
+	gotUsers, err := testStore.ListUsers(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, users, 5)
+	require.Len(t, gotUsers, 5)
 
-	for _, user := range users {
+	for _, user := range gotUsers {
 		require.NotEmpty(t, user)
+	}
+
+	// cleanup
+	for _, user := range users {
+		_deleteUser(t, user.ID)
+	}
+}
+
+func TestCountUsers(t *testing.T) {
+	n := 10
+	users := make([]User, n)
+	for i := 0; i < n; i++ {
+		users[i] = createRandomUser(t)
+	}
+
+	numUsers, err := testStore.CountUsers(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, numUsers, int64(n))
+
+	// cleanup
+	for _, user := range users {
+		_deleteUser(t, user.ID)
 	}
 }
 
@@ -165,6 +195,9 @@ func TestUpdateUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedUser, err := testStore.UpdateUser(context.Background(), tc.buildArg())
 			tc.checkResult(updatedUser, err)
+
+			// cleanup
+			_deleteUser(t, updatedUser.ID)
 		})
 	}
 }
@@ -172,12 +205,8 @@ func TestUpdateUser(t *testing.T) {
 func TestDeleteUser(t *testing.T) {
 	user := createRandomUser(t)
 
-	err := testStore.DeleteUser(context.Background(), user.ID)
-	require.NoError(t, err)
-
-	gotUser, err := testStore.GetUser(context.Background(), user.ID)
-	require.Error(t, err)
-	require.Empty(t, gotUser)
+	// cleanup
+	_deleteUser(t, user.ID)
 }
 
 func createRandomUser(t *testing.T) User {
@@ -204,6 +233,15 @@ func createRandomUser(t *testing.T) User {
 	require.NotZero(t, user.CreatedAt.Time)
 
 	return user
+}
+
+func _deleteUser(t *testing.T, userID int64) {
+	err := testStore.DeleteUser(context.Background(), userID)
+	require.NoError(t, err)
+
+	gotUser, err := testStore.GetUser(context.Background(), userID)
+	require.Error(t, err)
+	require.Empty(t, gotUser)
 }
 
 func requireUserEqual(t *testing.T, u1, u2 User) {

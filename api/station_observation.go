@@ -55,9 +55,16 @@ type listStationObsUri struct {
 }
 
 type listStationObsReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`         // page number
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"` // limit
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`            // page number
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
 } //name ListStationObservationsParams
+
+type listStationObsRes struct {
+	Page    int32                `json:"page"`
+	PerPage int32                `json:"per_page"`
+	Total   int64                `json:"total"`
+	Data    []stationObsResponse `json:"data"`
+} //@name ListStationObservationsResponse
 
 // ListStationObservations
 //
@@ -65,8 +72,8 @@ type listStationObsReq struct {
 //	@Tags		observations
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query	listStationObsReq	false	"List station observations parameters"
-//	@Success	200	{array}	stationObsResponse
+//	@Param		req	query		listStationObsReq	false	"List station observations parameters"
+//	@Success	200	{object}	listStationObsRes
 //	@Router		/stations/{station_id}/observations [get]
 func (s *Server) ListStationObservations(ctx *gin.Context) {
 	var uri listStationObsUri
@@ -80,10 +87,10 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 		return
 	}
 
-	offset := (req.Page - 1) * req.Limit
+	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListStationObservationsParams{
 		StationID: uri.StationID,
-		Limit:     req.Limit,
+		Limit:     req.PerPage,
 		Offset:    offset,
 	}
 
@@ -94,13 +101,22 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 	}
 
 	numObs := len(observations)
-	if numObs <= 0 {
-		ctx.JSON(http.StatusOK, nil)
+	obsRes := make([]stationObsResponse, numObs)
+	for i, observation := range observations {
+		obsRes[i] = newStationObsResponse(observation)
 	}
 
-	rsp := make([]stationObsResponse, numObs)
-	for i, observation := range observations {
-		rsp[i] = newStationObsResponse(observation)
+	totalObs, err := s.store.CountStationObservations(ctx, uri.StationID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := listStationObsRes{
+		Page:    req.Page,
+		PerPage: req.PerPage,
+		Total:   totalObs,
+		Data:    obsRes,
 	}
 
 	ctx.JSON(http.StatusOK, rsp)

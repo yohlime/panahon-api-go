@@ -10,7 +10,10 @@ import (
 )
 
 func TestCreateStation(t *testing.T) {
-	createRandomStation(t)
+	station := createRandomStation(t)
+
+	// cleanup
+	_deleteStation(t, station.ID)
 }
 
 func TestGetStation(t *testing.T) {
@@ -22,23 +25,50 @@ func TestGetStation(t *testing.T) {
 	require.NotEmpty(t, gotStation)
 
 	require.Equal(t, station, gotStation)
+
+	// cleanup
+	_deleteStation(t, station.ID)
 }
 
 func TestListStations(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		createRandomStation(t)
+	n := 10
+	stations := make([]ObservationsStation, n)
+	for i := 0; i < n; i++ {
+		stations[i] = createRandomStation(t)
 	}
 
 	arg := ListStationsParams{
 		Limit:  5,
 		Offset: 5,
 	}
-	stations, err := testStore.ListStations(context.Background(), arg)
+	gotStations, err := testStore.ListStations(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, stations, 5)
+	require.Len(t, gotStations, 5)
 
-	for _, station := range stations {
+	for _, station := range gotStations {
 		require.NotEmpty(t, station)
+	}
+
+	// cleanup
+	for _, station := range stations {
+		_deleteStation(t, station.ID)
+	}
+}
+
+func TestCountStations(t *testing.T) {
+	n := 10
+	stations := make([]ObservationsStation, n)
+	for i := 0; i < n; i++ {
+		stations[i] = createRandomStation(t)
+	}
+
+	numStations, err := testStore.CountStations(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, numStations, int64(n))
+
+	// cleanup
+	for _, station := range stations {
+		_deleteStation(t, station.ID)
 	}
 }
 
@@ -132,6 +162,9 @@ func TestUpdateStation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedStation, err := testStore.UpdateStation(context.Background(), tc.buildArg())
 			tc.checkResult(updatedStation, err)
+
+			// cleanup
+			_deleteStation(t, updatedStation.ID)
 		})
 	}
 }
@@ -139,12 +172,8 @@ func TestUpdateStation(t *testing.T) {
 func TestDeleteStation(t *testing.T) {
 	station := createRandomStation(t)
 
-	err := testStore.DeleteStation(context.Background(), station.ID)
-	require.NoError(t, err)
-
-	gotStation, err := testStore.GetStation(context.Background(), station.ID)
-	require.Error(t, err)
-	require.Empty(t, gotStation)
+	// cleanup
+	_deleteStation(t, station.ID)
 }
 
 func createRandomStation(t *testing.T) ObservationsStation {
@@ -170,4 +199,13 @@ func createRandomStation(t *testing.T) ObservationsStation {
 	require.NotZero(t, station.CreatedAt.Time)
 
 	return station
+}
+
+func _deleteStation(t *testing.T, stationID int64) {
+	err := testStore.DeleteStation(context.Background(), stationID)
+	require.NoError(t, err)
+
+	gotStation, err := testStore.GetStation(context.Background(), stationID)
+	require.Error(t, err)
+	require.Empty(t, gotStation)
 }

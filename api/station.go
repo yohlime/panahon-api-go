@@ -29,26 +29,34 @@ type stationResponse struct {
 
 func newStationResponse(station db.ObservationsStation) stationResponse {
 	return stationResponse{
-		ID:           station.ID,
-		Name:         station.Name,
-		Lat:          station.Lat,
-		Lon:          station.Lon,
-		Elevation:    station.Elevation,
-		MobileNumber: station.MobileNumber,
-		StationType:  station.StationType,
-		StationType2: station.StationType2,
-		StationUrl:   station.StationUrl,
-		Status:       station.Status,
-		Province:     station.Province,
-		Region:       station.Region,
-		Address:      station.Address,
+		ID:            station.ID,
+		Name:          station.Name,
+		Lat:           station.Lat,
+		Lon:           station.Lon,
+		Elevation:     station.Elevation,
+		DateInstalled: station.DateInstalled,
+		MobileNumber:  station.MobileNumber,
+		StationType:   station.StationType,
+		StationType2:  station.StationType2,
+		StationUrl:    station.StationUrl,
+		Status:        station.Status,
+		Province:      station.Province,
+		Region:        station.Region,
+		Address:       station.Address,
 	}
 }
 
-type listStationReq struct {
-	Page  int32 `form:"page,default=1" binding:"omitempty,min=1"`         // page number
-	Limit int32 `form:"limit,default=5" binding:"omitempty,min=1,max=30"` // limit
+type listStationsReq struct {
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`            // page number
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
 } //@name ListStationsParams
+
+type listStationsRes struct {
+	Page    int32             `json:"page"`
+	PerPage int32             `json:"per_page"`
+	Total   int64             `json:"total"`
+	Data    []stationResponse `json:"data"`
+} //@name ListStationsResponse
 
 // ListStations
 //
@@ -56,19 +64,19 @@ type listStationReq struct {
 //	@Tags		stations
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query	listStationReq	false	"List stations parameters"
-//	@Success	200	{array}	stationResponse
+//	@Param		req	query		listStationsReq	false	"List stations parameters"
+//	@Success	200	{object}	listStationsRes
 //	@Router		/stations [get]
 func (s *Server) ListStations(ctx *gin.Context) {
-	var req listStationReq
+	var req listStationsReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	offset := (req.Page - 1) * req.Limit
+	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListStationsParams{
-		Limit:  req.Limit,
+		Limit:  req.PerPage,
 		Offset: offset,
 	}
 
@@ -79,13 +87,22 @@ func (s *Server) ListStations(ctx *gin.Context) {
 	}
 
 	numStations := len(stations)
-	if numStations <= 0 {
-		ctx.JSON(http.StatusOK, nil)
+	stationsRes := make([]stationResponse, numStations)
+	for i, station := range stations {
+		stationsRes[i] = newStationResponse(station)
 	}
 
-	rsp := make([]stationResponse, numStations)
-	for i, station := range stations {
-		rsp[i] = newStationResponse(station)
+	totalStations, err := s.store.CountStations(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := listStationsRes{
+		Page:    req.Page,
+		PerPage: req.PerPage,
+		Total:   totalStations,
+		Data:    stationsRes,
 	}
 
 	ctx.JSON(http.StatusOK, rsp)
