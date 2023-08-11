@@ -8,28 +8,41 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateRole(t *testing.T) {
-	role := createRandomRole(t)
-
-	// cleanup
-	_deleteRole(t, role.ID)
+type RoleTestSuite struct {
+	suite.Suite
 }
 
-func TestGetRole(t *testing.T) {
+func TestRoleTestSuite(t *testing.T) {
+	suite.Run(t, new(RoleTestSuite))
+}
+
+func (ts *RoleTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *RoleTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *RoleTestSuite) TestCreateRole() {
+	createRandomRole(ts.T())
+}
+
+func (ts *RoleTestSuite) TestGetRole() {
+	t := ts.T()
 	role := createRandomRole(t)
 
 	gotRole, err := testStore.GetRole(context.Background(), role.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, gotRole)
 	requireRoleEqual(t, role, gotRole)
-
-	// cleanup
-	_deleteRole(t, role.ID)
 }
 
-func TestListRole(t *testing.T) {
+func (ts *RoleTestSuite) TestListRoles() {
+	t := ts.T()
 	n := 10
 	roles := make([]Role, n)
 	for i := 0; i < n; i++ {
@@ -48,14 +61,10 @@ func TestListRole(t *testing.T) {
 	for _, role := range gotRoles {
 		require.NotEmpty(t, role)
 	}
-
-	// cleanup
-	for _, role := range roles {
-		_deleteRole(t, role.ID)
-	}
 }
 
-func TestCountRole(t *testing.T) {
+func (ts *RoleTestSuite) TestCountRoles() {
+	t := ts.T()
 	n := 10
 	roles := make([]Role, n)
 	for i := 0; i < n; i++ {
@@ -65,19 +74,16 @@ func TestCountRole(t *testing.T) {
 	numRoles, err := testStore.CountRoles(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, numRoles, int64(n))
-
-	// cleanup
-	for _, role := range roles {
-		_deleteRole(t, role.ID)
-	}
 }
 
-func TestUpdateRole(t *testing.T) {
+func (ts *RoleTestSuite) TestUpdateRole() {
 	var (
 		oldRole        Role
 		newName        string
 		newDescription string
 	)
+
+	t := ts.T()
 
 	testCases := []struct {
 		name        string
@@ -160,18 +166,22 @@ func TestUpdateRole(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedRole, err := testStore.UpdateRole(context.Background(), tc.buildArg())
 			tc.checkResult(updatedRole, err)
-
-			// cleanup
-			_deleteRole(t, updatedRole.ID)
 		})
 	}
 }
 
-func TestDeleteRole(t *testing.T) {
+func (ts *RoleTestSuite) TestDeleteRole() {
+	t := ts.T()
 	role := createRandomRole(t)
 
-	// cleanup
-	_deleteRole(t, role.ID)
+	ctx := context.Background()
+
+	err := testStore.DeleteRole(ctx, role.ID)
+	require.NoError(t, err)
+
+	gotRole, err := testStore.GetRole(ctx, role.ID)
+	require.Error(t, err)
+	require.Empty(t, gotRole)
 }
 
 func createRandomRole(t *testing.T) Role {
@@ -197,17 +207,6 @@ func createRandomRole(t *testing.T) Role {
 	require.NotZero(t, role.CreatedAt.Time)
 
 	return role
-}
-
-func _deleteRole(t *testing.T, roleID int64) {
-	ctx := context.Background()
-
-	err := testStore.DeleteRole(ctx, roleID)
-	require.NoError(t, err)
-
-	gotRole, err := testStore.GetRole(ctx, roleID)
-	require.Error(t, err)
-	require.Empty(t, gotRole)
 }
 
 func requireRoleEqual(t *testing.T, r1, r2 Role) {

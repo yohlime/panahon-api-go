@@ -7,16 +7,31 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateStation(t *testing.T) {
-	station := createRandomStation(t)
-
-	// cleanup
-	_deleteStation(t, station.ID)
+type StationTestSuite struct {
+	suite.Suite
 }
 
-func TestGetStation(t *testing.T) {
+func TestStationTestSuite(t *testing.T) {
+	suite.Run(t, new(StationTestSuite))
+}
+
+func (ts *StationTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *StationTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *StationTestSuite) TestCreateStation() {
+	createRandomStation(ts.T())
+}
+
+func (ts *StationTestSuite) TestGetStation() {
+	t := ts.T()
 	station := createRandomStation(t)
 
 	gotStation, err := testStore.GetStation(context.Background(), station.ID)
@@ -25,16 +40,13 @@ func TestGetStation(t *testing.T) {
 	require.NotEmpty(t, gotStation)
 
 	require.Equal(t, station, gotStation)
-
-	// cleanup
-	_deleteStation(t, station.ID)
 }
 
-func TestListStations(t *testing.T) {
+func (ts *StationTestSuite) TestListStations() {
+	t := ts.T()
 	n := 10
-	stations := make([]ObservationsStation, n)
 	for i := 0; i < n; i++ {
-		stations[i] = createRandomStation(t)
+		createRandomStation(t)
 	}
 
 	arg := ListStationsParams{
@@ -48,31 +60,21 @@ func TestListStations(t *testing.T) {
 	for _, station := range gotStations {
 		require.NotEmpty(t, station)
 	}
-
-	// cleanup
-	for _, station := range stations {
-		_deleteStation(t, station.ID)
-	}
 }
 
-func TestCountStations(t *testing.T) {
+func (ts *StationTestSuite) TestCountStations() {
+	t := ts.T()
 	n := 10
-	stations := make([]ObservationsStation, n)
 	for i := 0; i < n; i++ {
-		stations[i] = createRandomStation(t)
+		createRandomStation(t)
 	}
 
 	numStations, err := testStore.CountStations(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, numStations, int64(n))
-
-	// cleanup
-	for _, station := range stations {
-		_deleteStation(t, station.ID)
-	}
 }
 
-func TestUpdateStation(t *testing.T) {
+func (ts *StationTestSuite) TestUpdateStation() {
 	var (
 		oldStation      ObservationsStation
 		newName         util.NullString
@@ -80,6 +82,8 @@ func TestUpdateStation(t *testing.T) {
 		newLat          util.NullFloat4
 		newLon          util.NullFloat4
 	)
+
+	t := ts.T()
 
 	testCases := []struct {
 		name        string
@@ -162,18 +166,20 @@ func TestUpdateStation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedStation, err := testStore.UpdateStation(context.Background(), tc.buildArg())
 			tc.checkResult(updatedStation, err)
-
-			// cleanup
-			_deleteStation(t, updatedStation.ID)
 		})
 	}
 }
 
-func TestDeleteStation(t *testing.T) {
+func (ts *StationTestSuite) TestDeleteStation() {
+	t := ts.T()
 	station := createRandomStation(t)
 
-	// cleanup
-	_deleteStation(t, station.ID)
+	err := testStore.DeleteStation(context.Background(), station.ID)
+	require.NoError(t, err)
+
+	gotStation, err := testStore.GetStation(context.Background(), station.ID)
+	require.Error(t, err)
+	require.Empty(t, gotStation)
 }
 
 func createRandomStation(t *testing.T) ObservationsStation {
@@ -199,13 +205,4 @@ func createRandomStation(t *testing.T) ObservationsStation {
 	require.NotZero(t, station.CreatedAt.Time)
 
 	return station
-}
-
-func _deleteStation(t *testing.T, stationID int64) {
-	err := testStore.DeleteStation(context.Background(), stationID)
-	require.NoError(t, err)
-
-	gotStation, err := testStore.GetStation(context.Background(), stationID)
-	require.Error(t, err)
-	require.Empty(t, gotStation)
 }

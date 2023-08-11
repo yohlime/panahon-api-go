@@ -3,15 +3,16 @@ package db
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -19,19 +20,25 @@ const (
 	dbPasswd = "secret"
 )
 
-var testStore Store
+var (
+	testConfig util.Config
+	testStore  Store
+	testLogger *zerolog.Logger
+)
 
 func TestMain(m *testing.M) {
-	config := util.Config{
-		MigrationPath: "../../db/migration",
+	testConfig = util.Config{
+		MigrationPath:        "../../db/migration",
+		EnableConsoleLogging: true,
+		EnableFileLogging:    false,
 	}
 
-	connPool, dbCleanUp, err := newDBTest(&config)
+	testLogger = util.NewLogger(testConfig)
+
+	connPool, dbCleanUp, err := newDBTest(&testConfig)
 	if err != nil {
-		log.Fatalf("cannot connect to db: %s", err)
+		testLogger.Fatal().Err(err).Msg("cannot connect to db")
 	}
-
-	util.RunDBMigration(config.MigrationPath, config.DBSource)
 
 	testStore = NewStore(connPool)
 
@@ -43,12 +50,12 @@ func TestMain(m *testing.M) {
 func newDBTest(config *util.Config) (connPool *pgxpool.Pool, fnCleanUp func(), err error) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		log.Fatalf("Could not construct pool: %s", err)
+		testLogger.Fatal().Err(err).Msg("could not construct pool")
 	}
 
 	err = pool.Client.Ping()
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		testLogger.Fatal().Err(err).Msg("could not connect to docker")
 	}
 
 	// pulls an image, creates a container based on it and runs it
@@ -65,13 +72,13 @@ func newDBTest(config *util.Config) (connPool *pgxpool.Pool, fnCleanUp func(), e
 		config.RestartPolicy = docker.NeverRestart()
 	})
 	if err != nil {
-		log.Fatalf("could not start resource: %s", err)
+		testLogger.Fatal().Err(err).Msg("could not start resource")
 	}
 
 	dbPort := resource.GetPort("5432/tcp")
 	config.DBSource = fmt.Sprintf("postgresql://postgres:%s@localhost:%s/%s?sslmode=disable", dbPasswd, dbPort, dbName)
 
-	log.Println("Connecting to database on url: " + config.DBSource)
+	testLogger.Info().Msgf("connecting to database on url: " + config.DBSource)
 
 	resource.Expire(120) // Tell docker to hard kill the container in 120 seconds
 
@@ -85,14 +92,27 @@ func newDBTest(config *util.Config) (connPool *pgxpool.Pool, fnCleanUp func(), e
 		}
 		return connPool.Ping(ctx)
 	}); err != nil {
-		log.Fatalf("could not connect to docker: %s", err)
+		testLogger.Fatal().Err(err).Msg("could not connect to docker")
 	}
 
 	fnCleanUp = func() {
 		if err := pool.Purge(resource); err != nil {
-			log.Fatalf("could not purge resource: %s", err)
+			testLogger.Fatal().Err(err).Msg("could not purge resource")
 		}
 	}
 
 	return
+}
+
+func runDBMigrationDown(migrationPath string, dbSource string) {
+	migration, err := migrate.New("file://"+migrationPath, dbSource)
+	if err != nil {
+		testLogger.Fatal().Err(err).Msg("cannot create new migrate instance")
+	}
+
+	if err = migration.Down(); err != nil && err != migrate.ErrNoChange {
+		testLogger.Fatal().Err(err).Msg("failed to run migrate down")
+	}
+
+	testLogger.Info().Msg("db migrate down successful")
 }

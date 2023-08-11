@@ -8,32 +8,44 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateUser(t *testing.T) {
-	user := createRandomUser(t)
-
-	// cleanup
-	_deleteUser(t, user.ID)
+type UserTestSuite struct {
+	suite.Suite
 }
 
-func TestGetUser(t *testing.T) {
+func TestUserTestSuite(t *testing.T) {
+	suite.Run(t, new(UserTestSuite))
+}
+
+func (ts *UserTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *UserTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *UserTestSuite) TestCreateUser() {
+	createRandomUser(ts.T())
+}
+
+func (ts *UserTestSuite) TestGetUser() {
+	t := ts.T()
 	user := createRandomUser(t)
 
 	gotUser, err := testStore.GetUser(context.Background(), user.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, gotUser)
 	requireUserEqual(t, user, gotUser)
-
-	// cleanup
-	_deleteUser(t, user.ID)
 }
 
-func TestListUsers(t *testing.T) {
+func (ts *UserTestSuite) TestListUsers() {
+	t := ts.T()
 	n := 10
-	users := make([]User, n)
 	for i := 0; i < n; i++ {
-		users[i] = createRandomUser(t)
+		createRandomUser(t)
 	}
 
 	arg := ListUsersParams{
@@ -48,37 +60,29 @@ func TestListUsers(t *testing.T) {
 	for _, user := range gotUsers {
 		require.NotEmpty(t, user)
 	}
-
-	// cleanup
-	for _, user := range users {
-		_deleteUser(t, user.ID)
-	}
 }
 
-func TestCountUsers(t *testing.T) {
+func (ts *UserTestSuite) TestCountUsers() {
+	t := ts.T()
 	n := 10
-	users := make([]User, n)
 	for i := 0; i < n; i++ {
-		users[i] = createRandomUser(t)
+		createRandomUser(t)
 	}
 
 	numUsers, err := testStore.CountUsers(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, numUsers, int64(n))
-
-	// cleanup
-	for _, user := range users {
-		_deleteUser(t, user.ID)
-	}
 }
 
-func TestUpdateUser(t *testing.T) {
+func (ts *UserTestSuite) TestUpdateUser() {
 	var (
 		oldUser           User
 		newFullName       string
 		newEmail          string
 		newHashedPassword string
 	)
+
+	t := ts.T()
 
 	testCases := []struct {
 		name        string
@@ -195,18 +199,20 @@ func TestUpdateUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedUser, err := testStore.UpdateUser(context.Background(), tc.buildArg())
 			tc.checkResult(updatedUser, err)
-
-			// cleanup
-			_deleteUser(t, updatedUser.ID)
 		})
 	}
 }
 
-func TestDeleteUser(t *testing.T) {
+func (ts *UserTestSuite) TestDeleteUser() {
+	t := ts.T()
 	user := createRandomUser(t)
 
-	// cleanup
-	_deleteUser(t, user.ID)
+	err := testStore.DeleteUser(context.Background(), user.ID)
+	require.NoError(t, err)
+
+	gotUser, err := testStore.GetUser(context.Background(), user.ID)
+	require.Error(t, err)
+	require.Empty(t, gotUser)
 }
 
 func createRandomUser(t *testing.T) User {
@@ -233,15 +239,6 @@ func createRandomUser(t *testing.T) User {
 	require.NotZero(t, user.CreatedAt.Time)
 
 	return user
-}
-
-func _deleteUser(t *testing.T, userID int64) {
-	err := testStore.DeleteUser(context.Background(), userID)
-	require.NoError(t, err)
-
-	gotUser, err := testStore.GetUser(context.Background(), userID)
-	require.Error(t, err)
-	require.Empty(t, gotUser)
 }
 
 func requireUserEqual(t *testing.T, u1, u2 User) {

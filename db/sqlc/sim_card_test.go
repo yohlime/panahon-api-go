@@ -8,10 +8,27 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateSimCard(t *testing.T) {
-	createRandomSimCard(t)
+type SimCardTestSuite struct {
+	suite.Suite
+}
+
+func TestSimCardTestSuite(t *testing.T) {
+	suite.Run(t, new(SimCardTestSuite))
+}
+
+func (ts *SimCardTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *SimCardTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *SimCardTestSuite) TestCreateSimCard() {
+	createRandomSimCard(ts.T())
 }
 
 func createRandomSimCard(t *testing.T) SimCard {

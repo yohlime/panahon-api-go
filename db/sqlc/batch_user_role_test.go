@@ -5,10 +5,29 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestBulkCreateUserRoles(t *testing.T) {
+type BulkUserRoleTestSuite struct {
+	suite.Suite
+}
+
+func TestBulkUserRoleTestSuite(t *testing.T) {
+	suite.Run(t, new(BulkUserRoleTestSuite))
+}
+
+func (ts *BulkUserRoleTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *BulkUserRoleTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *BulkUserRoleTestSuite) TestBulkCreateUserRoles() {
+	t := ts.T()
 	nRole := 5
 	roles := make([]Role, nRole)
 	for i := 0; i < nRole; i++ {
@@ -44,15 +63,17 @@ func TestBulkCreateUserRoles(t *testing.T) {
 	assert.Len(t, errs, 1)
 }
 
-func TestBulkDeleteUserRoles(t *testing.T) {
+func (ts *BulkUserRoleTestSuite) TestBulkDeleteUserRoles() {
+	t := ts.T()
 	nRole := 5
-	userRolesParams := make([]UserRolesParams, nRole)
 	user := createRandomUser(t)
+	roles := make([]Role, nRole)
+	userRolesParams := make([]UserRolesParams, nRole)
 
 	for i := 0; i < nRole; i++ {
-		role := createRandomRole(t)
+		roles[i] = createRandomRole(t)
 
-		roleName := role.Name
+		roleName := roles[i].Name
 
 		userRolesParams[i] = UserRolesParams{
 			Username: user.Username,

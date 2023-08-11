@@ -8,20 +8,33 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateStationHealth(t *testing.T) {
-	station := createRandomStation(t)
-	health := createRandomStationHealth(t, station.ID)
-
-	// cleanup
-	_deleteStationHealth(t, DeleteStationHealthParams{
-		StationID: health.StationID,
-		ID:        health.ID,
-	})
+type StationHealthTestSuite struct {
+	suite.Suite
 }
 
-func TestGetStationHealth(t *testing.T) {
+func TestStationHealthTestSuite(t *testing.T) {
+	suite.Run(t, new(StationHealthTestSuite))
+}
+
+func (ts *StationHealthTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *StationHealthTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *StationHealthTestSuite) TestCreateStationHealth() {
+	t := ts.T()
+	station := createRandomStation(t)
+	createRandomStationHealth(t, station.ID)
+}
+
+func (ts *StationHealthTestSuite) TestGetStationHealth() {
+	t := ts.T()
 	station := createRandomStation(t)
 	health := createRandomStationHealth(t, station.ID)
 
@@ -35,15 +48,10 @@ func TestGetStationHealth(t *testing.T) {
 	require.NotEmpty(t, gotHealth)
 
 	require.Equal(t, health, gotHealth)
-
-	// cleanup
-	_deleteStationHealth(t, DeleteStationHealthParams{
-		StationID: health.StationID,
-		ID:        health.ID,
-	})
 }
 
-func TestListStationHealths(t *testing.T) {
+func (ts *StationHealthTestSuite) TestListStationHealths() {
+	t := ts.T()
 	station := createRandomStation(t)
 	n := 10
 	healths := make([]ObservationsStationhealth, n)
@@ -64,21 +72,15 @@ func TestListStationHealths(t *testing.T) {
 	for _, h := range gotHealths {
 		require.NotEmpty(t, h)
 	}
-
-	// cleanup
-	for _, h := range healths {
-		_deleteStationHealth(t, DeleteStationHealthParams{
-			StationID: h.StationID,
-			ID:        h.ID,
-		})
-	}
 }
 
-func TestUpdateStationHealth(t *testing.T) {
+func (ts *StationHealthTestSuite) TestUpdateStationHealth() {
 	var (
 		oldHealth ObservationsStationhealth
 		newBp1    util.NullFloat4
 	)
+
+	t := ts.T()
 
 	station := createRandomStation(t)
 
@@ -117,25 +119,26 @@ func TestUpdateStationHealth(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updatedHealth, err := testStore.UpdateStationHealth(context.Background(), tc.buildArg())
 			tc.checkResult(updatedHealth, err)
-
-			// cleanup
-			_deleteStationHealth(t, DeleteStationHealthParams{
-				StationID: updatedHealth.StationID,
-				ID:        updatedHealth.ID,
-			})
 		})
 	}
 }
 
-func TestDeleteStationHealth(t *testing.T) {
+func (ts *StationHealthTestSuite) TestDeleteStationHealth() {
+	t := ts.T()
 	station := createRandomStation(t)
 	health := createRandomStationHealth(t, station.ID)
 
-	// cleanup
-	_deleteStationHealth(t, DeleteStationHealthParams{
+	arg := DeleteStationHealthParams{
 		StationID: health.StationID,
 		ID:        health.ID,
-	})
+	}
+
+	err := testStore.DeleteStationHealth(context.Background(), arg)
+	require.NoError(t, err)
+
+	gotHealth, err := testStore.GetStationHealth(context.Background(), GetStationHealthParams(arg))
+	require.Error(t, err)
+	require.Empty(t, gotHealth)
 }
 
 func createRandomStationHealth(t *testing.T, stationID int64) ObservationsStationhealth {
@@ -162,13 +165,4 @@ func createRandomStationHealth(t *testing.T, stationID int64) ObservationsStatio
 	require.NotZero(t, health.CreatedAt.Time)
 
 	return health
-}
-
-func _deleteStationHealth(t *testing.T, arg DeleteStationHealthParams) {
-	err := testStore.DeleteStationHealth(context.Background(), arg)
-	require.NoError(t, err)
-
-	gotHealth, err := testStore.GetStationHealth(context.Background(), GetStationHealthParams(arg))
-	require.Error(t, err)
-	require.Empty(t, gotHealth)
 }

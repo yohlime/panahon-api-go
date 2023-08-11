@@ -7,14 +7,32 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateGLabsLoad(t *testing.T) {
-	createRandomGlabsLoad(t)
+type GLabsTestSuite struct {
+	suite.Suite
 }
 
-func createRandomGlabsLoad(t *testing.T) GlabsLoad {
+func TestGLabsTestSuite(t *testing.T) {
+	suite.Run(t, new(GLabsTestSuite))
+}
+
+func (ts *GLabsTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *GLabsTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *GLabsTestSuite) TestCreateGLabsLoad() {
+	t := ts.T()
 	station := createRandomStation(t)
+	createRandomGlabsLoad(t, station.MobileNumber.Text.String)
+}
+
+func createRandomGlabsLoad(t *testing.T, mobileNumber string) GlabsLoad {
 	arg := CreateGLabsLoadParams{
 		Promo: util.NullString{
 			Text: pgtype.Text{
@@ -29,7 +47,7 @@ func createRandomGlabsLoad(t *testing.T) GlabsLoad {
 				Valid:  true,
 			},
 		},
-		MobileNumber: station.MobileNumber.Text.String,
+		MobileNumber: mobileNumber,
 	}
 
 	gLabsLoad, err := testStore.CreateGLabsLoad(context.Background(), arg)

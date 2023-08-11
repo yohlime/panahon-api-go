@@ -8,9 +8,27 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestListLufftStationMsg(t *testing.T) {
+type LufftStationMsgTestSuite struct {
+	suite.Suite
+}
+
+func TestLufftStationMsgTestSuite(t *testing.T) {
+	suite.Run(t, new(LufftStationMsgTestSuite))
+}
+
+func (ts *LufftStationMsgTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *LufftStationMsgTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *LufftStationMsgTestSuite) TestListLufftStationMsg() {
+	t := ts.T()
 	station := createRandomStation(t)
 	n := 10
 	stnMsgs := make([]ObservationsStationhealth, n)
@@ -31,17 +49,10 @@ func TestListLufftStationMsg(t *testing.T) {
 	for _, msg := range gotStnMsgs {
 		require.NotEmpty(t, msg)
 	}
-
-	// cleanup
-	for _, msg := range stnMsgs {
-		_deleteStationHealth(t, DeleteStationHealthParams{
-			StationID: msg.StationID,
-			ID:        msg.ID,
-		})
-	}
 }
 
-func TestCountLufftStationMsg(t *testing.T) {
+func (ts *LufftStationMsgTestSuite) TestCountLufftStationMsg() {
+	t := ts.T()
 	station := createRandomStation(t)
 	n := 10
 	stnMsgs := make([]ObservationsStationhealth, n)
@@ -52,14 +63,6 @@ func TestCountLufftStationMsg(t *testing.T) {
 	numHealth, err := testStore.CountLufftStationMsg(context.Background(), station.ID)
 	require.NoError(t, err)
 	require.Equal(t, numHealth, int64(n))
-
-	// cleanup
-	for _, msg := range stnMsgs {
-		_deleteStationHealth(t, DeleteStationHealthParams{
-			StationID: msg.StationID,
-			ID:        msg.ID,
-		})
-	}
 }
 
 func createRandomLufftStationMsg(t *testing.T, stationID int64) ObservationsStationhealth {

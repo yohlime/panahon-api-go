@@ -5,11 +5,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestFirstOrCreateSimAccessToken(t *testing.T) {
+type FOCSimAccessTokenTxTestSuite struct {
+	suite.Suite
+}
+
+func TestFOCSimAccessTokenTxTestSuite(t *testing.T) {
+	suite.Run(t, new(FOCSimAccessTokenTxTestSuite))
+}
+
+func (ts *FOCSimAccessTokenTxTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *FOCSimAccessTokenTxTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *FOCSimAccessTokenTxTestSuite) TestFirstOrCreateSimAccessToken() {
 	var newAccTkn SimAccessToken
+
+	t := ts.T()
 	simCard := createRandomSimCard(t)
 	accTkn := createRandomSimAccessToken(t, simCard.MobileNumber)
 

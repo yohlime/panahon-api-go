@@ -8,14 +8,33 @@ import (
 	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateSimAccessToken(t *testing.T) {
+type SimAccTknTestSuite struct {
+	suite.Suite
+}
+
+func TestSimAccTknTestSuite(t *testing.T) {
+	suite.Run(t, new(SimAccTknTestSuite))
+}
+
+func (ts *SimAccTknTestSuite) SetupTest() {
+	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *SimAccTknTestSuite) TearDownTest() {
+	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+}
+
+func (ts *SimAccTknTestSuite) TestCreateSimAccessToken() {
+	t := ts.T()
 	simCard := createRandomSimCard(t)
 	createRandomSimAccessToken(t, simCard.MobileNumber)
 }
 
-func TestGetSimAccessToken(t *testing.T) {
+func (ts *SimAccTknTestSuite) TestGetSimAccessToken() {
+	t := ts.T()
 	simCard := createRandomSimCard(t)
 	accTkn := createRandomSimAccessToken(t, simCard.MobileNumber)
 	gotAccTkn, err := testStore.GetSimAccessToken(context.Background(), accTkn.AccessToken)
@@ -29,7 +48,8 @@ func TestGetSimAccessToken(t *testing.T) {
 	require.WithinDuration(t, accTkn.UpdatedAt.Time, gotAccTkn.UpdatedAt.Time, time.Second)
 }
 
-func TestDeleteSimAccessToken(t *testing.T) {
+func (ts *SimAccTknTestSuite) TestDeleteSimAccessToken() {
+	t := ts.T()
 	simCard := createRandomSimCard(t)
 	accTkn := createRandomSimAccessToken(t, simCard.MobileNumber)
 
