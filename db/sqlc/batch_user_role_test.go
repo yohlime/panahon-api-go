@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/emiliogozo/panahon-api-go/util"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -19,11 +19,13 @@ func TestBulkUserRoleTestSuite(t *testing.T) {
 }
 
 func (ts *BulkUserRoleTestSuite) SetupTest() {
-	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *BulkUserRoleTestSuite) TearDownTest() {
-	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 
 func (ts *BulkUserRoleTestSuite) TestBulkCreateUserRoles() {
@@ -58,9 +60,9 @@ func (ts *BulkUserRoleTestSuite) TestBulkCreateUserRoles() {
 
 	userRolesRes, errs := testStore.BulkCreateUserRoles(context.Background(), userRolesParams)
 	nValidUserRoles := len(userRolesParams) - 1
-	assert.Len(t, userRolesRes, nValidUserRoles)
-	assert.Equal(t, fmt.Sprint(userRolesRes), fmt.Sprint(userRolesParams[0:nValidUserRoles]))
-	assert.Len(t, errs, 1)
+	require.Len(t, userRolesRes, nValidUserRoles)
+	require.Equal(t, fmt.Sprint(userRolesRes), fmt.Sprint(userRolesParams[0:nValidUserRoles]))
+	require.Len(t, errs, 1)
 }
 
 func (ts *BulkUserRoleTestSuite) TestBulkDeleteUserRoles() {
@@ -83,9 +85,9 @@ func (ts *BulkUserRoleTestSuite) TestBulkDeleteUserRoles() {
 
 	ctx := context.Background()
 	userRolesRes, errs := testStore.BulkCreateUserRoles(ctx, userRolesParams)
-	assert.Len(t, userRolesRes, nRole)
-	assert.Equal(t, fmt.Sprint(userRolesRes), fmt.Sprint(userRolesParams))
-	assert.Len(t, errs, 0)
+	require.Len(t, userRolesRes, nRole)
+	require.Equal(t, fmt.Sprint(userRolesRes), fmt.Sprint(userRolesParams))
+	require.Len(t, errs, 0)
 
 	delUserRolesArg := make([]UserRolesParams, 2)
 	for i, n := range []int{0, 2} {
@@ -95,7 +97,7 @@ func (ts *BulkUserRoleTestSuite) TestBulkDeleteUserRoles() {
 		}
 	}
 	errs = testStore.BulkDeleteUserRoles(ctx, delUserRolesArg)
-	assert.Len(t, errs, 0)
+	require.Len(t, errs, 0)
 
 	newUserRoles := make([]BatchCreateUserRolesParams, 3)
 	for i, n := range []int{1, 3, 4} {
@@ -107,8 +109,8 @@ func (ts *BulkUserRoleTestSuite) TestBulkDeleteUserRoles() {
 	}
 
 	retainedUserRoleNames, err := testStore.ListUserRoles(ctx, user.ID)
-	assert.NoError(t, err)
-	assert.Len(t, retainedUserRoleNames, nRole-2)
+	require.NoError(t, err)
+	require.Len(t, retainedUserRoleNames, nRole-2)
 
 	retainedUserRoles := make([]BatchCreateUserRolesParams, len(retainedUserRoleNames))
 	for r, roleName := range retainedUserRoleNames {
@@ -118,5 +120,5 @@ func (ts *BulkUserRoleTestSuite) TestBulkDeleteUserRoles() {
 		}
 	}
 
-	assert.Equal(t, fmt.Sprint(retainedUserRoles), fmt.Sprint(newUserRoles))
+	require.Equal(t, fmt.Sprint(retainedUserRoles), fmt.Sprint(newUserRoles))
 }

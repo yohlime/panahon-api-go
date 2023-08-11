@@ -20,11 +20,13 @@ func TestStationHealthTestSuite(t *testing.T) {
 }
 
 func (ts *StationHealthTestSuite) SetupTest() {
-	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *StationHealthTestSuite) TearDownTest() {
-	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 
 func (ts *StationHealthTestSuite) TestCreateStationHealth() {

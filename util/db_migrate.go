@@ -4,18 +4,30 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/rs/zerolog/log"
 )
 
-func RunDBMigration(migrationPath string, dbSource string) {
+func RunDBMigration(migrationPath string, dbSource string) error {
 	migration, err := migrate.New("file://"+migrationPath, dbSource)
 	if err != nil {
-		log.Fatal().Err(err).Msg("cannot create new migrate instance")
+		return err
 	}
 
 	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal().Err(err).Msg("failed to run migrate up")
+		return err
 	}
 
-	log.Debug().Msg("db migrated successfully")
+	return nil
+}
+
+func ReverseDBMigration(migrationPath string, dbSource string) error {
+	migration, err := migrate.New("file://"+migrationPath, dbSource)
+	if err != nil {
+		return err
+	}
+
+	if err = migration.Down(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
 }

@@ -40,7 +40,10 @@ func main() {
 		logger.Fatal().Err(err).Msg("cannot connect to db")
 	}
 
-	util.RunDBMigration(config.MigrationPath, config.DBSource)
+	err = util.RunDBMigration(config.MigrationPath, config.DBSource)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("db migration problem")
+	}
 
 	store := db.NewStore(connPool)
 

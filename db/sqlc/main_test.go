@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/emiliogozo/panahon-api-go/util"
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
@@ -102,17 +101,4 @@ func newDBTest(config *util.Config) (connPool *pgxpool.Pool, fnCleanUp func(), e
 	}
 
 	return
-}
-
-func runDBMigrationDown(migrationPath string, dbSource string) {
-	migration, err := migrate.New("file://"+migrationPath, dbSource)
-	if err != nil {
-		testLogger.Fatal().Err(err).Msg("cannot create new migrate instance")
-	}
-
-	if err = migration.Down(); err != nil && err != migrate.ErrNoChange {
-		testLogger.Fatal().Err(err).Msg("failed to run migrate down")
-	}
-
-	testLogger.Info().Msg("db migrate down successful")
 }

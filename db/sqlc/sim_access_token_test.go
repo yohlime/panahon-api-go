@@ -20,11 +20,13 @@ func TestSimAccTknTestSuite(t *testing.T) {
 }
 
 func (ts *SimAccTknTestSuite) SetupTest() {
-	util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *SimAccTknTestSuite) TearDownTest() {
-	runDBMigrationDown(testConfig.MigrationPath, testConfig.DBSource)
+	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 
 func (ts *SimAccTknTestSuite) TestCreateSimAccessToken() {
