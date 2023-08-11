@@ -8,6 +8,10 @@ import (
 )
 
 func TestLufft(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
 	lufft := RandomLufft()
 
 	testCases := []struct {

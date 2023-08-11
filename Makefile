@@ -37,8 +37,11 @@ swag:
 test:
 	go test -v -cover ./...
 
+short_test:
+	go test $(shell go list ./... | grep -v /db/) -cover -short 
+
 build:
 	go build -o main main.go
 
 
-.PHONY: createdb dropdb migrateup migrateup1 migratedown migratedown1 new_migration sqlc server mock swag test build
+.PHONY: createdb dropdb migrateup migrateup1 migratedown migratedown1 new_migration sqlc server mock swag test short_test build
