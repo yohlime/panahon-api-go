@@ -422,8 +422,8 @@ type loginUserResponse struct {
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	body	loginUserRequest	true	"Login user parameters"
-//	@Success	200
+//	@Param		req	body		loginUserRequest	true	"Login user parameters"
+//	@Success	200	{object}	loginUserResponse
 //	@Router		/users/login [post]
 func (s *Server) LoginUser(ctx *gin.Context) {
 	var req loginUserRequest
@@ -487,7 +487,7 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
 		RefreshToken:          refreshToken,
 		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
-		User:                  newUserResponse(user, nil),
+		User:                  newUserResponse(user, roleNames),
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }
