@@ -1,7 +1,7 @@
-FROM golang:1.20-alpine3.18 AS builder
+FROM golang:1.21.0-alpine3.18 AS builder
 WORKDIR /app
 COPY . .
-RUN go build -ldflags "-s" -o main main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -a -o main main.go
 
 FROM alpine:3.18
 WORKDIR /app
@@ -10,6 +10,5 @@ COPY app.env .
 COPY --chmod=0755 start.sh .
 COPY db/migration ./db/migration
 
-EXPOSE 8080
 CMD [ "/app/main" ]
 ENTRYPOINT [ "/app/start.sh" ]
