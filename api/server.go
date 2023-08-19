@@ -56,7 +56,9 @@ func (s *Server) setupRouter() {
 		users.POST("/register", s.RegisterUser)
 
 		usersAuth := addMiddleware(users,
-			authMiddleware(s.tokenMaker),
+			authMiddleware(s.tokenMaker))
+		usersAuth.GET("/auth", s.GetAuthUser)
+		usersAuth = addMiddleware(users,
 			roleMiddleware(string(superAdminRole)))
 		usersAuth.GET("", s.ListUsers)
 		usersAuth.GET(":id", s.GetUser)

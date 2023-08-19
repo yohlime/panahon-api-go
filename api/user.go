@@ -491,3 +491,25 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }
+
+// GetAuthUser
+//
+//	@Summary	Get Auth User
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Security	BearerAuth
+//	@Success	200	{object}	userResponse
+//	@Router		/users/auth [get]
+func (s *Server) GetAuthUser(ctx *gin.Context) {
+	_authPayload, _ := ctx.Get(authorizationPayloadKey)
+	authPayload, _ := _authPayload.(*token.Payload)
+
+	user, err := s.store.GetUserByUsername(ctx, authPayload.User.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUserResponse(user, authPayload.User.Roles))
+}
