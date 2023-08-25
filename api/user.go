@@ -140,7 +140,7 @@ func (s *Server) GetUser(ctx *gin.Context) {
 type createUserReq struct {
 	Username string   `json:"username" binding:"required,alphanum"`
 	Password string   `json:"password" binding:"required,min=6"`
-	FullName string   `json:"full_name" binding:"required"`
+	FullName string   `json:"full_name" binding:"required,alphanumspace"`
 	Email    string   `json:"email" binding:"required,email"`
 	Roles    []string `json:"roles"`
 } //@name CreateUserParams
@@ -210,7 +210,7 @@ type updateUserUri struct {
 
 type updateUserReq struct {
 	Password util.NullString `json:"password" binding:"omitempty,min=6"`
-	FullName util.NullString `json:"full_name"`
+	FullName util.NullString `json:"full_name" binding:"omitempty,alphanumspace"`
 	Email    util.NullString `json:"email" binding:"omitempty,email"`
 	Roles    []string        `json:"roles"`
 } //@name UpdateUserParams

@@ -469,7 +469,7 @@ func TestDeleteStationAPI(t *testing.T) {
 func randomStation() db.ObservationsStation {
 	return db.ObservationsStation{
 		ID:       util.RandomInt(1, 1000),
-		Name:     util.RandomString(12),
+		Name:     fmt.Sprintf("%s %s", util.RandomString(12), util.RandomString(8)),
 		Lat:      util.NullFloat4{Float4: pgtype.Float4{Float32: util.RandomFloat(-90.0, 90.0), Valid: true}},
 		Lon:      util.NullFloat4{Float4: pgtype.Float4{Float32: util.RandomFloat(0.0, 360.0), Valid: true}},
 		Province: util.NullString{Text: pgtype.Text{String: util.RandomString(16), Valid: true}},

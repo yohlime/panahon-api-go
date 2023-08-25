@@ -149,7 +149,7 @@ func (s *Server) GetRole(ctx *gin.Context) {
 
 type createRoleReq struct {
 	Name        string          `json:"name" binding:"required,alphanum"`
-	Description util.NullString `json:"description" binding:"omitempty,alphanum"`
+	Description util.NullString `json:"description" binding:"omitempty,alphanumspace"`
 } //@name CreateRoleParams
 
 // CreateRole
@@ -193,7 +193,7 @@ type updateRoleUri struct {
 
 type updateRoleReq struct {
 	Name        util.NullString `json:"name" binding:"omitempty,alphanum"`
-	Description util.NullString `json:"description" binding:"omitempty,alphanum"`
+	Description util.NullString `json:"description" binding:"omitempty,alphanumspace"`
 } //@name UpdateRoleParams
 
 // UpdateRole

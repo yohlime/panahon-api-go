@@ -142,7 +142,7 @@ func (s *Server) GetStation(ctx *gin.Context) {
 }
 
 type createStationReq struct {
-	Name          string          `json:"name" binding:"required,alphanum"`
+	Name          string          `json:"name" binding:"required,alphanumspace"`
 	Lat           util.NullFloat4 `json:"lat" binding:"omitempty,numeric"`
 	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
 	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
@@ -204,7 +204,7 @@ type updateStationUri struct {
 }
 
 type updateStationReq struct {
-	Name          util.NullString `json:"name" binding:"omitempty,alphanum"`
+	Name          util.NullString `json:"name" binding:"omitempty,alphanumspace"`
 	Lat           util.NullFloat4 `json:"lat" binding:"omitempty,numeric"`
 	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
 	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
