@@ -146,7 +146,7 @@ type createStationReq struct {
 	Lat           util.NullFloat4 `json:"lat" binding:"omitempty,numeric"`
 	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
 	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
-	DateInstalled pgtype.Date     `json:"date_installed"`
+	DateInstalled pgtype.Date     `json:"date_installed" binding:"omitempty"`
 	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty"`
 	StationType   util.NullString `json:"station_type" binding:"omitempty"`
 	StationType2  util.NullString `json:"station_type2" binding:"omitempty"`
@@ -208,7 +208,7 @@ type updateStationReq struct {
 	Lat           util.NullFloat4 `json:"lat" binding:"omitempty,numeric"`
 	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
 	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
-	DateInstalled pgtype.Date     `json:"date_installed"`
+	DateInstalled pgtype.Date     `json:"date_installed" binding:"omitempty"`
 	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty"`
 	StationType   util.NullString `json:"station_type" binding:"omitempty"`
 	StationType2  util.NullString `json:"station_type2" binding:"omitempty"`
@@ -244,19 +244,20 @@ func (s *Server) UpdateStation(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateStationParams{
-		ID:           uri.ID,
-		Name:         req.Name,
-		Lat:          req.Lat,
-		Lon:          req.Lon,
-		Elevation:    req.Elevation,
-		MobileNumber: req.MobileNumber,
-		StationType:  req.StationType,
-		StationType2: req.StationType2,
-		StationUrl:   req.StationUrl,
-		Status:       req.Status,
-		Province:     req.Province,
-		Region:       req.Region,
-		Address:      req.Address,
+		ID:            uri.ID,
+		Name:          req.Name,
+		Lat:           req.Lat,
+		Lon:           req.Lon,
+		Elevation:     req.Elevation,
+		DateInstalled: req.DateInstalled,
+		MobileNumber:  req.MobileNumber,
+		StationType:   req.StationType,
+		StationType2:  req.StationType2,
+		StationUrl:    req.StationUrl,
+		Status:        req.Status,
+		Province:      req.Province,
+		Region:        req.Region,
+		Address:       req.Address,
 	}
 
 	station, err := s.store.UpdateStation(ctx, arg)
