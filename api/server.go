@@ -6,6 +6,7 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/token"
 	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -47,6 +48,13 @@ func NewServer(config util.Config, store db.Store, logger *zerolog.Logger) (*Ser
 func (s *Server) setupRouter() {
 	gin.SetMode(s.config.GinMode)
 	r := gin.Default()
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowCredentials = true
+	corsConfig.AddAllowMethods("OPTIONS")
+	corsConfig.AddAllowHeaders("Authorization")
+	r.Use(cors.New(corsConfig))
 
 	api := r.Group(s.config.APIBasePath)
 
