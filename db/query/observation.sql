@@ -26,13 +26,17 @@ WHERE station_id = $1 AND id = $2 LIMIT 1;
 -- name: ListStationObservations :many
 SELECT * FROM observations_observation
 WHERE station_id = @station_id
-ORDER BY id
+  AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
+  AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END)
+ORDER BY timestamp DESC
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
 -- name: CountStationObservations :one
 SELECT count(*) FROM observations_observation
-WHERE station_id = $1;
+WHERE station_id = @station_id
+  AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
+  AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END);
 
 -- name: UpdateStationObservation :one
 UPDATE observations_observation

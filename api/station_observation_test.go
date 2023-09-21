@@ -23,13 +23,15 @@ func TestListStationObservationsAPI(t *testing.T) {
 	n := 10
 	stationID := util.RandomInt(1, 100)
 	stationObsSlice := make([]db.ObservationsObservation, n)
-	for i := 0; i < n; i++ {
+	for i := range stationObsSlice {
 		stationObsSlice[i] = randomStationObservation(stationID)
 	}
 
 	type Query struct {
-		Page    int32
-		PerPage int32
+		Page      int32
+		PerPage   int32
+		StartDate string
+		EndDate   string
 	}
 
 	testCases := []struct {
@@ -45,15 +47,66 @@ func TestListStationObservationsAPI(t *testing.T) {
 				PerPage: int32(n),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().ListStationObservations(mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return !args.IsStartDate && !args.IsEndDate
+					})).
 					Return(stationObsSlice, nil)
-				store.EXPECT().CountStationObservations(mock.AnythingOfType("*gin.Context"), stationID).
+				store.EXPECT().CountStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.CountStationObservationsParams) bool {
+						return !args.IsStartDate && !args.IsEndDate
+					})).
 					Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
 				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+			},
+		},
+		{
+			name: "WithStartAndEndDate",
+			query: Query{
+				Page:      1,
+				PerPage:   int32(n),
+				StartDate: "2023-09-01",
+				EndDate:   "2023-09-01T23:00:00",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return args.IsStartDate && args.IsEndDate
+					})).
+					Return(stationObsSlice, nil)
+				store.EXPECT().CountStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.CountStationObservationsParams) bool {
+						return args.IsStartDate && args.IsEndDate
+					})).
+					Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+			},
+		},
+		{
+			name: "WithInvalidStartAndEndDate",
+			query: Query{
+				Page:      1,
+				PerPage:   int32(n),
+				StartDate: "notdatetime",
+				EndDate:   "invaliddatetime",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListStationObservations", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -106,7 +159,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStationObservations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsObservation{}, nil)
-				store.EXPECT().CountStationObservations(mock.AnythingOfType("*gin.Context"), stationID).
+				store.EXPECT().CountStationObservations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -124,7 +177,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStationObservations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsObservation{}, nil)
-				store.EXPECT().CountStationObservations(mock.AnythingOfType("*gin.Context"), stationID).
+				store.EXPECT().CountStationObservations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(int64(n), sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -152,6 +205,8 @@ func TestListStationObservationsAPI(t *testing.T) {
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
 			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
+			q.Add("start_date", fmt.Sprintf("%s", tc.query.StartDate))
+			q.Add("end_date", fmt.Sprintf("%s", tc.query.EndDate))
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)

@@ -813,6 +813,9 @@ paths:
       consumes:
       - application/json
       parameters:
+      - in: query
+        name: end_date
+        type: string
       - description: page number
         in: query
         minimum: 1
@@ -824,6 +827,9 @@ paths:
         minimum: 1
         name: per_page
         type: integer
+      - in: query
+        name: start_date
+        type: string
       produces:
       - application/json
       responses:
@@ -1075,6 +1081,22 @@ paths:
       security:
       - BearerAuth: []
       summary: Update user
+      tags:
+      - users
+  /users/auth:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Auth User
       tags:
       - users
   /users/login:

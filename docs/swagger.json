@@ -550,6 +550,11 @@
                 "summary": "List station observations",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
                         "minimum": 1,
                         "type": "integer",
                         "description": "page number",
@@ -562,6 +567,11 @@
                         "type": "integer",
                         "description": "limit",
                         "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "start_date",
                         "in": "query"
                     }
                 ],
@@ -811,6 +821,33 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/ListUsersResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/auth": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Auth User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserResponse"
                         }
                     }
                 }

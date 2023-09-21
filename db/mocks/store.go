@@ -323,23 +323,23 @@ func (_c *MockStore_CountRoles_Call) RunAndReturn(run func(context.Context) (int
 	return _c
 }
 
-// CountStationObservations provides a mock function with given fields: ctx, stationID
-func (_m *MockStore) CountStationObservations(ctx context.Context, stationID int64) (int64, error) {
-	ret := _m.Called(ctx, stationID)
+// CountStationObservations provides a mock function with given fields: ctx, arg
+func (_m *MockStore) CountStationObservations(ctx context.Context, arg db.CountStationObservationsParams) (int64, error) {
+	ret := _m.Called(ctx, arg)
 
 	var r0 int64
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64) (int64, error)); ok {
-		return rf(ctx, stationID)
+	if rf, ok := ret.Get(0).(func(context.Context, db.CountStationObservationsParams) (int64, error)); ok {
+		return rf(ctx, arg)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64) int64); ok {
-		r0 = rf(ctx, stationID)
+	if rf, ok := ret.Get(0).(func(context.Context, db.CountStationObservationsParams) int64); ok {
+		r0 = rf(ctx, arg)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
-		r1 = rf(ctx, stationID)
+	if rf, ok := ret.Get(1).(func(context.Context, db.CountStationObservationsParams) error); ok {
+		r1 = rf(ctx, arg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -354,14 +354,14 @@ type MockStore_CountStationObservations_Call struct {
 
 // CountStationObservations is a helper method to define mock.On call
 //   - ctx context.Context
-//   - stationID int64
-func (_e *MockStore_Expecter) CountStationObservations(ctx interface{}, stationID interface{}) *MockStore_CountStationObservations_Call {
-	return &MockStore_CountStationObservations_Call{Call: _e.mock.On("CountStationObservations", ctx, stationID)}
+//   - arg db.CountStationObservationsParams
+func (_e *MockStore_Expecter) CountStationObservations(ctx interface{}, arg interface{}) *MockStore_CountStationObservations_Call {
+	return &MockStore_CountStationObservations_Call{Call: _e.mock.On("CountStationObservations", ctx, arg)}
 }
 
-func (_c *MockStore_CountStationObservations_Call) Run(run func(ctx context.Context, stationID int64)) *MockStore_CountStationObservations_Call {
+func (_c *MockStore_CountStationObservations_Call) Run(run func(ctx context.Context, arg db.CountStationObservationsParams)) *MockStore_CountStationObservations_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(int64))
+		run(args[0].(context.Context), args[1].(db.CountStationObservationsParams))
 	})
 	return _c
 }
@@ -371,7 +371,7 @@ func (_c *MockStore_CountStationObservations_Call) Return(_a0 int64, _a1 error) 
 	return _c
 }
 
-func (_c *MockStore_CountStationObservations_Call) RunAndReturn(run func(context.Context, int64) (int64, error)) *MockStore_CountStationObservations_Call {
+func (_c *MockStore_CountStationObservations_Call) RunAndReturn(run func(context.Context, db.CountStationObservationsParams) (int64, error)) *MockStore_CountStationObservations_Call {
 	_c.Call.Return(run)
 	return _c
 }

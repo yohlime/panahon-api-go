@@ -39,6 +39,7 @@ func NewServer(config util.Config, store db.Store, logger *zerolog.Logger) (*Ser
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("mobile_number", validMobileNumber)
 		v.RegisterValidation("alphanumspace", validAlphaNumSpace)
+		v.RegisterValidation("date_time", validDateTimeStr)
 	}
 
 	server.setupRouter()

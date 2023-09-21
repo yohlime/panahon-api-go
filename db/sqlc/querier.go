@@ -16,7 +16,7 @@ type Querier interface {
 	BatchDeleteUserRoles(ctx context.Context, arg []BatchDeleteUserRolesParams) *BatchDeleteUserRolesBatchResults
 	CountLufftStationMsg(ctx context.Context, stationID int64) (int64, error)
 	CountRoles(ctx context.Context) (int64, error)
-	CountStationObservations(ctx context.Context, stationID int64) (int64, error)
+	CountStationObservations(ctx context.Context, arg CountStationObservationsParams) (int64, error)
 	CountStations(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateGLabsLoad(ctx context.Context, arg CreateGLabsLoadParams) (GlabsLoad, error)

@@ -15,10 +15,26 @@ import (
 const countStationObservations = `-- name: CountStationObservations :one
 SELECT count(*) FROM observations_observation
 WHERE station_id = $1
+  AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
+  AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
 `
 
-func (q *Queries) CountStationObservations(ctx context.Context, stationID int64) (int64, error) {
-	row := q.db.QueryRow(ctx, countStationObservations, stationID)
+type CountStationObservationsParams struct {
+	StationID   int64              `json:"station_id"`
+	IsStartDate bool               `json:"is_start_date"`
+	StartDate   pgtype.Timestamptz `json:"start_date"`
+	IsEndDate   bool               `json:"is_end_date"`
+	EndDate     pgtype.Timestamptz `json:"end_date"`
+}
+
+func (q *Queries) CountStationObservations(ctx context.Context, arg CountStationObservationsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countStationObservations,
+		arg.StationID,
+		arg.IsStartDate,
+		arg.StartDate,
+		arg.IsEndDate,
+		arg.EndDate,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -159,19 +175,33 @@ func (q *Queries) GetStationObservation(ctx context.Context, arg GetStationObser
 const listStationObservations = `-- name: ListStationObservations :many
 SELECT id, pres, rr, rh, temp, td, wdir, wspd, wspdx, srad, mslp, hi, station_id, timestamp, wchill, qc_level, created_at, updated_at FROM observations_observation
 WHERE station_id = $1
-ORDER BY id
-LIMIT $3
-OFFSET $2
+  AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
+  AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
+ORDER BY timestamp DESC
+LIMIT $7
+OFFSET $6
 `
 
 type ListStationObservationsParams struct {
-	StationID int64         `json:"station_id"`
-	Offset    int32         `json:"offset"`
-	Limit     util.NullInt4 `json:"limit"`
+	StationID   int64              `json:"station_id"`
+	IsStartDate bool               `json:"is_start_date"`
+	StartDate   pgtype.Timestamptz `json:"start_date"`
+	IsEndDate   bool               `json:"is_end_date"`
+	EndDate     pgtype.Timestamptz `json:"end_date"`
+	Offset      int32              `json:"offset"`
+	Limit       util.NullInt4      `json:"limit"`
 }
 
 func (q *Queries) ListStationObservations(ctx context.Context, arg ListStationObservationsParams) ([]ObservationsObservation, error) {
-	rows, err := q.db.Query(ctx, listStationObservations, arg.StationID, arg.Offset, arg.Limit)
+	rows, err := q.db.Query(ctx, listStationObservations,
+		arg.StationID,
+		arg.IsStartDate,
+		arg.StartDate,
+		arg.IsEndDate,
+		arg.EndDate,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}

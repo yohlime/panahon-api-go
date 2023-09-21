@@ -55,8 +55,10 @@ type listStationObsUri struct {
 }
 
 type listStationObsReq struct {
-	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`            // page number
-	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
+	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
+	PerPage   int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
+	StartDate string `form:"start_date" binding:"omitempty,date_time"`
+	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
 } //name ListStationObservationsParams
 
 type listStationObsRes struct {
@@ -87,6 +89,9 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 		return
 	}
 
+	startDate, isStartDate := util.ParseDateTime(req.StartDate)
+	endDate, isEndDate := util.ParseDateTime(req.EndDate)
+
 	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListStationObservationsParams{
 		StationID: uri.StationID,
@@ -96,7 +101,17 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 				Valid: true,
 			},
 		},
-		Offset: offset,
+		Offset:      offset,
+		IsStartDate: isStartDate,
+		StartDate: pgtype.Timestamptz{
+			Time:  startDate,
+			Valid: !startDate.IsZero(),
+		},
+		IsEndDate: isEndDate,
+		EndDate: pgtype.Timestamptz{
+			Time:  endDate,
+			Valid: !endDate.IsZero(),
+		},
 	}
 
 	observations, err := s.store.ListStationObservations(ctx, arg)
@@ -111,7 +126,13 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 		obsRes[i] = newStationObsResponse(observation)
 	}
 
-	totalObs, err := s.store.CountStationObservations(ctx, uri.StationID)
+	totalObs, err := s.store.CountStationObservations(ctx, db.CountStationObservationsParams{
+		StationID:   arg.StationID,
+		IsStartDate: arg.IsStartDate,
+		StartDate:   arg.StartDate,
+		IsEndDate:   arg.IsEndDate,
+		EndDate:     arg.EndDate,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
