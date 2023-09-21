@@ -238,7 +238,7 @@ func TestGetStationObservationAPI(t *testing.T) {
 					ID:        stationObs.ID,
 					StationID: stationObs.StationID,
 				}
-				store.On("GetStationObservation", mock.AnythingOfType("*gin.Context"), arg).
+				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), arg).
 					Return(stationObs, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -258,7 +258,7 @@ func TestGetStationObservationAPI(t *testing.T) {
 					ID:        stationObs.ID,
 					StationID: stationObs.StationID,
 				}
-				store.On("GetStationObservation", mock.AnythingOfType("*gin.Context"), arg).
+				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), arg).
 					Return(db.ObservationsObservation{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -273,7 +273,7 @@ func TestGetStationObservationAPI(t *testing.T) {
 				StationID: stationObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.On("GetStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.ObservationsObservation{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -341,7 +341,7 @@ func TestCreateStationObservationAPI(t *testing.T) {
 					Temp:      stationObs.Temp,
 				}
 
-				store.On("CreateStationObservation", mock.AnythingOfType("*gin.Context"), arg).
+				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), arg).
 					Return(stationObs, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -357,7 +357,7 @@ func TestCreateStationObservationAPI(t *testing.T) {
 				"pres":       stationObs.Pres,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.On("CreateStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.ObservationsObservation{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -423,7 +423,7 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 					Temp:      stationObs.Temp,
 				}
 
-				store.On("UpdateStationObservation", mock.AnythingOfType("*gin.Context"), arg).
+				store.EXPECT().UpdateStationObservation(mock.AnythingOfType("*gin.Context"), arg).
 					Return(stationObs, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -440,7 +440,7 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 			},
 			body: gin.H{},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.On("UpdateStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().UpdateStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.ObservationsObservation{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -456,7 +456,7 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 			},
 			body: gin.H{},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.On("UpdateStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().UpdateStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.ObservationsObservation{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -508,7 +508,7 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 				StationID: stationObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.On("DeleteStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().DeleteStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -523,7 +523,7 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 				StationID: stationObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.On("DeleteStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().DeleteStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
