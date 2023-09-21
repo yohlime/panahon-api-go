@@ -90,8 +90,13 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListStationObservationsParams{
 		StationID: uri.StationID,
-		Limit:     req.PerPage,
-		Offset:    offset,
+		Limit: util.NullInt4{
+			Int4: pgtype.Int4{
+				Int32: req.PerPage,
+				Valid: true,
+			},
+		},
+		Offset: offset,
 	}
 
 	observations, err := s.store.ListStationObservations(ctx, arg)

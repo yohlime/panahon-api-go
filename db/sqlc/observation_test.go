@@ -60,18 +60,72 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 		createRandomObservation(t, station.ID)
 	}
 
-	arg := ListStationObservationsParams{
-		StationID: station.ID,
-		Limit:     5,
-		Offset:    5,
+	testCases := []struct {
+		name   string
+		arg    ListStationObservationsParams
+		result func(obs []ObservationsObservation, err error)
+	}{
+		{
+			name: "Default",
+			arg: ListStationObservationsParams{
+				StationID: station.ID,
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, 10)
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
+		{
+			name: "WithLimit",
+			arg: ListStationObservationsParams{
+				StationID: station.ID,
+				Limit: util.NullInt4{
+					Int4: pgtype.Int4{
+						Int32: 5,
+						Valid: true,
+					},
+				},
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, 5)
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
+		{
+			name: "WithLimitAndOffset",
+			arg: ListStationObservationsParams{
+				StationID: station.ID,
+				Limit: util.NullInt4{
+					Int4: pgtype.Int4{
+						Int32: 5,
+						Valid: true,
+					},
+				},
+				Offset: 7,
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, 3)
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
 	}
 
-	gotObservations, err := testStore.ListStationObservations(context.Background(), arg)
-	require.NoError(t, err)
-	require.Len(t, gotObservations, 5)
-
-	for _, obs := range gotObservations {
-		require.NotEmpty(t, obs)
+	for i := range testCases {
+		tc := testCases[i]
+		gotObservations, err := testStore.ListStationObservations(context.Background(), tc.arg)
+		tc.result(gotObservations, err)
 	}
 }
 

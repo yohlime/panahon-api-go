@@ -160,18 +160,18 @@ const listStationObservations = `-- name: ListStationObservations :many
 SELECT id, pres, rr, rh, temp, td, wdir, wspd, wspdx, srad, mslp, hi, station_id, timestamp, wchill, qc_level, created_at, updated_at FROM observations_observation
 WHERE station_id = $1
 ORDER BY id
-LIMIT $2
-OFFSET $3
+LIMIT $3
+OFFSET $2
 `
 
 type ListStationObservationsParams struct {
-	StationID int64 `json:"station_id"`
-	Limit     int32 `json:"limit"`
-	Offset    int32 `json:"offset"`
+	StationID int64         `json:"station_id"`
+	Offset    int32         `json:"offset"`
+	Limit     util.NullInt4 `json:"limit"`
 }
 
 func (q *Queries) ListStationObservations(ctx context.Context, arg ListStationObservationsParams) ([]ObservationsObservation, error) {
-	rows, err := q.db.Query(ctx, listStationObservations, arg.StationID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listStationObservations, arg.StationID, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

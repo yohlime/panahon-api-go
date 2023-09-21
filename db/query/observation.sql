@@ -25,10 +25,10 @@ WHERE station_id = $1 AND id = $2 LIMIT 1;
 
 -- name: ListStationObservations :many
 SELECT * FROM observations_observation
-WHERE station_id = $1
+WHERE station_id = @station_id
 ORDER BY id
-LIMIT $2
-OFFSET $3;
+LIMIT sqlc.narg('limit')
+OFFSET sqlc.arg('offset');
 
 -- name: CountStationObservations :one
 SELECT count(*) FROM observations_observation
