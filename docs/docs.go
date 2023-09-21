@@ -140,6 +140,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/observations": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "observations"
+                ],
+                "summary": "list station observation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "station_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/StationObservationResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/ptexter": {
             "post": {
                 "consumes": [

@@ -555,6 +555,30 @@ paths:
       summary: Lufft Message Logs
       tags:
       - lufft
+  /observations:
+    get:
+      parameters:
+      - in: query
+        name: end_date
+        type: string
+      - in: query
+        name: start_date
+        type: string
+      - in: query
+        name: station_ids
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/StationObservationResponse'
+            type: array
+      summary: list station observation
+      tags:
+      - observations
   /ptexter:
     post:
       consumes:

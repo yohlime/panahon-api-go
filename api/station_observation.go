@@ -3,6 +3,8 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/util"
@@ -373,4 +375,109 @@ func (s *Server) DeleteStationObservation(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusNoContent, nil)
+}
+
+type listObservationsReq struct {
+	StationIDs string `form:"station_ids" binding:"omitempty"`
+	StartDate  string `form:"start_date" binding:"omitempty,date_time"`
+	EndDate    string `form:"end_date" binding:"omitempty,date_time"`
+} //name ListObservationsParams
+
+// ListObservations
+//
+//	@Summary	list station observation
+//	@Tags		observations
+//	@Produce	json
+//	@Param		req	query	listObservationsReq	false	"List observations parameters"
+//	@Success	200	{array}	stationObsResponse
+//	@Router		/observations [get]
+func (s *Server) ListObservations(ctx *gin.Context) {
+	var req listObservationsReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var stations []db.ObservationsStation
+	if len(req.StationIDs) == 0 {
+		stations, _ = s.store.ListStations(ctx, db.ListStationsParams{
+			Limit:  10,
+			Offset: 0,
+		})
+	} else {
+		stnIDStrs := strings.Split(req.StationIDs, ",")
+		for i := range stnIDStrs {
+			stnID, err := strconv.Atoi(stnIDStrs[i])
+			if err != nil {
+				continue
+			}
+			station, err := s.store.GetStation(ctx, int64(stnID))
+			if err != nil {
+				continue
+			}
+			stations = append(stations, station)
+		}
+	}
+
+	startDate, isStartDate := util.ParseDateTime(req.StartDate)
+	endDate, isEndDate := util.ParseDateTime(req.EndDate)
+
+	var obs []db.ObservationsObservation
+	for _, station := range stations {
+		var args db.ListStationObservationsParams
+		if !isStartDate && !isEndDate {
+			args = db.ListStationObservationsParams{
+				StationID: station.ID,
+				Limit: util.NullInt4{
+					Int4: pgtype.Int4{
+						Int32: 30,
+						Valid: true,
+					},
+				},
+				Offset: 0,
+			}
+		} else if !isStartDate || !isEndDate {
+			args = db.ListStationObservationsParams{
+				StationID: station.ID,
+				Limit: util.NullInt4{
+					Int4: pgtype.Int4{
+						Int32: 30,
+						Valid: true,
+					},
+				},
+				Offset:      0,
+				IsStartDate: isStartDate,
+				StartDate: pgtype.Timestamptz{
+					Time:  startDate,
+					Valid: !startDate.IsZero(),
+				},
+				IsEndDate: isEndDate,
+				EndDate: pgtype.Timestamptz{
+					Time:  endDate,
+					Valid: !endDate.IsZero(),
+				},
+			}
+		} else {
+			args = db.ListStationObservationsParams{
+				StationID:   station.ID,
+				Offset:      0,
+				IsStartDate: isStartDate,
+				StartDate: pgtype.Timestamptz{
+					Time:  startDate,
+					Valid: !startDate.IsZero(),
+				},
+				IsEndDate: isEndDate,
+				EndDate: pgtype.Timestamptz{
+					Time:  endDate,
+					Valid: !endDate.IsZero(),
+				},
+			}
+		}
+		_obs, _ := s.store.ListStationObservations(ctx, args)
+		if len(_obs) > 0 {
+			obs = append(obs, _obs...)
+		}
+	}
+
+	ctx.JSON(http.StatusOK, obs)
 }

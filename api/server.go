@@ -120,6 +120,11 @@ func (s *Server) setupRouter() {
 
 	}
 
+	observations := api.Group("/observations")
+	{
+		observations.GET("", s.ListObservations)
+	}
+
 	glabs := api.Group("/glabs")
 	{
 		glabs.GET("", s.GLabsOptIn)

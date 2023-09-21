@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
@@ -545,6 +546,221 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 			url := fmt.Sprintf("%s/stations/%d/observations/%d", server.config.APIBasePath, tc.params.StationID, tc.params.ID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
+func TestListObservationsAPI(t *testing.T) {
+	n := 5
+	stations := make([]db.ObservationsStation, n)
+	var selectedStns []db.ObservationsStation
+	var selectedStnIDs []string
+	for s := range stations {
+		stations[s] = randomStation()
+		if (s % 2) == 0 {
+			selectedStns = append(selectedStns, stations[s])
+			idStr := fmt.Sprintf("%d", stations[s].ID)
+			selectedStnIDs = append(selectedStnIDs, idStr)
+		}
+	}
+	nSelected := len(selectedStnIDs)
+
+	type Query struct {
+		StationIDs string
+		StartDate  string
+		EndDate    string
+	}
+
+	testCases := []struct {
+		name          string
+		query         Query
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name:  "Default",
+			query: Query{},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
+					Limit:  10,
+					Offset: 0,
+				}).
+					Return(stations, nil)
+
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return args.Limit.Int32 == 30 && args.Offset == 0
+					}),
+				).
+					Return(make([]db.ObservationsObservation, 3), nil).Times(n)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+				var gotObsSlice []db.ObservationsObservation
+				err = json.Unmarshal(data, &gotObsSlice)
+				require.NoError(t, err)
+				require.Len(t, gotObsSlice, n*3)
+			},
+		},
+		{
+			name: "StationIDs",
+			query: Query{
+				StationIDs: strings.Join(selectedStnIDs, ","),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				for i := range selectedStns {
+					store.EXPECT().GetStation(mock.AnythingOfType("*gin.Context"), selectedStns[i].ID).
+						Return(selectedStns[i], nil).Once()
+				}
+
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return args.Limit.Int32 == 30 && args.Offset == 0
+					}),
+				).
+					Return(make([]db.ObservationsObservation, 3), nil).Times(nSelected)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+				var gotObsSlice []db.ObservationsObservation
+				err = json.Unmarshal(data, &gotObsSlice)
+				require.NoError(t, err)
+				require.Len(t, gotObsSlice, nSelected*3)
+			},
+		},
+		{
+			name: "WithStartAndEndDate",
+			query: Query{
+				StartDate: "2023-04-15T12:45:00",
+				EndDate:   "2023-04-16",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
+					Limit:  10,
+					Offset: 0,
+				}).
+					Return(stations, nil)
+
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return args.IsStartDate && args.IsEndDate && !args.Limit.Valid
+					}),
+				).
+					Return(make([]db.ObservationsObservation, 3), nil).Times(n)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+				var gotObsSlice []db.ObservationsObservation
+				err = json.Unmarshal(data, &gotObsSlice)
+				require.NoError(t, err)
+				require.Len(t, gotObsSlice, n*3)
+			},
+		},
+		{
+			name: "WithStartDate",
+			query: Query{
+				StartDate: "2023-04-15T12:45:00",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
+					Limit:  10,
+					Offset: 0,
+				}).
+					Return(stations, nil)
+
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return args.IsStartDate && !args.IsEndDate && args.Limit.Int32 == 30
+					}),
+				).
+					Return(make([]db.ObservationsObservation, 3), nil).Times(n)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+				var gotObsSlice []db.ObservationsObservation
+				err = json.Unmarshal(data, &gotObsSlice)
+				require.NoError(t, err)
+				require.Len(t, gotObsSlice, n*3)
+			},
+		},
+		{
+			name: "WithEndDate",
+			query: Query{
+				EndDate: "2023-04-16",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
+					Limit:  10,
+					Offset: 0,
+				}).
+					Return(stations, nil)
+
+				store.EXPECT().ListStationObservations(
+					mock.AnythingOfType("*gin.Context"),
+					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
+						return !args.IsStartDate && args.IsEndDate && args.Limit.Int32 == 30
+					}),
+				).
+					Return(make([]db.ObservationsObservation, 3), nil).Times(n)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				data, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+				var gotObsSlice []db.ObservationsObservation
+				err = json.Unmarshal(data, &gotObsSlice)
+				require.NoError(t, err)
+				require.Len(t, gotObsSlice, n*3)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("%s/observations", server.config.APIBasePath)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			// Add query parameters to request URL
+			q := request.URL.Query()
+			q.Add("station_ids", fmt.Sprintf("%s", tc.query.StationIDs))
+			q.Add("start_date", fmt.Sprintf("%s", tc.query.StartDate))
+			q.Add("end_date", fmt.Sprintf("%s", tc.query.EndDate))
+			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)
 
