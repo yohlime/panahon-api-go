@@ -156,6 +156,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "name": "start_date",
                         "in": "query"
@@ -170,10 +185,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/StationObservationResponse"
-                            }
+                            "$ref": "#/definitions/ListStationObservationsResponse"
                         }
                     }
                 }
@@ -596,6 +608,13 @@ const docTemplate = `{
                 ],
                 "summary": "List station observations",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "name": "end_date",

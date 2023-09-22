@@ -561,6 +561,17 @@ paths:
       - in: query
         name: end_date
         type: string
+      - description: page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: limit
+        in: query
+        maximum: 30
+        minimum: 1
+        name: per_page
+        type: integer
       - in: query
         name: start_date
         type: string
@@ -573,9 +584,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/StationObservationResponse'
-            type: array
+            $ref: '#/definitions/ListStationObservationsResponse'
       summary: list station observation
       tags:
       - observations
@@ -837,6 +846,11 @@ paths:
       consumes:
       - application/json
       parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
       - in: query
         name: end_date
         type: string

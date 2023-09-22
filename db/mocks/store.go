@@ -271,6 +271,59 @@ func (_c *MockStore_CountLufftStationMsg_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// CountObservations provides a mock function with given fields: ctx, arg
+func (_m *MockStore) CountObservations(ctx context.Context, arg db.CountObservationsParams) (int64, error) {
+	ret := _m.Called(ctx, arg)
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, db.CountObservationsParams) (int64, error)); ok {
+		return rf(ctx, arg)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, db.CountObservationsParams) int64); ok {
+		r0 = rf(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, db.CountObservationsParams) error); ok {
+		r1 = rf(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStore_CountObservations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountObservations'
+type MockStore_CountObservations_Call struct {
+	*mock.Call
+}
+
+// CountObservations is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.CountObservationsParams
+func (_e *MockStore_Expecter) CountObservations(ctx interface{}, arg interface{}) *MockStore_CountObservations_Call {
+	return &MockStore_CountObservations_Call{Call: _e.mock.On("CountObservations", ctx, arg)}
+}
+
+func (_c *MockStore_CountObservations_Call) Run(run func(ctx context.Context, arg db.CountObservationsParams)) *MockStore_CountObservations_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(db.CountObservationsParams))
+	})
+	return _c
+}
+
+func (_c *MockStore_CountObservations_Call) Return(_a0 int64, _a1 error) *MockStore_CountObservations_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStore_CountObservations_Call) RunAndReturn(run func(context.Context, db.CountObservationsParams) (int64, error)) *MockStore_CountObservations_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountRoles provides a mock function with given fields: ctx
 func (_m *MockStore) CountRoles(ctx context.Context) (int64, error) {
 	ret := _m.Called(ctx)
@@ -1955,6 +2008,61 @@ func (_c *MockStore_ListLufftStationMsg_Call) Return(_a0 []db.ListLufftStationMs
 }
 
 func (_c *MockStore_ListLufftStationMsg_Call) RunAndReturn(run func(context.Context, db.ListLufftStationMsgParams) ([]db.ListLufftStationMsgRow, error)) *MockStore_ListLufftStationMsg_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListObservations provides a mock function with given fields: ctx, arg
+func (_m *MockStore) ListObservations(ctx context.Context, arg db.ListObservationsParams) ([]db.ObservationsObservation, error) {
+	ret := _m.Called(ctx, arg)
+
+	var r0 []db.ObservationsObservation
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, db.ListObservationsParams) ([]db.ObservationsObservation, error)); ok {
+		return rf(ctx, arg)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, db.ListObservationsParams) []db.ObservationsObservation); ok {
+		r0 = rf(ctx, arg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.ObservationsObservation)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, db.ListObservationsParams) error); ok {
+		r1 = rf(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStore_ListObservations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListObservations'
+type MockStore_ListObservations_Call struct {
+	*mock.Call
+}
+
+// ListObservations is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.ListObservationsParams
+func (_e *MockStore_Expecter) ListObservations(ctx interface{}, arg interface{}) *MockStore_ListObservations_Call {
+	return &MockStore_ListObservations_Call{Call: _e.mock.On("ListObservations", ctx, arg)}
+}
+
+func (_c *MockStore_ListObservations_Call) Run(run func(ctx context.Context, arg db.ListObservationsParams)) *MockStore_ListObservations_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(db.ListObservationsParams))
+	})
+	return _c
+}
+
+func (_c *MockStore_ListObservations_Call) Return(_a0 []db.ObservationsObservation, _a1 error) *MockStore_ListObservations_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStore_ListObservations_Call) RunAndReturn(run func(context.Context, db.ListObservationsParams) ([]db.ObservationsObservation, error)) *MockStore_ListObservations_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -55,9 +55,9 @@ func (ts *ObservationTestSuite) TestGetStationObservation() {
 func (ts *ObservationTestSuite) TestListStationObservations() {
 	t := ts.T()
 	timeNow := time.Now()
-	station := createRandomStation(t)
 	n := 10
-	for i := 0; i < n; i++ {
+	station := createRandomStation(t)
+	for j := 0; j < n; j++ {
 		createRandomObservation(t, station.ID)
 	}
 
@@ -73,7 +73,7 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 			},
 			result: func(obs []ObservationsObservation, err error) {
 				require.NoError(t, err)
-				require.Len(t, obs, 10)
+				require.Len(t, obs, n)
 
 				for _, obs := range obs {
 					require.NotEmpty(t, obs)
@@ -138,7 +138,7 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 			},
 			result: func(obs []ObservationsObservation, err error) {
 				require.NoError(t, err)
-				require.Len(t, obs, 10)
+				require.Len(t, obs, n)
 
 				for _, obs := range obs {
 					require.NotEmpty(t, obs)
@@ -197,9 +197,9 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 func (ts *ObservationTestSuite) TestCountStationObservations() {
 	t := ts.T()
 	timeNow := time.Now()
-	station := createRandomStation(t)
 	n := 10
-	for i := 0; i < n; i++ {
+	station := createRandomStation(t)
+	for j := 0; j < n; j++ {
 		createRandomObservation(t, station.ID)
 	}
 
@@ -215,7 +215,7 @@ func (ts *ObservationTestSuite) TestCountStationObservations() {
 			},
 			result: func(count int64, err error) {
 				require.NoError(t, err)
-				require.Equal(t, count, int64(n))
+				require.Equal(t, int64(n), count)
 			},
 		},
 		{
@@ -235,7 +235,7 @@ func (ts *ObservationTestSuite) TestCountStationObservations() {
 			},
 			result: func(count int64, err error) {
 				require.NoError(t, err)
-				require.Equal(t, count, int64(n))
+				require.Equal(t, int64(n), count)
 			},
 		},
 		{
@@ -255,7 +255,7 @@ func (ts *ObservationTestSuite) TestCountStationObservations() {
 			},
 			result: func(count int64, err error) {
 				require.NoError(t, err)
-				require.Equal(t, count, int64(0))
+				require.Equal(t, int64(0), count)
 			},
 		},
 		{
@@ -275,7 +275,7 @@ func (ts *ObservationTestSuite) TestCountStationObservations() {
 			},
 			result: func(count int64, err error) {
 				require.NoError(t, err)
-				require.Equal(t, count, int64(0))
+				require.Equal(t, int64(0), count)
 			},
 		},
 	}
@@ -283,6 +283,255 @@ func (ts *ObservationTestSuite) TestCountStationObservations() {
 	for i := range testCases {
 		tc := testCases[i]
 		numObservations, err := testStore.CountStationObservations(context.Background(), tc.arg)
+		tc.result(numObservations, err)
+	}
+}
+
+func (ts *ObservationTestSuite) TestListObservations() {
+	t := ts.T()
+	timeNow := time.Now()
+	n, m := 5, 10
+	stations := make([]ObservationsStation, n)
+	var selStationIDs []int64
+	for i := range stations {
+		stations[i] = createRandomStation(t)
+		for j := 0; j < m; j++ {
+			createRandomObservation(t, stations[i].ID)
+		}
+		if i%2 == 0 {
+			selStationIDs = append(selStationIDs, stations[i].ID)
+		}
+	}
+
+	testCases := []struct {
+		name   string
+		arg    ListObservationsParams
+		result func(obs []ObservationsObservation, err error)
+	}{
+		{
+			name: "Default",
+			arg: ListObservationsParams{
+				StationIds: selStationIDs,
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, m*len(selStationIDs))
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
+		{
+			name: "WithLimit",
+			arg: ListObservationsParams{
+				StationIds: selStationIDs,
+				Limit: util.NullInt4{
+					Int4: pgtype.Int4{
+						Int32: 5,
+						Valid: true,
+					},
+				},
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, 5)
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
+		{
+			name: "WithLimitAndOffset",
+			arg: ListObservationsParams{
+				StationIds: selStationIDs,
+				Limit: util.NullInt4{
+					Int4: pgtype.Int4{
+						Int32: 5,
+						Valid: true,
+					},
+				},
+				Offset: int32(m*len(selStationIDs) - 3),
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, 3)
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
+		{
+			name: "WithStartAndEndDate",
+			arg: ListObservationsParams{
+				StationIds:  selStationIDs,
+				IsStartDate: true,
+				StartDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, -2),
+					Valid: true,
+				},
+				IsEndDate: true,
+				EndDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, 2),
+					Valid: true,
+				},
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Len(t, obs, m*len(selStationIDs))
+
+				for _, obs := range obs {
+					require.NotEmpty(t, obs)
+				}
+			},
+		},
+		{
+			name: "WithPastDate",
+			arg: ListObservationsParams{
+				StationIds:  selStationIDs,
+				IsStartDate: true,
+				StartDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, -4),
+					Valid: true,
+				},
+				IsEndDate: true,
+				EndDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, -2),
+					Valid: true,
+				},
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Empty(t, obs, 0)
+			},
+		},
+		{
+			name: "WithFutureDate",
+			arg: ListObservationsParams{
+				StationIds:  selStationIDs,
+				IsStartDate: true,
+				StartDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, 2),
+					Valid: true,
+				},
+				IsEndDate: true,
+				EndDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, 4),
+					Valid: true,
+				},
+			},
+			result: func(obs []ObservationsObservation, err error) {
+				require.NoError(t, err)
+				require.Empty(t, obs, 0)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+		gotObservations, err := testStore.ListObservations(context.Background(), tc.arg)
+		tc.result(gotObservations, err)
+	}
+}
+
+func (ts *ObservationTestSuite) TestCountObservations() {
+	t := ts.T()
+	timeNow := time.Now()
+	n, m := 5, 10
+	stations := make([]ObservationsStation, n)
+	var selStationIDs []int64
+	for i := range stations {
+		stations[i] = createRandomStation(t)
+		for j := 0; j < m; j++ {
+			createRandomObservation(t, stations[i].ID)
+		}
+		if i%2 == 0 {
+			selStationIDs = append(selStationIDs, stations[i].ID)
+		}
+	}
+
+	testCases := []struct {
+		name   string
+		arg    CountObservationsParams
+		result func(count int64, err error)
+	}{
+		{
+			name: "Default",
+			arg: CountObservationsParams{
+				StationIds: selStationIDs,
+			},
+			result: func(count int64, err error) {
+				require.NoError(t, err)
+				require.Equal(t, int64(m*len(selStationIDs)), count)
+			},
+		},
+		{
+			name: "WithStartAndEndDate",
+			arg: CountObservationsParams{
+				StationIds:  selStationIDs,
+				IsStartDate: true,
+				StartDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, -2),
+					Valid: true,
+				},
+				IsEndDate: true,
+				EndDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, 2),
+					Valid: true,
+				},
+			},
+			result: func(count int64, err error) {
+				require.NoError(t, err)
+				require.Equal(t, int64(m*len(selStationIDs)), count)
+			},
+		},
+		{
+			name: "WithPastDate",
+			arg: CountObservationsParams{
+				StationIds:  selStationIDs,
+				IsStartDate: true,
+				StartDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, -4),
+					Valid: true,
+				},
+				IsEndDate: true,
+				EndDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, -2),
+					Valid: true,
+				},
+			},
+			result: func(count int64, err error) {
+				require.NoError(t, err)
+				require.Equal(t, int64(0), count)
+			},
+		},
+		{
+			name: "WithFutureDate",
+			arg: CountObservationsParams{
+				StationIds:  selStationIDs,
+				IsStartDate: true,
+				StartDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, 2),
+					Valid: true,
+				},
+				IsEndDate: true,
+				EndDate: pgtype.Timestamptz{
+					Time:  timeNow.AddDate(0, 0, 4),
+					Valid: true,
+				},
+			},
+			result: func(count int64, err error) {
+				require.NoError(t, err)
+				require.Equal(t, int64(0), count)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+		numObservations, err := testStore.CountObservations(context.Background(), tc.arg)
 		tc.result(numObservations, err)
 	}
 }

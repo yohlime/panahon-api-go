@@ -15,6 +15,7 @@ type Querier interface {
 	BatchCreateUserRoles(ctx context.Context, arg []BatchCreateUserRolesParams) *BatchCreateUserRolesBatchResults
 	BatchDeleteUserRoles(ctx context.Context, arg []BatchDeleteUserRolesParams) *BatchDeleteUserRolesBatchResults
 	CountLufftStationMsg(ctx context.Context, stationID int64) (int64, error)
+	CountObservations(ctx context.Context, arg CountObservationsParams) (int64, error)
 	CountRoles(ctx context.Context) (int64, error)
 	CountStationObservations(ctx context.Context, arg CountStationObservationsParams) (int64, error)
 	CountStations(ctx context.Context) (int64, error)
@@ -47,6 +48,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	ListLufftStationMsg(ctx context.Context, arg ListLufftStationMsgParams) ([]ListLufftStationMsgRow, error)
+	ListObservations(ctx context.Context, arg ListObservationsParams) ([]ObservationsObservation, error)
 	ListRoles(ctx context.Context, arg ListRolesParams) ([]Role, error)
 	ListStationHealths(ctx context.Context, arg ListStationHealthsParams) ([]ObservationsStationhealth, error)
 	ListStationObservations(ctx context.Context, arg ListStationObservationsParams) ([]ObservationsObservation, error)

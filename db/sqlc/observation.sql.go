@@ -12,6 +12,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countObservations = `-- name: CountObservations :one
+SELECT count(*) FROM observations_observation
+WHERE station_id = ANY($1::bigint[])
+  AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
+  AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
+`
+
+type CountObservationsParams struct {
+	StationIds  []int64            `json:"station_ids"`
+	IsStartDate bool               `json:"is_start_date"`
+	StartDate   pgtype.Timestamptz `json:"start_date"`
+	IsEndDate   bool               `json:"is_end_date"`
+	EndDate     pgtype.Timestamptz `json:"end_date"`
+}
+
+func (q *Queries) CountObservations(ctx context.Context, arg CountObservationsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countObservations,
+		arg.StationIds,
+		arg.IsStartDate,
+		arg.StartDate,
+		arg.IsEndDate,
+		arg.EndDate,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countStationObservations = `-- name: CountStationObservations :one
 SELECT count(*) FROM observations_observation
 WHERE station_id = $1
@@ -170,6 +198,73 @@ func (q *Queries) GetStationObservation(ctx context.Context, arg GetStationObser
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listObservations = `-- name: ListObservations :many
+SELECT id, pres, rr, rh, temp, td, wdir, wspd, wspdx, srad, mslp, hi, station_id, timestamp, wchill, qc_level, created_at, updated_at FROM observations_observation
+WHERE station_id = ANY($1::bigint[])
+  AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
+  AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
+ORDER BY timestamp DESC
+LIMIT $7
+OFFSET $6
+`
+
+type ListObservationsParams struct {
+	StationIds  []int64            `json:"station_ids"`
+	IsStartDate bool               `json:"is_start_date"`
+	StartDate   pgtype.Timestamptz `json:"start_date"`
+	IsEndDate   bool               `json:"is_end_date"`
+	EndDate     pgtype.Timestamptz `json:"end_date"`
+	Offset      int32              `json:"offset"`
+	Limit       util.NullInt4      `json:"limit"`
+}
+
+func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsParams) ([]ObservationsObservation, error) {
+	rows, err := q.db.Query(ctx, listObservations,
+		arg.StationIds,
+		arg.IsStartDate,
+		arg.StartDate,
+		arg.IsEndDate,
+		arg.EndDate,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ObservationsObservation{}
+	for rows.Next() {
+		var i ObservationsObservation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Pres,
+			&i.Rr,
+			&i.Rh,
+			&i.Temp,
+			&i.Td,
+			&i.Wdir,
+			&i.Wspd,
+			&i.Wspdx,
+			&i.Srad,
+			&i.Mslp,
+			&i.Hi,
+			&i.StationID,
+			&i.Timestamp,
+			&i.Wchill,
+			&i.QcLevel,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listStationObservations = `-- name: ListStationObservations :many

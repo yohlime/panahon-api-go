@@ -32,9 +32,24 @@ ORDER BY timestamp DESC
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
+-- name: ListObservations :many
+SELECT * FROM observations_observation
+WHERE station_id = ANY(@station_ids::bigint[])
+  AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
+  AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END)
+ORDER BY timestamp DESC
+LIMIT sqlc.narg('limit')
+OFFSET sqlc.arg('offset');
+
 -- name: CountStationObservations :one
 SELECT count(*) FROM observations_observation
 WHERE station_id = @station_id
+  AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
+  AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END);
+
+-- name: CountObservations :one
+SELECT count(*) FROM observations_observation
+WHERE station_id = ANY(@station_ids::bigint[])
   AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
   AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END);
 

@@ -76,8 +76,9 @@ type listStationObsRes struct {
 //	@Tags		observations
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query		listStationObsReq	false	"List station observations parameters"
-//	@Success	200	{object}	listStationObsRes
+//	@Param		station_id	path		int					true	"Station ID"
+//	@Param		req			query		listStationObsReq	false	"List station observations parameters"
+//	@Success	200			{object}	listStationObsRes
 //	@Router		/stations/{station_id}/observations [get]
 func (s *Server) ListStationObservations(ctx *gin.Context) {
 	var uri listStationObsUri
@@ -378,6 +379,8 @@ func (s *Server) DeleteStationObservation(ctx *gin.Context) {
 }
 
 type listObservationsReq struct {
+	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
+	PerPage    int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
 	StationIDs string `form:"station_ids" binding:"omitempty"`
 	StartDate  string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate    string `form:"end_date" binding:"omitempty,date_time"`
@@ -388,8 +391,8 @@ type listObservationsReq struct {
 //	@Summary	list station observation
 //	@Tags		observations
 //	@Produce	json
-//	@Param		req	query	listObservationsReq	false	"List observations parameters"
-//	@Success	200	{array}	stationObsResponse
+//	@Param		req	query		listObservationsReq	false	"List observations parameters"
+//	@Success	200	{object}	listStationObsRes
 //	@Router		/observations [get]
 func (s *Server) ListObservations(ctx *gin.Context) {
 	var req listObservationsReq
@@ -398,86 +401,87 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 		return
 	}
 
-	var stations []db.ObservationsStation
+	var stationIDs []int64
 	if len(req.StationIDs) == 0 {
-		stations, _ = s.store.ListStations(ctx, db.ListStationsParams{
+		stations, err := s.store.ListStations(ctx, db.ListStationsParams{
 			Limit:  10,
 			Offset: 0,
 		})
+
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+
+		for i := range stations {
+			stationIDs = append(stationIDs, stations[i].ID)
+		}
 	} else {
 		stnIDStrs := strings.Split(req.StationIDs, ",")
 		for i := range stnIDStrs {
-			stnID, err := strconv.Atoi(stnIDStrs[i])
+			stnID, err := strconv.ParseInt(stnIDStrs[i], 10, 64)
 			if err != nil {
 				continue
 			}
-			station, err := s.store.GetStation(ctx, int64(stnID))
-			if err != nil {
-				continue
-			}
-			stations = append(stations, station)
+			stationIDs = append(stationIDs, stnID)
 		}
 	}
 
 	startDate, isStartDate := util.ParseDateTime(req.StartDate)
 	endDate, isEndDate := util.ParseDateTime(req.EndDate)
 
-	var obs []db.ObservationsObservation
-	for _, station := range stations {
-		var args db.ListStationObservationsParams
-		if !isStartDate && !isEndDate {
-			args = db.ListStationObservationsParams{
-				StationID: station.ID,
-				Limit: util.NullInt4{
-					Int4: pgtype.Int4{
-						Int32: 30,
-						Valid: true,
-					},
-				},
-				Offset: 0,
-			}
-		} else if !isStartDate || !isEndDate {
-			args = db.ListStationObservationsParams{
-				StationID: station.ID,
-				Limit: util.NullInt4{
-					Int4: pgtype.Int4{
-						Int32: 30,
-						Valid: true,
-					},
-				},
-				Offset:      0,
-				IsStartDate: isStartDate,
-				StartDate: pgtype.Timestamptz{
-					Time:  startDate,
-					Valid: !startDate.IsZero(),
-				},
-				IsEndDate: isEndDate,
-				EndDate: pgtype.Timestamptz{
-					Time:  endDate,
-					Valid: !endDate.IsZero(),
-				},
-			}
-		} else {
-			args = db.ListStationObservationsParams{
-				StationID:   station.ID,
-				Offset:      0,
-				IsStartDate: isStartDate,
-				StartDate: pgtype.Timestamptz{
-					Time:  startDate,
-					Valid: !startDate.IsZero(),
-				},
-				IsEndDate: isEndDate,
-				EndDate: pgtype.Timestamptz{
-					Time:  endDate,
-					Valid: !endDate.IsZero(),
-				},
-			}
-		}
-		_obs, _ := s.store.ListStationObservations(ctx, args)
-		if len(_obs) > 0 {
-			obs = append(obs, _obs...)
-		}
+	offset := (req.Page - 1) * req.PerPage
+	arg := db.ListObservationsParams{
+		StationIds: stationIDs,
+		Limit: util.NullInt4{
+			Int4: pgtype.Int4{
+				Int32: req.PerPage,
+				Valid: true,
+			},
+		},
+		Offset:      offset,
+		IsStartDate: isStartDate,
+		StartDate: pgtype.Timestamptz{
+			Time:  startDate,
+			Valid: !startDate.IsZero(),
+		},
+		IsEndDate: isEndDate,
+		EndDate: pgtype.Timestamptz{
+			Time:  endDate,
+			Valid: !endDate.IsZero(),
+		},
 	}
 
-	ctx.JSON(http.StatusOK, obs)
+	obs, err := s.store.ListObservations(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	numObs := len(obs)
+	obsRes := make([]stationObsResponse, numObs)
+	for i, observation := range obs {
+		obsRes[i] = newStationObsResponse(observation)
+	}
+
+	totalObs, err := s.store.CountObservations(ctx, db.CountObservationsParams{
+		StationIds:  arg.StationIds,
+		IsStartDate: arg.IsStartDate,
+		StartDate:   arg.StartDate,
+		IsEndDate:   arg.IsEndDate,
+		EndDate:     arg.EndDate,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := listStationObsRes{
+		Page:    req.Page,
+		PerPage: req.PerPage,
+		Total:   totalObs,
+		Data:    obsRes,
+	}
+
+	ctx.JSON(http.StatusOK, rsp)
 }
