@@ -69,20 +69,27 @@ func (ts *StationTestSuite) TestListStations() {
 
 func (ts *StationTestSuite) TestListStationsWithinRadius() {
 	t := ts.T()
-	cLat := util.RandomFloat(5.5, 18.6)
-	cLon := util.RandomFloat(117.15, 126.6)
+	cLat := getRandomLat()
+	cLon := getRandomLon()
 	cR := float32(1.0)
 	n := 10
 	for i := 0; i < n; i++ {
-		theta := 2 * math.Pi * float64(util.RandomFloat(0.0, 1.0))
-		var d float32
+		var lon, lat float32
 		if i%2 == 0 {
-			d = cR * float32(math.Sqrt(float64(util.RandomFloat(2.0, 3.0))))
+			lon, lat = getRandomCoordsFromCircle(getRandomCoordsFromCircleParams{
+				cX:        cLon,
+				cY:        cLat,
+				r:         cR,
+				minOffset: 2.0,
+				maxOffset: 3.0,
+			})
 		} else {
-			d = cR * float32(math.Sqrt(float64(util.RandomFloat(0.0, 1.0))))
+			lon, lat = getRandomCoordsFromCircle(getRandomCoordsFromCircleParams{
+				cX: cLon,
+				cY: cLat,
+				r:  cR,
+			})
 		}
-		lon := cLon + d*float32(math.Cos(theta))
-		lat := cLat + d*float32(math.Sin(theta))
 		p := geom.NewPoint(geom.XY).MustSetCoords(geom.Coord{float64(lon), float64(lat)}).SetSRID(4326)
 		createRandomStation(t, util.Point{Point: p})
 	}
@@ -151,24 +158,30 @@ func (ts *StationTestSuite) TestCountStations() {
 
 func (ts *StationTestSuite) TestCountStationsWithinRadius() {
 	t := ts.T()
-	cLat := util.RandomFloat(5.5, 18.6)
-	cLon := util.RandomFloat(117.15, 126.6)
+	cLat := getRandomLat()
+	cLon := getRandomLon()
 	cR := float32(1.0)
 	n := 10
 	for i := 0; i < n; i++ {
-		theta := 2 * math.Pi * float64(util.RandomFloat(0.0, 1.0))
-		var d float32
+		var lon, lat float32
 		if i%2 == 0 {
-			d = cR * float32(math.Sqrt(float64(util.RandomFloat(2.0, 3.0))))
+			lon, lat = getRandomCoordsFromCircle(getRandomCoordsFromCircleParams{
+				cX:        cLon,
+				cY:        cLat,
+				r:         cR,
+				minOffset: 2.0,
+				maxOffset: 3.0,
+			})
 		} else {
-			d = cR * float32(math.Sqrt(float64(util.RandomFloat(0.0, 1.0))))
+			lon, lat = getRandomCoordsFromCircle(getRandomCoordsFromCircleParams{
+				cX: cLon,
+				cY: cLat,
+				r:  cR,
+			})
 		}
-		lon := cLon + d*float32(math.Cos(theta))
-		lat := cLat + d*float32(math.Sin(theta))
 		p := geom.NewPoint(geom.XY).MustSetCoords(geom.Coord{float64(lon), float64(lat)}).SetSRID(4326)
 		createRandomStation(t, util.Point{Point: p})
 	}
-
 	arg := CountStationsWithinRadiusParams{
 		Cx: cLon,
 		Cy: cLat,
@@ -334,8 +347,18 @@ func createRandomStation(t *testing.T, geom any) ObservationsStation {
 	switch g := geom.(type) {
 	case bool:
 		if g {
-			arg.Lat = util.RandomNullFloat4(5.5, 18.6)
-			arg.Lon = util.RandomNullFloat4(117.15, 126.6)
+			arg.Lat = util.NullFloat4{
+				Float4: pgtype.Float4{
+					Float32: getRandomLat(),
+					Valid:   true,
+				},
+			}
+			arg.Lon = util.NullFloat4{
+				Float4: pgtype.Float4{
+					Float32: getRandomLon(),
+					Valid:   true,
+				},
+			}
 		}
 	case util.Point:
 		arg.Lon = util.NullFloat4{
@@ -363,4 +386,32 @@ func createRandomStation(t *testing.T, geom any) ObservationsStation {
 	require.NotZero(t, station.CreatedAt.Time)
 
 	return station
+}
+
+func getRandomLat() float32 {
+	return util.RandomFloat(5.5, 18.6)
+}
+
+func getRandomLon() float32 {
+	return util.RandomFloat(117.15, 126.6)
+}
+
+type getRandomCoordsFromCircleParams struct {
+	cX, cY, r            float32
+	minOffset, maxOffset float32
+}
+
+func getRandomCoordsFromCircle(arg getRandomCoordsFromCircleParams) (lon, lat float32) {
+	theta := 2 * math.Pi * float64(util.RandomFloat(0.0, 1.0))
+
+	minOffset, maxOffset := float32(0.0), float32(1.0)
+	if (arg.minOffset > 0) && (arg.maxOffset > arg.minOffset) {
+		minOffset = arg.minOffset
+		maxOffset = arg.maxOffset
+	}
+
+	d := arg.r * float32(math.Sqrt(float64(util.RandomFloat(minOffset, maxOffset))))
+	lon = arg.cX + d*float32(math.Cos(theta))
+	lat = arg.cY + d*float32(math.Sin(theta))
+	return
 }
