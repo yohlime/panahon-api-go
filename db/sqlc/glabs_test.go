@@ -30,7 +30,7 @@ func (ts *GLabsTestSuite) TearDownTest() {
 
 func (ts *GLabsTestSuite) TestCreateGLabsLoad() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	createRandomGlabsLoad(t, station.MobileNumber.Text.String)
 }
 

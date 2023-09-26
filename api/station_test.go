@@ -26,20 +26,15 @@ func TestListStationsAPI(t *testing.T) {
 		stations[i] = randomStation()
 	}
 
-	type Query struct {
-		Page    int32
-		PerPage int32
-	}
-
 	testCases := []struct {
 		name          string
-		query         Query
+		query         listStationsReq
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
-			name: "OK",
-			query: Query{
+			name: "Default",
+			query: listStationsReq{
 				Page:    1,
 				PerPage: int32(n),
 			},
@@ -55,8 +50,72 @@ func TestListStationsAPI(t *testing.T) {
 			},
 		},
 		{
+			name: "WithinCircle",
+			query: listStationsReq{
+				Circle:  "121.0,5.5,1.0",
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(stations, nil)
+				store.EXPECT().CountStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchStations(t, recorder.Body, stations)
+			},
+		},
+		{
+			name: "InvalidCircle",
+			query: listStationsReq{
+				Circle:  "121.0,5.5",
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListStationsWithinRadius", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "WithinBBox",
+			query: listStationsReq{
+				BBox:    "121.0,5.5,122.5,7.6",
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(stations, nil)
+				store.EXPECT().CountStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchStations(t, recorder.Body, stations)
+			},
+		},
+		{
+			name: "InvalidBBox",
+			query: listStationsReq{
+				BBox:    "121.0,5.5",
+				Page:    1,
+				PerPage: int32(n),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListStationsWithinBBox", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
 			name: "InternalError",
-			query: Query{
+			query: listStationsReq{
 				Page:    1,
 				PerPage: int32(n),
 			},
@@ -71,7 +130,7 @@ func TestListStationsAPI(t *testing.T) {
 		},
 		{
 			name: "InvalidPage",
-			query: Query{
+			query: listStationsReq{
 				Page:    -1,
 				PerPage: int32(n),
 			},
@@ -84,7 +143,7 @@ func TestListStationsAPI(t *testing.T) {
 		},
 		{
 			name: "InvalidLimit",
-			query: Query{
+			query: listStationsReq{
 				Page:    1,
 				PerPage: 10000,
 			},
@@ -97,7 +156,7 @@ func TestListStationsAPI(t *testing.T) {
 		},
 		{
 			name: "EmptySlice",
-			query: Query{
+			query: listStationsReq{
 				Page:    1,
 				PerPage: int32(n),
 			},
@@ -114,7 +173,7 @@ func TestListStationsAPI(t *testing.T) {
 		},
 		{
 			name: "CountInternalError",
-			query: Query{
+			query: listStationsReq{
 				Page:    1,
 				PerPage: int32(n),
 			},
@@ -148,6 +207,12 @@ func TestListStationsAPI(t *testing.T) {
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
 			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
+			if len(tc.query.Circle) > 0 {
+				q.Add("circle", tc.query.Circle)
+			}
+			if len(tc.query.BBox) > 0 {
+				q.Add("bbox", tc.query.BBox)
+			}
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)

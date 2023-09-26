@@ -732,6 +732,12 @@ paths:
       consumes:
       - application/json
       parameters:
+      - in: query
+        name: bbox
+        type: string
+      - in: query
+        name: circle
+        type: string
       - description: page number
         in: query
         minimum: 1

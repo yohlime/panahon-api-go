@@ -17,9 +17,14 @@ INSERT INTO observations_station (
   provider_id,
   province,
   region,
-  address
+  address,
+  geom
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+  $1, @lat, @lon, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 
+  CASE
+    WHEN @lon::real IS NOT NULL AND @lat::real IS NOT NULL THEN ST_Point(@lon::real, @lat::real, 4326)
+    ELSE ST_GeomFromEWKT('POINT EMPTY')
+  END
 ) RETURNING *;
 
 -- name: GetStation :one
@@ -36,8 +41,30 @@ ORDER BY id
 LIMIT $1
 OFFSET $2;
 
+-- name: ListStationsWithinRadius :many
+SELECT * FROM observations_station
+WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real)
+ORDER BY id
+LIMIT sqlc.arg('limit')
+OFFSET sqlc.arg('offset');
+
+-- name: ListStationsWithinBBox :many
+SELECT * FROM observations_station
+WHERE geom && ST_MakeEnvelope(@xmin::real, @ymin::real, @xmax::real, @ymax::real, 4326)
+ORDER BY id
+LIMIT sqlc.arg('limit')
+OFFSET sqlc.arg('offset');
+
 -- name: CountStations :one
 SELECT count(*) FROM observations_station;
+
+-- name: CountStationsWithinRadius :one
+SELECT count(*) FROM observations_station
+WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real);
+
+-- name: CountStationsWithinBBox :one
+SELECT count(*) FROM observations_station
+WHERE geom && ST_MakeEnvelope(@xmin::real, @ymin::real, @xmax::real, @ymax::real, 4326);
 
 -- name: UpdateStation :one
 UPDATE observations_station
@@ -60,6 +87,7 @@ SET
   province = COALESCE(sqlc.narg(province), province),
   region = COALESCE(sqlc.narg(region), region),
   address = COALESCE(sqlc.narg(address), address),
+  geom = COALESCE(ST_POINT(sqlc.narg(lon), sqlc.narg(lat), 4326), geom),
   updated_at = now()
 WHERE id = sqlc.arg(id)
 RETURNING *;

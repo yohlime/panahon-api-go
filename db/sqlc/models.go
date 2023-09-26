@@ -99,6 +99,7 @@ type ObservationsStation struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
+	Geom          util.Point         `json:"geom"`
 }
 
 type ObservationsStationhealth struct {

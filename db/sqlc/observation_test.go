@@ -31,13 +31,13 @@ func (ts *ObservationTestSuite) TearDownTest() {
 
 func (ts *ObservationTestSuite) TestCreateStationObservation() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	createRandomObservation(t, station.ID)
 }
 
 func (ts *ObservationTestSuite) TestGetStationObservation() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	obs := createRandomObservation(t, station.ID)
 
 	arg := GetStationObservationParams{
@@ -56,7 +56,7 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 	t := ts.T()
 	timeNow := time.Now()
 	n := 10
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	for j := 0; j < n; j++ {
 		createRandomObservation(t, station.ID)
 	}
@@ -198,7 +198,7 @@ func (ts *ObservationTestSuite) TestCountStationObservations() {
 	t := ts.T()
 	timeNow := time.Now()
 	n := 10
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	for j := 0; j < n; j++ {
 		createRandomObservation(t, station.ID)
 	}
@@ -294,7 +294,7 @@ func (ts *ObservationTestSuite) TestListObservations() {
 	stations := make([]ObservationsStation, n)
 	var selStationIDs []int64
 	for i := range stations {
-		stations[i] = createRandomStation(t)
+		stations[i] = createRandomStation(t, false)
 		for j := 0; j < m; j++ {
 			createRandomObservation(t, stations[i].ID)
 		}
@@ -443,7 +443,7 @@ func (ts *ObservationTestSuite) TestCountObservations() {
 	stations := make([]ObservationsStation, n)
 	var selStationIDs []int64
 	for i := range stations {
-		stations[i] = createRandomStation(t)
+		stations[i] = createRandomStation(t, false)
 		for j := 0; j < m; j++ {
 			createRandomObservation(t, stations[i].ID)
 		}
@@ -545,7 +545,7 @@ func (ts *ObservationTestSuite) TestUpdateStationObservation() {
 
 	t := ts.T()
 
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 
 	testCases := []struct {
 		name        string
@@ -590,7 +590,7 @@ func (ts *ObservationTestSuite) TestUpdateStationObservation() {
 
 func (ts *ObservationTestSuite) TestDeleteStationObservation() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	obs := createRandomObservation(t, station.ID)
 
 	arg := DeleteStationObservationParams{

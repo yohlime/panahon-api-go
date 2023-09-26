@@ -23,6 +23,48 @@ func (q *Queries) CountStations(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countStationsWithinBBox = `-- name: CountStationsWithinBBox :one
+SELECT count(*) FROM observations_station
+WHERE geom && ST_MakeEnvelope($1::real, $2::real, $3::real, $4::real, 4326)
+`
+
+type CountStationsWithinBBoxParams struct {
+	Xmin float32 `json:"xmin"`
+	Ymin float32 `json:"ymin"`
+	Xmax float32 `json:"xmax"`
+	Ymax float32 `json:"ymax"`
+}
+
+func (q *Queries) CountStationsWithinBBox(ctx context.Context, arg CountStationsWithinBBoxParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countStationsWithinBBox,
+		arg.Xmin,
+		arg.Ymin,
+		arg.Xmax,
+		arg.Ymax,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countStationsWithinRadius = `-- name: CountStationsWithinRadius :one
+SELECT count(*) FROM observations_station
+WHERE ST_DWithin(geom, ST_Point($1::real, $2::real, 4326), $3::real)
+`
+
+type CountStationsWithinRadiusParams struct {
+	Cx float32 `json:"cx"`
+	Cy float32 `json:"cy"`
+	R  float32 `json:"r"`
+}
+
+func (q *Queries) CountStationsWithinRadius(ctx context.Context, arg CountStationsWithinRadiusParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countStationsWithinRadius, arg.Cx, arg.Cy, arg.R)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createStation = `-- name: CreateStation :one
 INSERT INTO observations_station (
   name,
@@ -42,16 +84,19 @@ INSERT INTO observations_station (
   provider_id,
   province,
   region,
-  address
+  address,
+  geom
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
-) RETURNING id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at
+  $1, $17, $18, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 
+  CASE
+    WHEN $18::real IS NOT NULL AND $17::real IS NOT NULL THEN ST_Point($18::real, $17::real, 4326)
+    ELSE ST_GeomFromEWKT('POINT EMPTY')
+  END
+) RETURNING id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom
 `
 
 type CreateStationParams struct {
 	Name          string          `json:"name"`
-	Lat           util.NullFloat4 `json:"lat"`
-	Lon           util.NullFloat4 `json:"lon"`
 	Elevation     util.NullFloat4 `json:"elevation"`
 	DateInstalled pgtype.Date     `json:"date_installed"`
 	MoStationID   util.NullString `json:"mo_station_id"`
@@ -67,13 +112,13 @@ type CreateStationParams struct {
 	Province      util.NullString `json:"province"`
 	Region        util.NullString `json:"region"`
 	Address       util.NullString `json:"address"`
+	Lat           util.NullFloat4 `json:"lat"`
+	Lon           util.NullFloat4 `json:"lon"`
 }
 
 func (q *Queries) CreateStation(ctx context.Context, arg CreateStationParams) (ObservationsStation, error) {
 	row := q.db.QueryRow(ctx, createStation,
 		arg.Name,
-		arg.Lat,
-		arg.Lon,
 		arg.Elevation,
 		arg.DateInstalled,
 		arg.MoStationID,
@@ -89,6 +134,8 @@ func (q *Queries) CreateStation(ctx context.Context, arg CreateStationParams) (O
 		arg.Province,
 		arg.Region,
 		arg.Address,
+		arg.Lat,
+		arg.Lon,
 	)
 	var i ObservationsStation
 	err := row.Scan(
@@ -114,6 +161,7 @@ func (q *Queries) CreateStation(ctx context.Context, arg CreateStationParams) (O
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Geom,
 	)
 	return i, err
 }
@@ -128,7 +176,7 @@ func (q *Queries) DeleteStation(ctx context.Context, id int64) error {
 }
 
 const getStation = `-- name: GetStation :one
-SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at FROM observations_station
+SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 WHERE id = $1 LIMIT 1
 `
 
@@ -158,12 +206,13 @@ func (q *Queries) GetStation(ctx context.Context, id int64) (ObservationsStation
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Geom,
 	)
 	return i, err
 }
 
 const getStationByMobileNumber = `-- name: GetStationByMobileNumber :one
-SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at FROM observations_station
+SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 WHERE mobile_number = $1 LIMIT 1
 `
 
@@ -193,12 +242,13 @@ func (q *Queries) GetStationByMobileNumber(ctx context.Context, mobileNumber uti
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Geom,
 	)
 	return i, err
 }
 
 const listStations = `-- name: ListStations :many
-SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at FROM observations_station
+SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -241,6 +291,141 @@ func (q *Queries) ListStations(ctx context.Context, arg ListStationsParams) ([]O
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Geom,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStationsWithinBBox = `-- name: ListStationsWithinBBox :many
+SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
+WHERE geom && ST_MakeEnvelope($1::real, $2::real, $3::real, $4::real, 4326)
+ORDER BY id
+LIMIT $6
+OFFSET $5
+`
+
+type ListStationsWithinBBoxParams struct {
+	Xmin   float32 `json:"xmin"`
+	Ymin   float32 `json:"ymin"`
+	Xmax   float32 `json:"xmax"`
+	Ymax   float32 `json:"ymax"`
+	Offset int32   `json:"offset"`
+	Limit  int32   `json:"limit"`
+}
+
+func (q *Queries) ListStationsWithinBBox(ctx context.Context, arg ListStationsWithinBBoxParams) ([]ObservationsStation, error) {
+	rows, err := q.db.Query(ctx, listStationsWithinBBox,
+		arg.Xmin,
+		arg.Ymin,
+		arg.Xmax,
+		arg.Ymax,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ObservationsStation{}
+	for rows.Next() {
+		var i ObservationsStation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Lat,
+			&i.Lon,
+			&i.Elevation,
+			&i.DateInstalled,
+			&i.MoStationID,
+			&i.SmsSystemType,
+			&i.MobileNumber,
+			&i.StationType,
+			&i.StationType2,
+			&i.StationUrl,
+			&i.Status,
+			&i.LoggerVersion,
+			&i.PriorityLevel,
+			&i.ProviderID,
+			&i.Province,
+			&i.Region,
+			&i.Address,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Geom,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStationsWithinRadius = `-- name: ListStationsWithinRadius :many
+SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
+WHERE ST_DWithin(geom, ST_Point($1::real, $2::real, 4326), $3::real)
+ORDER BY id
+LIMIT $5
+OFFSET $4
+`
+
+type ListStationsWithinRadiusParams struct {
+	Cx     float32 `json:"cx"`
+	Cy     float32 `json:"cy"`
+	R      float32 `json:"r"`
+	Offset int32   `json:"offset"`
+	Limit  int32   `json:"limit"`
+}
+
+func (q *Queries) ListStationsWithinRadius(ctx context.Context, arg ListStationsWithinRadiusParams) ([]ObservationsStation, error) {
+	rows, err := q.db.Query(ctx, listStationsWithinRadius,
+		arg.Cx,
+		arg.Cy,
+		arg.R,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ObservationsStation{}
+	for rows.Next() {
+		var i ObservationsStation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Lat,
+			&i.Lon,
+			&i.Elevation,
+			&i.DateInstalled,
+			&i.MoStationID,
+			&i.SmsSystemType,
+			&i.MobileNumber,
+			&i.StationType,
+			&i.StationType2,
+			&i.StationUrl,
+			&i.Status,
+			&i.LoggerVersion,
+			&i.PriorityLevel,
+			&i.ProviderID,
+			&i.Province,
+			&i.Region,
+			&i.Address,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Geom,
 		); err != nil {
 			return nil, err
 		}
@@ -273,9 +458,10 @@ SET
   province = COALESCE($16, province),
   region = COALESCE($17, region),
   address = COALESCE($18, address),
+  geom = COALESCE(ST_POINT($3, $2, 4326), geom),
   updated_at = now()
 WHERE id = $19
-RETURNING id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at
+RETURNING id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom
 `
 
 type UpdateStationParams struct {
@@ -346,6 +532,7 @@ func (q *Queries) UpdateStation(ctx context.Context, arg UpdateStationParams) (O
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Geom,
 	)
 	return i, err
 }

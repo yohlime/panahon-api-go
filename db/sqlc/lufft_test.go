@@ -31,7 +31,7 @@ func (ts *LufftStationMsgTestSuite) TearDownTest() {
 
 func (ts *LufftStationMsgTestSuite) TestListLufftStationMsg() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	n := 10
 	stnMsgs := make([]ObservationsStationhealth, n)
 	for i := 0; i < n; i++ {
@@ -55,7 +55,7 @@ func (ts *LufftStationMsgTestSuite) TestListLufftStationMsg() {
 
 func (ts *LufftStationMsgTestSuite) TestCountLufftStationMsg() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	n := 10
 	stnMsgs := make([]ObservationsStationhealth, n)
 	for i := 0; i < n; i++ {

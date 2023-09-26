@@ -429,6 +429,16 @@ const docTemplate = `{
                 "summary": "List stations",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "bbox",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "circle",
+                        "in": "query"
+                    },
+                    {
                         "minimum": 1,
                         "type": "integer",
                         "description": "page number",

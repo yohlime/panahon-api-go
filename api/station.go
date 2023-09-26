@@ -2,7 +2,10 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/util"
@@ -47,8 +50,10 @@ func newStationResponse(station db.ObservationsStation) stationResponse {
 }
 
 type listStationsReq struct {
-	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`            // page number
-	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
+	Circle  string `form:"circle" binding:"omitempty"`
+	BBox    string `form:"bbox" binding:"omitempty"`
+	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
+	PerPage int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
 } //@name ListStationsParams
 
 type listStationsRes struct {
@@ -75,12 +80,83 @@ func (s *Server) ListStations(ctx *gin.Context) {
 	}
 
 	offset := (req.Page - 1) * req.PerPage
-	arg := db.ListStationsParams{
-		Limit:  req.PerPage,
-		Offset: offset,
-	}
 
-	stations, err := s.store.ListStations(ctx, arg)
+	var stations []db.ObservationsStation
+	var err error
+	var cX, cY, cR float64
+	var xMin, yMin, xMax, yMax float64
+	if len(req.Circle) > 0 {
+		cArgs := strings.Split(req.Circle, ",")
+		if len(cArgs) != 3 {
+			ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("invalid parameter: circle = %s", req.Circle)))
+			return
+		}
+		for i := range cArgs {
+			switch i {
+			case 0:
+				cX, err = strconv.ParseFloat(cArgs[i], 32)
+			case 1:
+				cY, err = strconv.ParseFloat(cArgs[i], 32)
+			case 2:
+				cR, err = strconv.ParseFloat(cArgs[i], 32)
+			default:
+				continue
+			}
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, err)
+				return
+			}
+		}
+		stations, err = s.store.ListStationsWithinRadius(
+			ctx,
+			db.ListStationsWithinRadiusParams{
+				Cx:     float32(cX),
+				Cy:     float32(cY),
+				R:      float32(cR),
+				Limit:  req.PerPage,
+				Offset: offset,
+			})
+	} else if len(req.BBox) > 0 {
+		rArgs := strings.Split(req.BBox, ",")
+		if len(rArgs) != 4 {
+			ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("invalid parameter: bbox = %s", req.BBox)))
+			return
+		}
+		for i := range rArgs {
+			switch i {
+			case 0:
+				xMin, err = strconv.ParseFloat(rArgs[i], 32)
+			case 1:
+				yMin, err = strconv.ParseFloat(rArgs[i], 32)
+			case 2:
+				xMax, err = strconv.ParseFloat(rArgs[i], 32)
+			case 3:
+				yMax, err = strconv.ParseFloat(rArgs[i], 32)
+			default:
+				continue
+			}
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, err)
+				return
+			}
+		}
+		stations, err = s.store.ListStationsWithinBBox(
+			ctx,
+			db.ListStationsWithinBBoxParams{
+				Xmin:   float32(xMin),
+				Ymin:   float32(yMin),
+				Xmax:   float32(xMax),
+				Ymax:   float32(yMax),
+				Limit:  req.PerPage,
+				Offset: offset,
+			})
+	} else {
+		arg := db.ListStationsParams{
+			Limit:  req.PerPage,
+			Offset: offset,
+		}
+		stations, err = s.store.ListStations(ctx, arg)
+	}
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -92,7 +168,28 @@ func (s *Server) ListStations(ctx *gin.Context) {
 		stationsRes[i] = newStationResponse(station)
 	}
 
-	totalStations, err := s.store.CountStations(ctx)
+	var totalStations int64
+	if len(req.Circle) > 0 {
+		totalStations, err = s.store.CountStationsWithinRadius(
+			ctx,
+			db.CountStationsWithinRadiusParams{
+				Cx: float32(cX),
+				Cy: float32(cY),
+				R:  float32(cR),
+			})
+	} else if len(req.BBox) > 0 {
+		totalStations, err = s.store.CountStationsWithinBBox(
+			ctx,
+			db.CountStationsWithinBBoxParams{
+				Xmin: float32(xMin),
+				Ymin: float32(yMin),
+				Xmax: float32(xMax),
+				Ymax: float32(yMax),
+			})
+	} else {
+		totalStations, err = s.store.CountStations(ctx)
+	}
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

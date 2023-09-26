@@ -59,8 +59,8 @@ func newDBTest(config *util.Config) (connPool *pgxpool.Pool, fnCleanUp func(), e
 
 	// pulls an image, creates a container based on it and runs it
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "postgres",
-		Tag:        "12",
+		Repository: "postgis/postgis",
+		Tag:        "12-3.4",
 		Env: []string{
 			"POSTGRES_PASSWORD=" + dbPasswd,
 			"POSTGRES_USER=postgres",

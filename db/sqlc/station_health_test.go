@@ -31,13 +31,13 @@ func (ts *StationHealthTestSuite) TearDownTest() {
 
 func (ts *StationHealthTestSuite) TestCreateStationHealth() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	createRandomStationHealth(t, station.ID)
 }
 
 func (ts *StationHealthTestSuite) TestGetStationHealth() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	health := createRandomStationHealth(t, station.ID)
 
 	arg := GetStationHealthParams{
@@ -54,7 +54,7 @@ func (ts *StationHealthTestSuite) TestGetStationHealth() {
 
 func (ts *StationHealthTestSuite) TestListStationHealths() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	n := 10
 	healths := make([]ObservationsStationhealth, n)
 	for i := 0; i < n; i++ {
@@ -84,7 +84,7 @@ func (ts *StationHealthTestSuite) TestUpdateStationHealth() {
 
 	t := ts.T()
 
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 
 	testCases := []struct {
 		name        string
@@ -127,7 +127,7 @@ func (ts *StationHealthTestSuite) TestUpdateStationHealth() {
 
 func (ts *StationHealthTestSuite) TestDeleteStationHealth() {
 	t := ts.T()
-	station := createRandomStation(t)
+	station := createRandomStation(t, false)
 	health := createRandomStationHealth(t, station.ID)
 
 	arg := DeleteStationHealthParams{
