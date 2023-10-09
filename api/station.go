@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -73,6 +74,64 @@ func newStation(station db.ObservationsStation) Station {
 	return res
 }
 
+type createStationReq struct {
+	Name          string        `json:"name" binding:"required,alphanumspace"`
+	Lat           pgtype.Float4 `json:"lat" binding:"numeric"`
+	Lon           pgtype.Float4 `json:"lon" binding:"numeric"`
+	Elevation     pgtype.Float4 `json:"elevation" binding:"numeric"`
+	DateInstalled pgtype.Date   `json:"date_installed"`
+	MobileNumber  pgtype.Text   `json:"mobile_number"`
+	StationType   pgtype.Text   `json:"station_type"`
+	StationType2  pgtype.Text   `json:"station_type2"`
+	StationUrl    pgtype.Text   `json:"station_url"`
+	Status        pgtype.Text   `json:"status"`
+	Province      pgtype.Text   `json:"province"`
+	Region        pgtype.Text   `json:"region"`
+	Address       pgtype.Text   `json:"address"`
+} //@name CreateStationParams
+
+// CreateStation
+//
+//	@Summary	Create station
+//	@Tags		stations
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	body	createStationReq	true	"Create station parameters"
+//	@Security	BearerAuth
+//	@Success	201	{object}	Station
+//	@Router		/stations [post]
+func (s *Server) CreateStation(ctx *gin.Context) {
+	var req createStationReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.CreateStationParams{
+		Name:          req.Name,
+		Lat:           req.Lat,
+		Lon:           req.Lon,
+		Elevation:     req.Elevation,
+		DateInstalled: req.DateInstalled,
+		MobileNumber:  req.MobileNumber,
+		StationType:   req.StationType,
+		StationType2:  req.StationType2,
+		StationUrl:    req.StationUrl,
+		Status:        req.Status,
+		Province:      req.Province,
+		Region:        req.Region,
+		Address:       req.Address,
+	}
+
+	result, err := s.store.CreateStation(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, newStation(result))
+}
+
 type listStationsReq struct {
 	Circle  string `form:"circle" binding:"omitempty"`
 	BBox    string `form:"bbox" binding:"omitempty"`
@@ -80,12 +139,7 @@ type listStationsReq struct {
 	PerPage int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
 } //@name ListStationsParams
 
-type listStationsRes struct {
-	Page    int32     `json:"page"`
-	PerPage int32     `json:"per_page"`
-	Total   int64     `json:"total"`
-	Data    []Station `json:"data"`
-} //@name ListStationsResponse
+type paginatedStations = util.PaginatedList[Station] //@name PaginatedStations
 
 // ListStations
 //
@@ -94,7 +148,7 @@ type listStationsRes struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	query		listStationsReq	false	"List stations parameters"
-//	@Success	200	{object}	listStationsRes
+//	@Success	200	{object}	paginatedStations
 //	@Router		/stations [get]
 func (s *Server) ListStations(ctx *gin.Context) {
 	var req listStationsReq
@@ -187,14 +241,14 @@ func (s *Server) ListStations(ctx *gin.Context) {
 	}
 
 	numStations := len(stations)
-	stationsRes := make([]Station, numStations)
+	items := make([]Station, numStations)
 	for i, station := range stations {
-		stationsRes[i] = newStation(station)
+		items[i] = newStation(station)
 	}
 
-	var totalStations int64
+	var count int64
 	if len(req.Circle) > 0 {
-		totalStations, err = s.store.CountStationsWithinRadius(
+		count, err = s.store.CountStationsWithinRadius(
 			ctx,
 			db.CountStationsWithinRadiusParams{
 				Cx: float32(cX),
@@ -202,7 +256,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				R:  float32(cR),
 			})
 	} else if len(req.BBox) > 0 {
-		totalStations, err = s.store.CountStationsWithinBBox(
+		count, err = s.store.CountStationsWithinBBox(
 			ctx,
 			db.CountStationsWithinBBoxParams{
 				Xmin: float32(xMin),
@@ -211,7 +265,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Ymax: float32(yMax),
 			})
 	} else {
-		totalStations, err = s.store.CountStations(ctx)
+		count, err = s.store.CountStations(ctx)
 	}
 
 	if err != nil {
@@ -219,14 +273,9 @@ func (s *Server) ListStations(ctx *gin.Context) {
 		return
 	}
 
-	rsp := listStationsRes{
-		Page:    req.Page,
-		PerPage: req.PerPage,
-		Total:   totalStations,
-		Data:    stationsRes,
-	}
+	res := util.NewPaginatedList[Station](req.Page, req.PerPage, int32(count), items)
 
-	ctx.JSON(http.StatusOK, rsp)
+	ctx.JSON(http.StatusOK, res)
 }
 
 type getStationReq struct {
@@ -260,64 +309,6 @@ func (s *Server) GetStation(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, newStation(station))
-}
-
-type createStationReq struct {
-	Name          string        `json:"name" binding:"required,alphanumspace"`
-	Lat           pgtype.Float4 `json:"lat" binding:"numeric"`
-	Lon           pgtype.Float4 `json:"lon" binding:"numeric"`
-	Elevation     pgtype.Float4 `json:"elevation" binding:"numeric"`
-	DateInstalled pgtype.Date   `json:"date_installed"`
-	MobileNumber  pgtype.Text   `json:"mobile_number"`
-	StationType   pgtype.Text   `json:"station_type"`
-	StationType2  pgtype.Text   `json:"station_type2"`
-	StationUrl    pgtype.Text   `json:"station_url"`
-	Status        pgtype.Text   `json:"status"`
-	Province      pgtype.Text   `json:"province"`
-	Region        pgtype.Text   `json:"region"`
-	Address       pgtype.Text   `json:"address"`
-} //@name CreateStationParams
-
-// CreateStation
-//
-//	@Summary	Create station
-//	@Tags		stations
-//	@Accept		json
-//	@Produce	json
-//	@Param		req	body	createStationReq	true	"Create station parameters"
-//	@Security	BearerAuth
-//	@Success	201	{object}	Station
-//	@Router		/stations [post]
-func (s *Server) CreateStation(ctx *gin.Context) {
-	var req createStationReq
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateStationParams{
-		Name:          req.Name,
-		Lat:           req.Lat,
-		Lon:           req.Lon,
-		Elevation:     req.Elevation,
-		DateInstalled: req.DateInstalled,
-		MobileNumber:  req.MobileNumber,
-		StationType:   req.StationType,
-		StationType2:  req.StationType2,
-		StationUrl:    req.StationUrl,
-		Status:        req.Status,
-		Province:      req.Province,
-		Region:        req.Region,
-		Address:       req.Address,
-	}
-
-	result, err := s.store.CreateStation(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, newStation(result))
 }
 
 type updateStationUri struct {

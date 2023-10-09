@@ -19,6 +19,83 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCreateStationAPI(t *testing.T) {
+	station := randomStation()
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"name":     station.Name,
+				"lat":      station.Lat,
+				"lon":      station.Lon,
+				"province": station.Province,
+				"region":   station.Region,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateStationParams{
+					Name:     station.Name,
+					Lat:      station.Lat,
+					Lon:      station.Lon,
+					Province: station.Province,
+					Region:   station.Region,
+				}
+
+				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), arg).
+					Return(station, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				requireBodyMatchStation(t, recorder.Body, station)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"name": station.Name,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.ObservationsStation{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("%s/stations", server.config.APIBasePath)
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
 func TestListStationsAPI(t *testing.T) {
 	n := 10
 	stations := make([]db.ObservationsStation, n)
@@ -301,83 +378,6 @@ func TestGetStationAPI(t *testing.T) {
 	}
 }
 
-func TestCreateStationAPI(t *testing.T) {
-	station := randomStation()
-
-	testCases := []struct {
-		name          string
-		body          gin.H
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
-	}{
-		{
-			name: "OK",
-			body: gin.H{
-				"name":     station.Name,
-				"lat":      station.Lat,
-				"lon":      station.Lon,
-				"province": station.Province,
-				"region":   station.Region,
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.CreateStationParams{
-					Name:     station.Name,
-					Lat:      station.Lat,
-					Lon:      station.Lon,
-					Province: station.Province,
-					Region:   station.Region,
-				}
-
-				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(station, nil)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertExpectations(t)
-				require.Equal(t, http.StatusCreated, recorder.Code)
-				requireBodyMatchStation(t, recorder.Body, station)
-			},
-		},
-		{
-			name: "InternalError",
-			body: gin.H{
-				"name": station.Name,
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(db.ObservationsStation{}, sql.ErrConnDone)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertExpectations(t)
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			store := mockdb.NewMockStore(t)
-			tc.buildStubs(store)
-
-			server := newTestServer(t, store)
-			recorder := httptest.NewRecorder()
-
-			// Marshal body data to JSON
-			data, err := json.Marshal(tc.body)
-			require.NoError(t, err)
-
-			url := fmt.Sprintf("%s/stations", server.config.APIBasePath)
-			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-			require.NoError(t, err)
-
-			server.router.ServeHTTP(recorder, request)
-
-			tc.checkResponse(recorder, store)
-		})
-	}
-}
-
 func TestUpdateStationAPI(t *testing.T) {
 	station := randomStation()
 
@@ -555,7 +555,7 @@ func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.Ob
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStations listStationsRes
+	var gotStations paginatedStations
 	err = json.Unmarshal(data, &gotStations)
 	require.NoError(t, err)
 
@@ -563,5 +563,5 @@ func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.Ob
 	for i, stn := range stations {
 		stationsRes[i] = newStation(stn)
 	}
-	require.Equal(t, stationsRes, gotStations.Data)
+	require.Equal(t, stationsRes, gotStations.Items)
 }

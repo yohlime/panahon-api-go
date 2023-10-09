@@ -79,143 +79,6 @@ func newStationObservation(obs db.ObservationsObservation) StationObservation {
 	return res
 }
 
-type listStationObsUri struct {
-	StationID int64 `uri:"station_id" binding:"required,min=1"`
-}
-
-type listStationObsReq struct {
-	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
-	PerPage   int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
-	StartDate string `form:"start_date" binding:"omitempty,date_time"`
-	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
-} //@name ListStationObservationsParams
-
-type listStationObsRes struct {
-	Page    int32                `json:"page"`
-	PerPage int32                `json:"per_page"`
-	Total   int64                `json:"total"`
-	Data    []StationObservation `json:"data"`
-} //@name ListStationObservationsResponse
-
-// ListStationObservations
-//
-//	@Summary	List station observations
-//	@Tags		observations
-//	@Accept		json
-//	@Produce	json
-//	@Param		station_id	path		int					true	"Station ID"
-//	@Param		req			query		listStationObsReq	false	"List station observations parameters"
-//	@Success	200			{object}	listStationObsRes
-//	@Router		/stations/{station_id}/observations [get]
-func (s *Server) ListStationObservations(ctx *gin.Context) {
-	var uri listStationObsUri
-	if err := ctx.ShouldBindUri(&uri); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-	var req listStationObsReq
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	startDate, isStartDate := util.ParseDateTime(req.StartDate)
-	endDate, isEndDate := util.ParseDateTime(req.EndDate)
-
-	offset := (req.Page - 1) * req.PerPage
-	arg := db.ListStationObservationsParams{
-		StationID: uri.StationID,
-		Limit: pgtype.Int4{
-			Int32: req.PerPage,
-			Valid: true,
-		},
-		Offset:      offset,
-		IsStartDate: isStartDate,
-		StartDate: pgtype.Timestamptz{
-			Time:  startDate,
-			Valid: !startDate.IsZero(),
-		},
-		IsEndDate: isEndDate,
-		EndDate: pgtype.Timestamptz{
-			Time:  endDate,
-			Valid: !endDate.IsZero(),
-		},
-	}
-
-	observations, err := s.store.ListStationObservations(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	numObs := len(observations)
-	obsRes := make([]StationObservation, numObs)
-	for i, observation := range observations {
-		obsRes[i] = newStationObservation(observation)
-	}
-
-	totalObs, err := s.store.CountStationObservations(ctx, db.CountStationObservationsParams{
-		StationID:   arg.StationID,
-		IsStartDate: arg.IsStartDate,
-		StartDate:   arg.StartDate,
-		IsEndDate:   arg.IsEndDate,
-		EndDate:     arg.EndDate,
-	})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	rsp := listStationObsRes{
-		Page:    req.Page,
-		PerPage: req.PerPage,
-		Total:   totalObs,
-		Data:    obsRes,
-	}
-
-	ctx.JSON(http.StatusOK, rsp)
-}
-
-type getStationObsReq struct {
-	StationID int64 `uri:"station_id" binding:"required,min=1"`
-	ID        int64 `uri:"id" binding:"required,min=1"`
-}
-
-// GetStationObservation
-//
-//	@Summary	Get station observation
-//	@Tags		observations
-//	@Accept		json
-//	@Produce	json
-//	@Param		station_id	path		int	true	"Station ID"
-//	@Param		id			path		int	true	"Station Observation ID"
-//	@Success	200			{object}	StationObservation
-//	@Router		/stations/{station_id}/observations/{id} [get]
-func (s *Server) GetStationObservation(ctx *gin.Context) {
-	var req getStationObsReq
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.GetStationObservationParams{
-		StationID: req.StationID,
-		ID:        req.ID,
-	}
-
-	obs, err := s.store.GetStationObservation(ctx, arg)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, newStationObservation(obs))
-}
-
 type createStationObsUri struct {
 	StationID int64 `uri:"station_id" binding:"required,min=1"`
 }
@@ -286,6 +149,133 @@ func (s *Server) CreateStationObservation(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, newStationObservation(obs))
+}
+
+type listStationObsUri struct {
+	StationID int64 `uri:"station_id" binding:"required,min=1"`
+}
+
+type listStationObsReq struct {
+	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
+	PerPage   int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
+	StartDate string `form:"start_date" binding:"omitempty,date_time"`
+	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
+} //@name ListStationObservationsParams
+
+type paginatedStationObservations = util.PaginatedList[StationObservation] //@name PaginatedStationObservations
+
+// ListStationObservations
+//
+//	@Summary	List station observations
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path		int					true	"Station ID"
+//	@Param		req			query		listStationObsReq	false	"List station observations parameters"
+//	@Success	200			{object}	paginatedStationObservations
+//	@Router		/stations/{station_id}/observations [get]
+func (s *Server) ListStationObservations(ctx *gin.Context) {
+	var uri listStationObsUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	var req listStationObsReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	startDate, isStartDate := util.ParseDateTime(req.StartDate)
+	endDate, isEndDate := util.ParseDateTime(req.EndDate)
+
+	offset := (req.Page - 1) * req.PerPage
+	arg := db.ListStationObservationsParams{
+		StationID: uri.StationID,
+		Limit: pgtype.Int4{
+			Int32: req.PerPage,
+			Valid: true,
+		},
+		Offset:      offset,
+		IsStartDate: isStartDate,
+		StartDate: pgtype.Timestamptz{
+			Time:  startDate,
+			Valid: !startDate.IsZero(),
+		},
+		IsEndDate: isEndDate,
+		EndDate: pgtype.Timestamptz{
+			Time:  endDate,
+			Valid: !endDate.IsZero(),
+		},
+	}
+
+	observations, err := s.store.ListStationObservations(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	numObs := len(observations)
+	items := make([]StationObservation, numObs)
+	for i, observation := range observations {
+		items[i] = newStationObservation(observation)
+	}
+
+	count, err := s.store.CountStationObservations(ctx, db.CountStationObservationsParams{
+		StationID:   arg.StationID,
+		IsStartDate: arg.IsStartDate,
+		StartDate:   arg.StartDate,
+		IsEndDate:   arg.IsEndDate,
+		EndDate:     arg.EndDate,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := util.NewPaginatedList[StationObservation](req.Page, req.PerPage, int32(count), items)
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type getStationObsReq struct {
+	StationID int64 `uri:"station_id" binding:"required,min=1"`
+	ID        int64 `uri:"id" binding:"required,min=1"`
+}
+
+// GetStationObservation
+//
+//	@Summary	Get station observation
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path		int	true	"Station ID"
+//	@Param		id			path		int	true	"Station Observation ID"
+//	@Success	200			{object}	StationObservation
+//	@Router		/stations/{station_id}/observations/{id} [get]
+func (s *Server) GetStationObservation(ctx *gin.Context) {
+	var req getStationObsReq
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.GetStationObservationParams{
+		StationID: req.StationID,
+		ID:        req.ID,
+	}
+
+	obs, err := s.store.GetStationObservation(ctx, arg)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newStationObservation(obs))
 }
 
 type updateStationObsUri struct {
@@ -417,7 +407,7 @@ type listObservationsReq struct {
 //	@Tags		observations
 //	@Produce	json
 //	@Param		req	query		listObservationsReq	false	"List observations parameters"
-//	@Success	200	{object}	listStationObsRes
+//	@Success	200	{object}	paginatedStationObservations
 //	@Router		/observations [get]
 func (s *Server) ListObservations(ctx *gin.Context) {
 	var req listObservationsReq
@@ -482,12 +472,12 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 	}
 
 	numObs := len(obs)
-	obsRes := make([]StationObservation, numObs)
+	items := make([]StationObservation, numObs)
 	for i, observation := range obs {
-		obsRes[i] = newStationObservation(observation)
+		items[i] = newStationObservation(observation)
 	}
 
-	totalObs, err := s.store.CountObservations(ctx, db.CountObservationsParams{
+	count, err := s.store.CountObservations(ctx, db.CountObservationsParams{
 		StationIds:  arg.StationIds,
 		IsStartDate: arg.IsStartDate,
 		StartDate:   arg.StartDate,
@@ -499,14 +489,9 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 		return
 	}
 
-	rsp := listStationObsRes{
-		Page:    req.Page,
-		PerPage: req.PerPage,
-		Total:   totalObs,
-		Data:    obsRes,
-	}
+	res := util.NewPaginatedList[StationObservation](req.Page, req.PerPage, int32(count), items)
 
-	ctx.JSON(http.StatusOK, rsp)
+	ctx.JSON(http.StatusOK, res)
 }
 
 type latestObservationRes struct {

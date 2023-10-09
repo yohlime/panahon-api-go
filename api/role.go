@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -55,102 +56,6 @@ func newRole(role db.Role) Role {
 	return res
 }
 
-type listRolesReq struct {
-	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
-} //@name ListRolesParams
-
-type listRolesRes struct {
-	Page    int32  `json:"page"`
-	PerPage int32  `json:"per_page"`
-	Total   int64  `json:"total"`
-	Data    []Role `json:"data"`
-} //@name ListRolessResponse
-
-// ListRoles
-//
-//	@Summary	List roles
-//	@Tags		roles
-//	@Accept		json
-//	@Produce	json
-//	@Param		req	query	listRolesReq	false	"List roles parameters"
-//	@Security	BearerAuth
-//	@Success	200	{object}	listRolesRes
-//	@Router		/roles [get]
-func (s *Server) ListRoles(ctx *gin.Context) {
-	var req listRolesReq
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	offset := (req.Page - 1) * req.PerPage
-	arg := db.ListRolesParams{
-		Limit:  req.PerPage,
-		Offset: offset,
-	}
-	roles, err := s.store.ListRoles(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	numRoles := len(roles)
-	rolesRes := make([]Role, numRoles)
-	for i, role := range roles {
-		rolesRes[i] = newRole(role)
-	}
-
-	totalRoles, err := s.store.CountRoles(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	rsp := listRolesRes{
-		Page:    req.Page,
-		PerPage: req.PerPage,
-		Total:   totalRoles,
-		Data:    rolesRes,
-	}
-
-	ctx.JSON(http.StatusOK, rsp)
-}
-
-type getRoleReq struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-// GetRole
-//
-//	@Summary	Get role
-//	@Tags		roles
-//	@Accept		json
-//	@Produce	json
-//	@Param		id	path	int	true	"Role ID"
-//	@Security	BearerAuth
-//	@Success	200	{object}	Role
-//	@Router		/roles/{id} [get]
-func (s *Server) GetRole(ctx *gin.Context) {
-	var req getRoleReq
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	role, err := s.store.GetRole(ctx, req.ID)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("role not found")))
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, newRole(role))
-}
-
 type createRoleReq struct {
 	Name        string `json:"name" binding:"required,alphanum"`
 	Description string `json:"description" binding:"alphanumspace"`
@@ -185,6 +90,92 @@ func (s *Server) CreateRole(ctx *gin.Context) {
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newRole(role))
+}
+
+type listRolesReq struct {
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
+} //@name ListRolesParams
+
+type paginatedRoles = util.PaginatedList[Role] //@name PaginatedRoles
+
+// ListRoles
+//
+//	@Summary	List roles
+//	@Tags		roles
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	listRolesReq	false	"List roles parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	paginatedRoles
+//	@Router		/roles [get]
+func (s *Server) ListRoles(ctx *gin.Context) {
+	var req listRolesReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	offset := (req.Page - 1) * req.PerPage
+	arg := db.ListRolesParams{
+		Limit:  req.PerPage,
+		Offset: offset,
+	}
+	roles, err := s.store.ListRoles(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	numRoles := len(roles)
+	items := make([]Role, numRoles)
+	for i, role := range roles {
+		items[i] = newRole(role)
+	}
+
+	count, err := s.store.CountRoles(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := util.NewPaginatedList[Role](req.Page, req.PerPage, int32(count), items)
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type getRoleReq struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
+}
+
+// GetRole
+//
+//	@Summary	Get role
+//	@Tags		roles
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int	true	"Role ID"
+//	@Security	BearerAuth
+//	@Success	200	{object}	Role
+//	@Router		/roles/{id} [get]
+func (s *Server) GetRole(ctx *gin.Context) {
+	var req getRoleReq
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	role, err := s.store.GetRole(ctx, req.ID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("role not found")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

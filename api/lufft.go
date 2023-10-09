@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -17,24 +18,19 @@ type lufftMsgLogReq struct {
 	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
 } //@name LufftMsgLogParams
 
-type lufftMsgLogRes struct {
+type lufftMsgLog struct {
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
 	Message   pgtype.Text        `json:"message"`
-} //@name LufftMsgLogResponse
+} //@name LufftMsgLog
 
-func newLufftMsgLoResponse(res db.ListLufftStationMsgRow) lufftMsgLogRes {
-	return lufftMsgLogRes{
+func newLufftMsgLoResponse(res db.ListLufftStationMsgRow) lufftMsgLog {
+	return lufftMsgLog{
 		Timestamp: res.Timestamp,
 		Message:   res.Message,
 	}
 }
 
-type lufftMsgLogsRes struct {
-	Page    int32            `json:"page"`
-	PerPage int32            `json:"per_page"`
-	Total   int64            `json:"total"`
-	Data    []lufftMsgLogRes `json:"data"`
-} //@name LufftMsgLogsResponse
+type paginatedLufftMsgLogs = util.PaginatedList[lufftMsgLog]
 
 // LufftMsgLog
 //
@@ -44,7 +40,7 @@ type lufftMsgLogsRes struct {
 //	@Produce	json
 //	@Param		station_id	path		int				true	"Station ID"
 //	@Param		req			query		lufftMsgLogReq	false	"Lufft Message log query"
-//	@Success	200			{object}	lufftMsgLogsRes
+//	@Success	200			{object}	paginatedLufftMsgLogs
 //	@Router		/lufft/{station_id}/logs [get]
 func (s *Server) LufftMsgLog(ctx *gin.Context) {
 	var uri lufftMsgLogUri
@@ -72,25 +68,20 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 	}
 
 	numMsg := len(msgs)
-	msgsRes := make([]lufftMsgLogRes, numMsg)
+	items := make([]lufftMsgLog, numMsg)
 	for m, msg := range msgs {
-		msgsRes[m] = newLufftMsgLoResponse(msg)
+		items[m] = newLufftMsgLoResponse(msg)
 	}
 
-	totalMsgs, err := s.store.CountLufftStationMsg(ctx, uri.StationID)
+	count, err := s.store.CountLufftStationMsg(ctx, uri.StationID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := lufftMsgLogsRes{
-		Page:    req.Page,
-		PerPage: req.PerPage,
-		Total:   totalMsgs,
-		Data:    msgsRes,
-	}
+	res := util.NewPaginatedList[lufftMsgLog](req.Page, req.PerPage, int32(count), items)
 
-	ctx.JSON(http.StatusOK, rsp)
+	ctx.JSON(http.StatusOK, res)
 }
 
 type lufftRes struct {

@@ -503,12 +503,12 @@ func requireBodyMatchRoles(t *testing.T, body *bytes.Buffer, roles []db.Role) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotRoles listRolesRes
+	var gotRoles paginatedRoles
 	err = json.Unmarshal(data, &gotRoles)
 
 	require.NoError(t, err)
 	for i, role := range roles {
-		require.Equal(t, role.Name, gotRoles.Data[i].Name)
-		require.Equal(t, role.Description.String, gotRoles.Data[i].Description)
+		require.Equal(t, role.Name, gotRoles.Items[i].Name)
+		require.Equal(t, role.Description.String, gotRoles.Items[i].Description)
 	}
 }

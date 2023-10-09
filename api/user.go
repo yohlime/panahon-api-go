@@ -23,7 +23,7 @@ type User struct {
 	Roles             []string           `json:"roles"`
 } //@name User
 
-func newUserResponse(user db.User, roleNames []string) User {
+func newUser(user db.User, roleNames []string) User {
 	ret := User{
 		Username:          user.Username,
 		FullName:          user.FullName,
@@ -37,104 +37,6 @@ func newUserResponse(user db.User, roleNames []string) User {
 	}
 
 	return ret
-}
-
-type listUsersReq struct {
-	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
-} //@name ListUsersParams
-
-type listUsersRes struct {
-	Page    int32  `json:"page"`
-	PerPage int32  `json:"per_page"`
-	Total   int64  `json:"total"`
-	Data    []User `json:"data"`
-} //@name ListUsersResponse
-
-// ListUsers
-//
-//	@Summary	List users
-//	@Tags		users
-//	@Accept		json
-//	@Produce	json
-//	@Param		req	query	listUsersReq	false	"List users parameters"
-//	@Security	BearerAuth
-//	@Success	200	{object}	listUsersRes
-//	@Router		/users [get]
-func (s *Server) ListUsers(ctx *gin.Context) {
-	var req listUsersReq
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	offset := (req.Page - 1) * req.PerPage
-	arg := db.ListUsersParams{
-		Limit:  req.PerPage,
-		Offset: offset,
-	}
-	users, err := s.store.ListUsers(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	numUsers := len(users)
-	usersRes := make([]User, numUsers)
-	for i, user := range users {
-		usersRes[i] = newUserResponse(user, nil)
-	}
-
-	totalUsers, err := s.store.CountUsers(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	rsp := listUsersRes{
-		Page:    req.Page,
-		PerPage: req.PerPage,
-		Total:   totalUsers,
-		Data:    usersRes,
-	}
-
-	ctx.JSON(http.StatusOK, rsp)
-}
-
-type getUserReq struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-// GetUser
-//
-//	@Summary	Get user
-//	@Tags		users
-//	@Accept		json
-//	@Produce	json
-//	@Param		id	path	int	true	"User ID"
-//	@Security	BearerAuth
-//	@Success	200	{object}	User
-//	@Router		/users/{id} [get]
-func (s *Server) GetUser(ctx *gin.Context) {
-	var req getUserReq
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	user, err := s.store.GetUser(ctx, req.ID)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	roleNames, _ := s.store.ListUserRoles(ctx, req.ID)
-
-	ctx.JSON(http.StatusOK, newUserResponse(user, roleNames))
 }
 
 type createUserReq struct {
@@ -201,7 +103,95 @@ func (s *Server) CreateUser(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user, roleNames))
+	ctx.JSON(http.StatusOK, newUser(user, roleNames))
+}
+
+type listUsersReq struct {
+	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
+	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
+} //@name ListUsersParams
+
+type paginatedUsers = util.PaginatedList[User] //@name PaginatedUsers
+
+// ListUsers
+//
+//	@Summary	List users
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query	listUsersReq	false	"List users parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	paginatedUsers
+//	@Router		/users [get]
+func (s *Server) ListUsers(ctx *gin.Context) {
+	var req listUsersReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	offset := (req.Page - 1) * req.PerPage
+	arg := db.ListUsersParams{
+		Limit:  req.PerPage,
+		Offset: offset,
+	}
+	users, err := s.store.ListUsers(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	numUsers := len(users)
+	items := make([]User, numUsers)
+	for i, user := range users {
+		items[i] = newUser(user, nil)
+	}
+
+	count, err := s.store.CountUsers(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := util.NewPaginatedList[User](req.Page, req.PerPage, int32(count), items)
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type getUserReq struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
+}
+
+// GetUser
+//
+//	@Summary	Get user
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int	true	"User ID"
+//	@Security	BearerAuth
+//	@Success	200	{object}	User
+//	@Router		/users/{id} [get]
+func (s *Server) GetUser(ctx *gin.Context) {
+	var req getUserReq
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := s.store.GetUser(ctx, req.ID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	roleNames, _ := s.store.ListUserRoles(ctx, req.ID)
+
+	ctx.JSON(http.StatusOK, newUser(user, roleNames))
 }
 
 type updateUserUri struct {
@@ -315,7 +305,7 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user, updatedRoleNames))
+	ctx.JSON(http.StatusOK, newUser(user, updatedRoleNames))
 }
 
 type deleteUserReq struct {
@@ -405,7 +395,7 @@ func (s *Server) RegisterUser(ctx *gin.Context) {
 
 	s.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
 
-	ctx.JSON(http.StatusOK, newUserResponse(user, roleNames))
+	ctx.JSON(http.StatusOK, newUser(user, roleNames))
 }
 
 type loginUserRequest struct {
@@ -493,7 +483,7 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
 		RefreshToken:          refreshToken,
 		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
-		User:                  newUserResponse(user, roleNames),
+		User:                  newUser(user, roleNames),
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }
@@ -517,5 +507,5 @@ func (s *Server) GetAuthUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user, authPayload.User.Roles))
+	ctx.JSON(http.StatusOK, newUser(user, authPayload.User.Roles))
 }

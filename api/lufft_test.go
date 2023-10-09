@@ -184,12 +184,12 @@ func requireBodyMatchLufftMsgLogs(t *testing.T, body *bytes.Buffer, lufftStation
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotLufftStationMsgs lufftMsgLogsRes
+	var gotLufftStationMsgs paginatedLufftMsgLogs
 	err = json.Unmarshal(data, &gotLufftStationMsgs)
 	require.NoError(t, err)
 	for m, msg := range lufftStationMsgs {
-		require.Equal(t, msg.Message, gotLufftStationMsgs.Data[m].Message)
-		require.WithinDuration(t, msg.Timestamp.Time, gotLufftStationMsgs.Data[m].Timestamp.Time, time.Second)
+		require.Equal(t, msg.Message, gotLufftStationMsgs.Items[m].Message)
+		require.WithinDuration(t, msg.Timestamp.Time, gotLufftStationMsgs.Items[m].Timestamp.Time, time.Second)
 	}
 
 }

@@ -188,7 +188,7 @@ func TestGetUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, nil))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, nil))
 			},
 		},
 		{
@@ -203,7 +203,7 @@ func TestGetUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, roleNames))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, roleNames))
 			},
 		},
 		{
@@ -312,7 +312,7 @@ func TestCreateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, nil))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, nil))
 			},
 		},
 		{
@@ -333,7 +333,7 @@ func TestCreateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, roleNames))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, roleNames))
 			},
 		},
 		{
@@ -354,7 +354,7 @@ func TestCreateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, withInvalidRoleNamesRet))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, withInvalidRoleNamesRet))
 			},
 		},
 		{
@@ -516,7 +516,7 @@ func TestUpdateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, nil))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, nil))
 			},
 		},
 		{
@@ -549,7 +549,7 @@ func TestUpdateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, toAttachRolesNames))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, toAttachRolesNames))
 			},
 		},
 		{
@@ -689,7 +689,7 @@ func TestRegisterUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUserResponse(user, userRoles))
+				requireBodyMatchUser(t, recorder.Body, newUser(user, userRoles))
 			},
 		},
 		{
@@ -1048,13 +1048,13 @@ func requireBodyMatchUsers(t *testing.T, body *bytes.Buffer, users []db.User) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotUsers listUsersRes
+	var gotUsers paginatedUsers
 	err = json.Unmarshal(data, &gotUsers)
 
 	require.NoError(t, err)
 	for i, user := range users {
-		require.Equal(t, user.Username, gotUsers.Data[i].Username)
-		require.Equal(t, user.FullName, gotUsers.Data[i].FullName)
-		require.Equal(t, user.Email, gotUsers.Data[i].Email)
+		require.Equal(t, user.Username, gotUsers.Items[i].Username)
+		require.Equal(t, user.FullName, gotUsers.Items[i].FullName)
+		require.Equal(t, user.Email, gotUsers.Items[i].Email)
 	}
 }

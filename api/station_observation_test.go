@@ -810,7 +810,7 @@ func requireBodyMatchStationObservations(t *testing.T, body *bytes.Buffer, stati
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStationObsSlice listStationObsRes
+	var gotStationObsSlice paginatedStationObservations
 	err = json.Unmarshal(data, &gotStationObsSlice)
 	require.NoError(t, err)
 
@@ -818,5 +818,5 @@ func requireBodyMatchStationObservations(t *testing.T, body *bytes.Buffer, stati
 	for i, obs := range stationObsSlice {
 		stationObsSliceRes[i] = newStationObservation(obs)
 	}
-	require.Equal(t, stationObsSliceRes, gotStationObsSlice.Data)
+	require.Equal(t, stationObsSliceRes, gotStationObsSlice.Items)
 }
