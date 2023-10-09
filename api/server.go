@@ -99,6 +99,7 @@ func (s *Server) setupRouter() {
 		stnObservations := stations.Group(":station_id/observations")
 		{
 			stnObservations.GET("", s.ListStationObservations)
+			stnObservations.GET("/latest", s.GetLatestStationObservation)
 			stnObservations.GET(":id", s.GetStationObservation)
 		}
 
@@ -123,6 +124,7 @@ func (s *Server) setupRouter() {
 	observations := api.Group("/observations")
 	{
 		observations.GET("", s.ListObservations)
+		observations.GET("/latest", s.ListLatestObservations)
 	}
 
 	glabs := api.Group("/glabs")

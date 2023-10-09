@@ -191,6 +191,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/observations/latest": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "observations"
+                ],
+                "summary": "list latest observation",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LatestObservation"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/ptexter": {
             "post": {
                 "consumes": [
@@ -699,6 +721,37 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/StationObservationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stations/{station_id}/observations/latest": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "observations"
+                ],
+                "summary": "Get latest station observation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/LatestObservation"
                         }
                     }
                 }
@@ -1318,6 +1371,29 @@ const docTemplate = `{
                 }
             }
         },
+        "LatestObservation": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "elevation": {
+                    "type": "number"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lon": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "obs": {
+                    "$ref": "#/definitions/db.MvObservationsCurrent"
+                }
+            }
+        },
         "ListRolessResponse": {
             "type": "object",
             "properties": {
@@ -1852,6 +1928,59 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "db.MvObservationsCurrent": {
+            "type": "object",
+            "properties": {
+                "gust": {
+                    "type": "number"
+                },
+                "gust_timestamp": {
+                    "type": "string"
+                },
+                "mslp": {
+                    "type": "number"
+                },
+                "rain": {
+                    "type": "number"
+                },
+                "rain_accum": {
+                    "type": "number"
+                },
+                "rh": {
+                    "type": "number"
+                },
+                "srad": {
+                    "type": "number"
+                },
+                "station_id": {
+                    "type": "integer"
+                },
+                "temp": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "tn": {
+                    "type": "number"
+                },
+                "tn_timestamp": {
+                    "type": "string"
+                },
+                "tx": {
+                    "type": "number"
+                },
+                "tx_timestamp": {
+                    "type": "string"
+                },
+                "wdir": {
+                    "type": "number"
+                },
+                "wspd": {
+                    "type": "number"
                 }
             }
         }

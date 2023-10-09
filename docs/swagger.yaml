@@ -115,6 +115,21 @@ definitions:
       type:
         type: string
     type: object
+  LatestObservation:
+    properties:
+      address:
+        type: string
+      elevation:
+        type: number
+      lat:
+        type: number
+      lon:
+        type: number
+      name:
+        type: string
+      obs:
+        $ref: '#/definitions/db.MvObservationsCurrent'
+    type: object
   ListRolessResponse:
     properties:
       data:
@@ -469,6 +484,41 @@ definitions:
       username:
         type: string
     type: object
+  db.MvObservationsCurrent:
+    properties:
+      gust:
+        type: number
+      gust_timestamp:
+        type: string
+      mslp:
+        type: number
+      rain:
+        type: number
+      rain_accum:
+        type: number
+      rh:
+        type: number
+      srad:
+        type: number
+      station_id:
+        type: integer
+      temp:
+        type: number
+      timestamp:
+        type: string
+      tn:
+        type: number
+      tn_timestamp:
+        type: string
+      tx:
+        type: number
+      tx_timestamp:
+        type: string
+      wdir:
+        type: number
+      wspd:
+        type: number
+    type: object
 info:
   contact:
     email: emiliogozo@proton.me
@@ -586,6 +636,20 @@ paths:
           schema:
             $ref: '#/definitions/ListStationObservationsResponse'
       summary: list station observation
+      tags:
+      - observations
+  /observations/latest:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/LatestObservation'
+            type: array
+      summary: list latest observation
       tags:
       - observations
   /ptexter:
@@ -988,6 +1052,26 @@ paths:
       security:
       - BearerAuth: []
       summary: Update station observation
+      tags:
+      - observations
+  /stations/{station_id}/observations/latest:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/LatestObservation'
+      summary: Get latest station observation
       tags:
       - observations
   /tokens/renew:

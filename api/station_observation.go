@@ -61,7 +61,7 @@ type listStationObsReq struct {
 	PerPage   int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
 	StartDate string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
-} //name ListStationObservationsParams
+} //@name ListStationObservationsParams
 
 type listStationObsRes struct {
 	Page    int32                `json:"page"`
@@ -384,7 +384,7 @@ type listObservationsReq struct {
 	StationIDs string `form:"station_ids" binding:"omitempty"`
 	StartDate  string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate    string `form:"end_date" binding:"omitempty,date_time"`
-} //name ListObservationsParams
+} //@name ListObservationsParams
 
 // ListObservations
 //
@@ -484,4 +484,94 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, rsp)
+}
+
+type latestObservationRes struct {
+	Name      string                   `json:"name"`
+	Lat       util.NullFloat4          `json:"lat"`
+	Lon       util.NullFloat4          `json:"lon"`
+	Elevation util.NullFloat4          `json:"elevation"`
+	Address   util.NullString          `json:"address"`
+	Obs       db.MvObservationsCurrent `json:"obs"`
+} //@name LatestObservation
+
+func newLatestObservationResponse(data any) latestObservationRes {
+	switch d := data.(type) {
+	case db.ListLatestObservationsRow:
+		return latestObservationRes{
+			Name:      d.Name,
+			Lat:       d.Lat,
+			Lon:       d.Lon,
+			Elevation: d.Elevation,
+			Address:   d.Address,
+			Obs:       d.MvObservationsCurrent,
+		}
+	case db.GetLatestStationObservationRow:
+		return latestObservationRes{
+			Name:      d.Name,
+			Lat:       d.Lat,
+			Lon:       d.Lon,
+			Elevation: d.Elevation,
+			Address:   d.Address,
+			Obs:       d.MvObservationsCurrent,
+		}
+	default:
+		return latestObservationRes{}
+	}
+}
+
+// ListLatestObservations
+//
+//	@Summary	list latest observation
+//	@Tags		observations
+//	@Produce	json
+//	@Success	200	{array}	latestObservationRes
+//	@Router		/observations/latest [get]
+func (s *Server) ListLatestObservations(ctx *gin.Context) {
+	_obsSlice, err := s.store.ListLatestObservations(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	obsSlice := make([]latestObservationRes, len(_obsSlice))
+
+	for i := range obsSlice {
+		obsSlice[i] = newLatestObservationResponse(_obsSlice[i])
+	}
+
+	ctx.JSON(http.StatusOK, obsSlice)
+}
+
+type getLatestStationObsReq struct {
+	StationID int64 `uri:"station_id" binding:"required,min=1"`
+}
+
+// GetLatestStationObservation
+//
+//	@Summary	Get latest station observation
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		station_id	path		int	true	"Station ID"
+//	@Success	200			{object}	latestObservationRes
+//	@Router		/stations/{station_id}/observations/latest [get]
+func (s *Server) GetLatestStationObservation(ctx *gin.Context) {
+	var req getLatestStationObsReq
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	obs, err := s.store.GetLatestStationObservation(ctx, req.StationID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newLatestObservationResponse(obs))
 }

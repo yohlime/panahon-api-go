@@ -37,6 +37,7 @@ type Querier interface {
 	DeleteStationHealth(ctx context.Context, arg DeleteStationHealthParams) error
 	DeleteStationObservation(ctx context.Context, arg DeleteStationObservationParams) error
 	DeleteUser(ctx context.Context, id int64) error
+	GetLatestStationObservation(ctx context.Context, id int64) (GetLatestStationObservationRow, error)
 	GetRole(ctx context.Context, id int64) (Role, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
@@ -49,6 +50,7 @@ type Querier interface {
 	GetUser(ctx context.Context, id int64) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListLatestObservations(ctx context.Context) ([]ListLatestObservationsRow, error)
 	ListLufftStationMsg(ctx context.Context, arg ListLufftStationMsgParams) ([]ListLufftStationMsgRow, error)
 	ListObservations(ctx context.Context, arg ListObservationsParams) ([]ObservationsObservation, error)
 	ListRoles(ctx context.Context, arg ListRolesParams) ([]Role, error)
@@ -59,6 +61,7 @@ type Querier interface {
 	ListStationsWithinRadius(ctx context.Context, arg ListStationsWithinRadiusParams) ([]ObservationsStation, error)
 	ListUserRoles(ctx context.Context, userID int64) ([]string, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	RefreshMVCurrentObservations(ctx context.Context) error
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
 	UpdateStation(ctx context.Context, arg UpdateStationParams) (ObservationsStation, error)
 	UpdateStationHealth(ctx context.Context, arg UpdateStationHealthParams) (ObservationsStationhealth, error)
