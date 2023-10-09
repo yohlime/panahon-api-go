@@ -84,11 +84,9 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 			name: "WithLimit",
 			arg: ListStationObservationsParams{
 				StationID: station.ID,
-				Limit: util.NullInt4{
-					Int4: pgtype.Int4{
-						Int32: 5,
-						Valid: true,
-					},
+				Limit: pgtype.Int4{
+					Int32: 5,
+					Valid: true,
 				},
 			},
 			result: func(obs []ObservationsObservation, err error) {
@@ -104,11 +102,9 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 			name: "WithLimitAndOffset",
 			arg: ListStationObservationsParams{
 				StationID: station.ID,
-				Limit: util.NullInt4{
-					Int4: pgtype.Int4{
-						Int32: 5,
-						Valid: true,
-					},
+				Limit: pgtype.Int4{
+					Int32: 5,
+					Valid: true,
 				},
 				Offset: 7,
 			},
@@ -326,11 +322,9 @@ func (ts *ObservationTestSuite) TestListObservations() {
 			name: "WithLimit",
 			arg: ListObservationsParams{
 				StationIds: selStationIDs,
-				Limit: util.NullInt4{
-					Int4: pgtype.Int4{
-						Int32: 5,
-						Valid: true,
-					},
+				Limit: pgtype.Int4{
+					Int32: 5,
+					Valid: true,
 				},
 			},
 			result: func(obs []ObservationsObservation, err error) {
@@ -346,11 +340,9 @@ func (ts *ObservationTestSuite) TestListObservations() {
 			name: "WithLimitAndOffset",
 			arg: ListObservationsParams{
 				StationIds: selStationIDs,
-				Limit: util.NullInt4{
-					Int4: pgtype.Int4{
-						Int32: 5,
-						Valid: true,
-					},
+				Limit: pgtype.Int4{
+					Int32: 5,
+					Valid: true,
 				},
 				Offset: int32(m*len(selStationIDs) - 3),
 			},
@@ -539,8 +531,8 @@ func (ts *ObservationTestSuite) TestCountObservations() {
 func (ts *ObservationTestSuite) TestUpdateStationObservation() {
 	var (
 		oldObs  ObservationsObservation
-		newPres util.NullFloat4
-		newRr   util.NullFloat4
+		newPres pgtype.Float4
+		newRr   pgtype.Float4
 	)
 
 	t := ts.T()
@@ -556,8 +548,14 @@ func (ts *ObservationTestSuite) TestUpdateStationObservation() {
 			name: "SomeValues",
 			buildArg: func() UpdateStationObservationParams {
 				oldObs = createRandomObservation(t, station.ID)
-				newPres = util.RandomNullFloat4(995.0, 1100.0)
-				newRr = util.RandomNullFloat4(0.0, 15.0)
+				newPres = pgtype.Float4{
+					Float32: util.RandomFloat(995.0, 1100.0),
+					Valid:   true,
+				}
+				newRr = pgtype.Float4{
+					Float32: util.RandomFloat(0.0, 15.0),
+					Valid:   true,
+				}
 
 				return UpdateStationObservationParams{
 					StationID: station.ID,
@@ -609,9 +607,18 @@ func (ts *ObservationTestSuite) TestDeleteStationObservation() {
 
 func createRandomObservation(t *testing.T, stationID int64) ObservationsObservation {
 	arg := CreateStationObservationParams{
-		Pres: util.RandomNullFloat4(990.0, 1100.0),
-		Temp: util.RandomNullFloat4(16.0, 38.0),
-		Rr:   util.RandomNullFloat4(0.0, 10.0),
+		Pres: pgtype.Float4{
+			Float32: util.RandomFloat(999.0, 1100.9),
+			Valid:   true,
+		},
+		Temp: pgtype.Float4{
+			Float32: util.RandomFloat(16.0, 38.0),
+			Valid:   true,
+		},
+		Rr: pgtype.Float4{
+			Float32: util.RandomFloat(0.0, 10.0),
+			Valid:   true,
+		},
 		Timestamp: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,

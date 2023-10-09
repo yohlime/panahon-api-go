@@ -8,45 +8,69 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type stationResponse struct {
-	ID            int64           `json:"id"`
-	Name          string          `json:"name"`
-	Lat           util.NullFloat4 `json:"lat"`
-	Lon           util.NullFloat4 `json:"lon"`
-	Elevation     util.NullFloat4 `json:"elevation"`
-	DateInstalled pgtype.Date     `json:"date_installed"`
-	MobileNumber  util.NullString `json:"mobile_number"`
-	StationType   util.NullString `json:"station_type"`
-	StationType2  util.NullString `json:"station_type2"`
-	StationUrl    util.NullString `json:"station_url"`
-	Status        util.NullString `json:"status"`
-	Province      util.NullString `json:"province"`
-	Region        util.NullString `json:"region"`
-	Address       util.NullString `json:"address"`
-} //@name StationResponse
+type Station struct {
+	ID            int64       `json:"id"`
+	Name          string      `json:"name"`
+	Lat           float32     `json:"lat"`
+	Lon           float32     `json:"lon"`
+	Elevation     float32     `json:"elevation"`
+	DateInstalled pgtype.Date `json:"date_installed"`
+	MobileNumber  string      `json:"mobile_number"`
+	StationType   string      `json:"station_type"`
+	StationType2  string      `json:"station_type2"`
+	StationUrl    string      `json:"station_url"`
+	Status        string      `json:"status"`
+	Province      string      `json:"province"`
+	Region        string      `json:"region"`
+	Address       string      `json:"address"`
+} //@name Station
 
-func newStationResponse(station db.ObservationsStation) stationResponse {
-	return stationResponse{
+func newStation(station db.ObservationsStation) Station {
+	res := Station{
 		ID:            station.ID,
 		Name:          station.Name,
-		Lat:           station.Lat,
-		Lon:           station.Lon,
-		Elevation:     station.Elevation,
 		DateInstalled: station.DateInstalled,
-		MobileNumber:  station.MobileNumber,
-		StationType:   station.StationType,
-		StationType2:  station.StationType2,
-		StationUrl:    station.StationUrl,
-		Status:        station.Status,
-		Province:      station.Province,
-		Region:        station.Region,
-		Address:       station.Address,
 	}
+
+	if station.Lat.Valid {
+		res.Lat = station.Lat.Float32
+	}
+	if station.Lon.Valid {
+		res.Lon = station.Lon.Float32
+	}
+	if station.Elevation.Valid {
+		res.Elevation = station.Elevation.Float32
+	}
+	if station.MobileNumber.Valid {
+		res.MobileNumber = station.MobileNumber.String
+	}
+	if station.StationType.Valid {
+		res.StationType = station.StationType.String
+	}
+	if station.StationType2.Valid {
+		res.StationType2 = station.StationType2.String
+	}
+	if station.StationUrl.Valid {
+		res.StationUrl = station.StationUrl.String
+	}
+	if station.Status.Valid {
+		res.Status = station.Status.String
+	}
+	if station.Province.Valid {
+		res.Province = station.Province.String
+	}
+	if station.Region.Valid {
+		res.Region = station.Region.String
+	}
+	if station.Address.Valid {
+		res.Address = station.Address.String
+	}
+
+	return res
 }
 
 type listStationsReq struct {
@@ -57,10 +81,10 @@ type listStationsReq struct {
 } //@name ListStationsParams
 
 type listStationsRes struct {
-	Page    int32             `json:"page"`
-	PerPage int32             `json:"per_page"`
-	Total   int64             `json:"total"`
-	Data    []stationResponse `json:"data"`
+	Page    int32     `json:"page"`
+	PerPage int32     `json:"per_page"`
+	Total   int64     `json:"total"`
+	Data    []Station `json:"data"`
 } //@name ListStationsResponse
 
 // ListStations
@@ -163,9 +187,9 @@ func (s *Server) ListStations(ctx *gin.Context) {
 	}
 
 	numStations := len(stations)
-	stationsRes := make([]stationResponse, numStations)
+	stationsRes := make([]Station, numStations)
 	for i, station := range stations {
-		stationsRes[i] = newStationResponse(station)
+		stationsRes[i] = newStation(station)
 	}
 
 	var totalStations int64
@@ -216,7 +240,7 @@ type getStationReq struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		station_id	path		int	true	"Station ID"
-//	@Success	200			{object}	stationResponse
+//	@Success	200			{object}	Station
 //	@Router		/stations/{station_id} [get]
 func (s *Server) GetStation(ctx *gin.Context) {
 	var req getStationReq
@@ -235,23 +259,23 @@ func (s *Server) GetStation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStationResponse(station))
+	ctx.JSON(http.StatusOK, newStation(station))
 }
 
 type createStationReq struct {
-	Name          string          `json:"name" binding:"required,alphanumspace"`
-	Lat           util.NullFloat4 `json:"lat" binding:"omitempty,numeric"`
-	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
-	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
-	DateInstalled pgtype.Date     `json:"date_installed" binding:"omitempty"`
-	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty"`
-	StationType   util.NullString `json:"station_type" binding:"omitempty"`
-	StationType2  util.NullString `json:"station_type2" binding:"omitempty"`
-	StationUrl    util.NullString `json:"station_url" binding:"omitempty"`
-	Status        util.NullString `json:"status" binding:"omitempty"`
-	Province      util.NullString `json:"province" binding:"omitempty"`
-	Region        util.NullString `json:"region" binding:"omitempty"`
-	Address       util.NullString `json:"address" binding:"omitempty"`
+	Name          string        `json:"name" binding:"required,alphanumspace"`
+	Lat           pgtype.Float4 `json:"lat" binding:"numeric"`
+	Lon           pgtype.Float4 `json:"lon" binding:"numeric"`
+	Elevation     pgtype.Float4 `json:"elevation" binding:"numeric"`
+	DateInstalled pgtype.Date   `json:"date_installed"`
+	MobileNumber  pgtype.Text   `json:"mobile_number"`
+	StationType   pgtype.Text   `json:"station_type"`
+	StationType2  pgtype.Text   `json:"station_type2"`
+	StationUrl    pgtype.Text   `json:"station_url"`
+	Status        pgtype.Text   `json:"status"`
+	Province      pgtype.Text   `json:"province"`
+	Region        pgtype.Text   `json:"region"`
+	Address       pgtype.Text   `json:"address"`
 } //@name CreateStationParams
 
 // CreateStation
@@ -262,7 +286,7 @@ type createStationReq struct {
 //	@Produce	json
 //	@Param		req	body	createStationReq	true	"Create station parameters"
 //	@Security	BearerAuth
-//	@Success	201	{object}	stationResponse
+//	@Success	201	{object}	Station
 //	@Router		/stations [post]
 func (s *Server) CreateStation(ctx *gin.Context) {
 	var req createStationReq
@@ -293,7 +317,7 @@ func (s *Server) CreateStation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, newStationResponse(result))
+	ctx.JSON(http.StatusCreated, newStation(result))
 }
 
 type updateStationUri struct {
@@ -301,19 +325,19 @@ type updateStationUri struct {
 }
 
 type updateStationReq struct {
-	Name          util.NullString `json:"name" binding:"omitempty,alphanumspace"`
-	Lat           util.NullFloat4 `json:"lat" binding:"omitempty,numeric"`
-	Lon           util.NullFloat4 `json:"lon" binding:"omitempty,numeric"`
-	Elevation     util.NullFloat4 `json:"elevation" binding:"omitempty,numeric"`
-	DateInstalled pgtype.Date     `json:"date_installed" binding:"omitempty"`
-	MobileNumber  util.NullString `json:"mobile_number" binding:"omitempty"`
-	StationType   util.NullString `json:"station_type" binding:"omitempty"`
-	StationType2  util.NullString `json:"station_type2" binding:"omitempty"`
-	StationUrl    util.NullString `json:"station_url" binding:"omitempty"`
-	Status        util.NullString `json:"status" binding:"omitempty"`
-	Province      util.NullString `json:"province" binding:"omitempty"`
-	Region        util.NullString `json:"region" binding:"omitempty"`
-	Address       util.NullString `json:"address" binding:"omitempty"`
+	Name          pgtype.Text   `json:"name" binding:"alphanumspace"`
+	Lat           pgtype.Float4 `json:"lat" binding:"numeric"`
+	Lon           pgtype.Float4 `json:"lon" binding:"numeric"`
+	Elevation     pgtype.Float4 `json:"elevation" binding:"numeric"`
+	DateInstalled pgtype.Date   `json:"date_installed" binding:"omitempty"`
+	MobileNumber  pgtype.Text   `json:"mobile_number" binding:"omitempty"`
+	StationType   pgtype.Text   `json:"station_type" binding:"omitempty"`
+	StationType2  pgtype.Text   `json:"station_type2" binding:"omitempty"`
+	StationUrl    pgtype.Text   `json:"station_url" binding:"omitempty"`
+	Status        pgtype.Text   `json:"status" binding:"omitempty"`
+	Province      pgtype.Text   `json:"province" binding:"omitempty"`
+	Region        pgtype.Text   `json:"region" binding:"omitempty"`
+	Address       pgtype.Text   `json:"address" binding:"omitempty"`
 } //@name UpdateStationParams
 
 // UpdateStation
@@ -325,7 +349,7 @@ type updateStationReq struct {
 //	@Param		station_id	path	int					true	"Station ID"
 //	@Param		req			body	updateStationReq	true	"Update station parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	stationResponse
+//	@Success	200	{object}	Station
 //	@Router		/stations/{station_id} [put]
 func (s *Server) UpdateStation(ctx *gin.Context) {
 	var uri updateStationUri
@@ -367,7 +391,7 @@ func (s *Server) UpdateStation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStationResponse(station))
+	ctx.JSON(http.StatusOK, newStation(station))
 }
 
 type deleteStationReq struct {

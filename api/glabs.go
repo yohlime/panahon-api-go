@@ -89,11 +89,9 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 			AccessToken:     req.AccessToken,
 			AccessTokenType: GLabsAccessTokenType,
 			MobileNumber:    mobileNumber,
-			MobileNumberType: util.NullString{
-				Text: pgtype.Text{
-					String: GLabsMobileNumberType,
-					Valid:  true,
-				},
+			MobileNumberType: pgtype.Text{
+				String: GLabsMobileNumberType,
+				Valid:  true,
 			},
 		}
 
@@ -181,21 +179,30 @@ type gLabsLoadReq struct {
 } //@name GlobeLabsLoadParams
 
 type gLabsLoadRes struct {
-	Status        util.NullString    `json:"status"`
-	Promo         util.NullString    `json:"promo"`
-	TransactionID util.NullInt4      `json:"transaction_id"`
+	Status        string             `json:"status"`
+	Promo         string             `json:"promo"`
+	TransactionID int32              `json:"transaction_id"`
 	MobileNumber  string             `json:"mobile_number"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 } //@name GlobeLabsLoadResponse
 
-func newGLabsLoadResponse(res db.GlabsLoad) gLabsLoadRes {
-	return gLabsLoadRes{
-		Status:        res.Status,
-		Promo:         res.Promo,
-		TransactionID: res.TransactionID,
-		MobileNumber:  res.MobileNumber,
-		CreatedAt:     res.CreatedAt,
+func newGLabsLoadResponse(g db.GlabsLoad) gLabsLoadRes {
+	res := gLabsLoadRes{
+		MobileNumber: g.MobileNumber,
+		CreatedAt:    g.CreatedAt,
 	}
+
+	if g.TransactionID.Valid {
+		res.TransactionID = g.TransactionID.Int32
+	}
+	if g.Status.Valid {
+		res.Status = g.Status.String
+	}
+	if g.Promo.Valid {
+		res.Promo = g.Promo.String
+	}
+
+	return res
 }
 
 // CreateGLabsLoad
@@ -232,12 +239,12 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 		return
 	}
 
-	_, err := s.store.GetStationByMobileNumber(ctx, util.NullString{
-		Text: pgtype.Text{
+	_, err := s.store.GetStationByMobileNumber(ctx,
+		pgtype.Text{
 			String: mobileNumber,
 			Valid:  true,
 		},
-	})
+	)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			s.logger.Warn().Err(err).
@@ -249,23 +256,17 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 	}
 
 	gLabsLoad, err := s.store.CreateGLabsLoad(ctx, db.CreateGLabsLoadParams{
-		Promo: util.NullString{
-			Text: pgtype.Text{
-				String: req.OutboundRewardRequest.Promo,
-				Valid:  true,
-			},
+		Promo: pgtype.Text{
+			String: req.OutboundRewardRequest.Promo,
+			Valid:  true,
 		},
-		TransactionID: util.NullInt4{
-			Int4: pgtype.Int4{
-				Int32: int32(req.OutboundRewardRequest.TransactionID),
-				Valid: true,
-			},
+		TransactionID: pgtype.Int4{
+			Int32: int32(req.OutboundRewardRequest.TransactionID),
+			Valid: true,
 		},
-		Status: util.NullString{
-			Text: pgtype.Text{
-				String: req.OutboundRewardRequest.Status,
-				Valid:  true,
-			},
+		Status: pgtype.Text{
+			String: req.OutboundRewardRequest.Status,
+			Valid:  true,
 		},
 		MobileNumber: mobileNumber,
 	})

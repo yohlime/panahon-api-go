@@ -504,11 +504,10 @@ func TestUpdateUserAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.UpdateUserParams{
 					ID: user.ID,
-					FullName: util.NullString{
-						Text: pgtype.Text{
-							String: user.FullName,
-							Valid:  true,
-						}},
+					FullName: pgtype.Text{
+						String: user.FullName,
+						Valid:  true,
+					},
 				}
 
 				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), arg).
@@ -532,11 +531,10 @@ func TestUpdateUserAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.UpdateUserParams{
 					ID: user.ID,
-					FullName: util.NullString{
-						Text: pgtype.Text{
-							String: user.FullName,
-							Valid:  true,
-						}},
+					FullName: pgtype.Text{
+						String: user.FullName,
+						Valid:  true,
+					},
 				}
 
 				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), arg).
@@ -1021,11 +1019,11 @@ func randomUser(t *testing.T) (user db.User, password string) {
 	return
 }
 
-func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user userResponse) {
+func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user User) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotUser userResponse
+	var gotUser User
 	err = json.Unmarshal(data, &gotUser)
 
 	require.NoError(t, err)

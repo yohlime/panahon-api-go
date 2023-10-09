@@ -2,45 +2,68 @@ package api
 
 import (
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type stationHealthResponse struct {
+type StationHealth struct {
 	ID         int64              `json:"id"`
-	Vb1        util.NullFloat4    `json:"vb1"`
-	Vb2        util.NullFloat4    `json:"vb2"`
-	Curr       util.NullFloat4    `json:"curr"`
-	Bp1        util.NullFloat4    `json:"bp1"`
-	Bp2        util.NullFloat4    `json:"bp2"`
-	Cm         util.NullString    `json:"cm"`
-	Ss         util.NullInt4      `json:"ss"`
-	TempArq    util.NullFloat4    `json:"temp_arq"`
-	RhArq      util.NullFloat4    `json:"rh_arq"`
-	Fpm        util.NullString    `json:"fpm"`
-	ErrorMsg   util.NullString    `json:"error_msg"`
-	Message    util.NullString    `json:"message"`
-	DataCount  util.NullInt4      `json:"data_count"`
-	DataStatus util.NullString    `json:"data_status"`
+	Vb1        float32            `json:"vb1"`
+	Vb2        float32            `json:"vb2"`
+	Curr       float32            `json:"curr"`
+	Bp1        float32            `json:"bp1"`
+	Bp2        float32            `json:"bp2"`
+	Cm         string             `json:"cm"`
+	Ss         int32              `json:"ss"`
+	RhArq      float32            `json:"rh_arq"`
+	TempArq    float32            `json:"temp_arq"`
+	Fpm        string             `json:"fpm"`
+	ErrorMsg   string             `json:"error_msg"`
+	Message    string             `json:"message"`
+	DataCount  int32              `json:"data_count"`
+	DataStatus string             `json:"data_status"`
 	Timestamp  pgtype.Timestamptz `json:"timestamp"`
 	StationID  int64              `json:"station_id"`
-} //@name StationHealthResponse
+} //@name StationHealth
 
-func newStationHealthResponse(h db.ObservationsStationhealth) stationHealthResponse {
-	return stationHealthResponse{
+func newStationHealth(h db.ObservationsStationhealth) StationHealth {
+	res := StationHealth{
 		ID:        h.ID,
 		StationID: h.StationID,
-		Vb1:       h.Vb1,
-		Vb2:       h.Vb2,
-		Curr:      h.Curr,
-		Bp1:       h.Bp1,
-		Bp2:       h.Bp2,
-		Cm:        h.Cm,
-		Ss:        h.Ss,
-		TempArq:   h.TempArq,
-		RhArq:     h.RhArq,
-		Fpm:       h.Fpm,
-		ErrorMsg:  h.ErrorMsg,
 		Timestamp: h.Timestamp,
 	}
+
+	if h.Vb1.Valid {
+		res.Vb1 = h.Vb1.Float32
+	}
+	if h.Vb2.Valid {
+		res.Vb2 = h.Vb2.Float32
+	}
+	if h.Curr.Valid {
+		res.Curr = h.Curr.Float32
+	}
+	if h.Bp1.Valid {
+		res.Bp1 = h.Bp1.Float32
+	}
+	if h.Bp2.Valid {
+		res.Bp2 = h.Bp2.Float32
+	}
+	if h.TempArq.Valid {
+		res.TempArq = h.TempArq.Float32
+	}
+	if h.RhArq.Valid {
+		res.RhArq = h.RhArq.Float32
+	}
+	if h.Ss.Valid {
+		res.Ss = h.Ss.Int32
+	}
+	if h.Cm.Valid {
+		res.Cm = h.Cm.String
+	}
+	if h.Fpm.Valid {
+		res.Fpm = h.Fpm.String
+	}
+	if h.ErrorMsg.Valid {
+		res.ErrorMsg = h.ErrorMsg.String
+	}
+	return res
 }

@@ -22,43 +22,43 @@ type Lufft struct {
 }
 
 type StationObservation struct {
-	Pres      NullFloat4         `json:"pres"`
-	Rr        NullFloat4         `json:"rr"`
-	Rh        NullFloat4         `json:"rh"`
-	Temp      NullFloat4         `json:"temp"`
-	Td        NullFloat4         `json:"td"`
-	Wdir      NullFloat4         `json:"wdir"`
-	Wspd      NullFloat4         `json:"wspd"`
-	Wspdx     NullFloat4         `json:"wspdx"`
-	Srad      NullFloat4         `json:"srad"`
-	Mslp      NullFloat4         `json:"mslp"`
-	Hi        NullFloat4         `json:"hi"`
-	Wchill    NullFloat4         `json:"wchill"`
+	Pres      pgtype.Float4      `json:"pres"`
+	Rr        pgtype.Float4      `json:"rr"`
+	Rh        pgtype.Float4      `json:"rh"`
+	Temp      pgtype.Float4      `json:"temp"`
+	Td        pgtype.Float4      `json:"td"`
+	Wdir      pgtype.Float4      `json:"wdir"`
+	Wspd      pgtype.Float4      `json:"wspd"`
+	Wspdx     pgtype.Float4      `json:"wspdx"`
+	Srad      pgtype.Float4      `json:"srad"`
+	Mslp      pgtype.Float4      `json:"mslp"`
+	Hi        pgtype.Float4      `json:"hi"`
+	Wchill    pgtype.Float4      `json:"wchill"`
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 type StationHealth struct {
-	Vb1               NullFloat4         `json:"vb1"`
-	Vb2               NullFloat4         `json:"vb2"`
-	Curr              NullFloat4         `json:"curr"`
-	Bp1               NullFloat4         `json:"bp1"`
-	Bp2               NullFloat4         `json:"bp2"`
-	Cm                NullString         `json:"cm"`
-	Ss                NullInt4           `json:"ss"`
-	TempArq           NullFloat4         `json:"temp_arq"`
-	RhArq             NullFloat4         `json:"rh_arq"`
-	Fpm               NullString         `json:"fpm"`
-	ErrorMsg          NullString         `json:"error_msg"`
-	Message           NullString         `json:"message"`
-	DataCount         NullInt4           `json:"data_count"`
-	DataStatus        NullString         `json:"data_status"`
+	Vb1               pgtype.Float4      `json:"vb1"`
+	Vb2               pgtype.Float4      `json:"vb2"`
+	Curr              pgtype.Float4      `json:"curr"`
+	Bp1               pgtype.Float4      `json:"bp1"`
+	Bp2               pgtype.Float4      `json:"bp2"`
+	Cm                pgtype.Text        `json:"cm"`
+	Ss                pgtype.Int4        `json:"ss"`
+	TempArq           pgtype.Float4      `json:"temp_arq"`
+	RhArq             pgtype.Float4      `json:"rh_arq"`
+	Fpm               pgtype.Text        `json:"fpm"`
+	ErrorMsg          pgtype.Text        `json:"error_msg"`
+	Message           pgtype.Text        `json:"message"`
+	DataCount         pgtype.Int4        `json:"data_count"`
+	DataStatus        pgtype.Text        `json:"data_status"`
 	Timestamp         pgtype.Timestamptz `json:"timestamp"`
-	MinutesDifference NullInt4           `json:"minutes_difference"`
+	MinutesDifference pgtype.Int4        `json:"minutes_difference"`
 }
 
 func (l Lufft) String(nVal int) string {
-	var wspd, wspdx NullFloat4
-	var rr NullInt4
+	var wspd, wspdx pgtype.Float4
+	var rr pgtype.Int4
 	if l.Obs.Wspd.Valid {
 		wspd.Float32 = l.Obs.Wspd.Float32 * 3.6
 		wspd.Valid = true
@@ -72,59 +72,116 @@ func (l Lufft) String(nVal int) string {
 		rr.Valid = true
 	}
 
-	obsStr := strings.Join([]string{
-		l.Obs.Temp.String(),
-		l.Obs.Rh.String(),
-		l.Obs.Pres.String(),
-		wspd.String(),
-		wspdx.String(),
-	}, "+")
-
+	// obsStr := ""
+	var obsStrSlice []string
+	for _, f := range []pgtype.Float4{l.Obs.Temp, l.Obs.Rh, l.Obs.Pres, wspd, wspdx} {
+		if f.Valid {
+			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+		} else {
+			obsStrSlice = append(obsStrSlice, "")
+		}
+	}
 	if nVal == 20 || nVal == 24 {
-		obsStr = obsStr + "+0"
+		obsStrSlice = append(obsStrSlice, "0")
 	}
+	for _, f := range []pgtype.Float4{l.Obs.Wdir, l.Obs.Srad, l.Obs.Td, l.Obs.Wchill} {
+		if f.Valid {
+			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+		} else {
+			obsStrSlice = append(obsStrSlice, "")
+		}
+	}
+	if rr.Valid {
+		obsStrSlice = append(obsStrSlice, fmt.Sprintf("%d", rr.Int32))
+	} else {
+		obsStrSlice = append(obsStrSlice, "")
+	}
+	obsStr := strings.Join(obsStrSlice, "+")
 
-	obsStr = obsStr + "+" + strings.Join([]string{
-		l.Obs.Wdir.String(),
-		l.Obs.Srad.String(),
-		l.Obs.Td.String(),
-		l.Obs.Wchill.String(),
-		rr.String(),
-	}, "+")
-
-	hStr := ""
+	var hStrSlice []string
 	if nVal == 23 || nVal == 24 {
-		hStr = strings.Join([]string{
-			l.Health.Vb1.String(),
-			l.Health.Vb2.String(),
-			l.Health.Curr.String(),
-			l.Health.Bp1.String(),
-			l.Health.Bp2.String(),
-			l.Health.Cm.String(),
-			l.Health.Ss.String(),
-			l.Health.TempArq.String(),
-			l.Health.RhArq.String(),
-			l.Health.Fpm.String(),
-		}, "+")
+		for _, f := range []pgtype.Float4{l.Health.Vb1, l.Health.Vb2, l.Health.Curr, l.Health.Bp1, l.Health.Bp2} {
+			if f.Valid {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+			} else {
+				hStrSlice = append(hStrSlice, "")
+			}
+		}
+		if l.Health.Cm.Valid {
+			hStrSlice = append(hStrSlice, l.Health.Cm.String)
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		if l.Health.Ss.Valid {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss.Int32))
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		for _, f := range []pgtype.Float4{l.Health.TempArq, l.Health.RhArq} {
+			if f.Valid {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+			} else {
+				hStrSlice = append(hStrSlice, "")
+			}
+		}
+		if l.Health.Fpm.Valid {
+			hStrSlice = append(hStrSlice, l.Health.Fpm.String)
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
 	} else if nVal == 19 {
-		hStr = strings.Join([]string{
-			l.Health.TempArq.String(),
-			l.Health.RhArq.String(),
-			l.Health.Ss.String(),
-			fmt.Sprintf("%s#", l.Health.Vb1),
-			l.Health.Bp1.String(),
-			l.Health.Fpm.String(),
-		}, "+")
+		for _, f := range []pgtype.Float4{l.Health.TempArq, l.Health.RhArq} {
+			if f.Valid {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+			} else {
+				hStrSlice = append(hStrSlice, "")
+			}
+		}
+		if l.Health.Ss.Valid {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss.Int32))
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		if l.Health.Vb1.Valid {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(l.Health.Vb1.Float32)*100)/100))
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		if l.Health.Bp1.Valid {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(l.Health.Bp1.Float32)*100)/100))
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		if l.Health.Fpm.Valid {
+			hStrSlice = append(hStrSlice, l.Health.Fpm.String)
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
 	} else if nVal == 20 {
-		hStr = strings.Join([]string{
-			l.Health.Ss.String(),
-			fmt.Sprintf("%s#", l.Health.Vb1),
-			l.Health.Bp1.String(),
-			l.Health.TempArq.String(),
-			l.Health.RhArq.String(),
-			l.Health.Fpm.String(),
-		}, "+")
+		if l.Health.Ss.Valid {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss.Int32))
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		if l.Health.Vb1.Valid {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(l.Health.Vb1.Float32)*100)/100))
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
+		for _, f := range []pgtype.Float4{l.Health.Bp1, l.Health.TempArq, l.Health.RhArq} {
+			if f.Valid {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+			} else {
+				hStrSlice = append(hStrSlice, "")
+			}
+		}
+		if l.Health.Fpm.Valid {
+			hStrSlice = append(hStrSlice, l.Health.Fpm.String)
+		} else {
+			hStrSlice = append(hStrSlice, "")
+		}
 	}
+	hStr := strings.Join(hStrSlice, "+")
 
 	timestampStr := l.Obs.Timestamp.Time.Format(time.RFC3339)
 	if nVal == 23 || nVal == 24 {
@@ -205,20 +262,16 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 			Curr: parseFloat(valStrs[13], false),
 			Bp1:  parseFloat(valStrs[14], false),
 			Bp2:  parseFloat(valStrs[15], false),
-			Cm: NullString{
-				Text: pgtype.Text{
-					String: valStrs[16],
-					Valid:  true,
-				},
+			Cm: pgtype.Text{
+				String: valStrs[16],
+				Valid:  true,
 			},
 			Ss:      parseInt(valStrs[17]),
 			TempArq: parseFloat(valStrs[18], false),
 			RhArq:   parseFloat(valStrs[19], false),
-			Fpm: NullString{
-				Text: pgtype.Text{
-					String: valStrs[20],
-					Valid:  true,
-				},
+			Fpm: pgtype.Text{
+				String: valStrs[20],
+				Valid:  true,
 			},
 		}
 	} else if nVal == 19 {
@@ -228,11 +281,9 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 			Ss:      parseInt(valStrs[13]),
 			Vb1:     parseFloat(strings.Split(valStrs[14], "#")[0], false),
 			Bp1:     parseFloat(valStrs[15], false),
-			Fpm: NullString{
-				Text: pgtype.Text{
-					String: valStrs[16],
-					Valid:  true,
-				},
+			Fpm: pgtype.Text{
+				String: valStrs[16],
+				Valid:  true,
 			},
 		}
 	} else if nVal == 20 {
@@ -242,10 +293,8 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 			Bp1:     parseFloat(valStrs[13], false),
 			TempArq: parseFloat(valStrs[14], false),
 			RhArq:   parseFloat(valStrs[15], false),
-			Fpm: NullString{
-				Text: pgtype.Text{String: valStrs[16],
-					Valid: true},
-			},
+			Fpm: pgtype.Text{String: valStrs[16],
+				Valid: true},
 		}
 	}
 
@@ -263,28 +312,23 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 
 	l.Health = health
 	l.Health.Timestamp = timestamp
-	l.Health.Message = NullString{
-		Text: pgtype.Text{String: valStr,
-			Valid: true},
+	l.Health.Message = pgtype.Text{String: valStr,
+		Valid: true,
 	}
-	l.Health.MinutesDifference = NullInt4{
-		Int4: pgtype.Int4{
-			Int32: int32(minutesDiff),
-			Valid: true,
-		}}
-	l.Health.ErrorMsg = NullString{
-		Text: pgtype.Text{String: errMsg,
-			Valid: true},
+
+	l.Health.MinutesDifference = pgtype.Int4{
+		Int32: int32(minutesDiff),
+		Valid: true,
 	}
-	l.Health.DataCount = NullInt4{
-		Int4: pgtype.Int4{
-			Int32: int32(dataCount),
-			Valid: true,
-		},
+	l.Health.ErrorMsg = pgtype.Text{String: errMsg,
+		Valid: true,
 	}
-	l.Health.DataStatus = NullString{
-		Text: pgtype.Text{String: dataStatus,
-			Valid: true},
+	l.Health.DataCount = pgtype.Int4{
+		Int32: int32(dataCount),
+		Valid: true,
+	}
+	l.Health.DataStatus = pgtype.Text{String: dataStatus,
+		Valid: true,
 	}
 
 	return l, nil
@@ -297,48 +341,98 @@ func RandomLufft() Lufft {
 	}
 	return Lufft{
 		Obs: StationObservation{
-			Temp:      RandomNullFloat4(20, 35),
-			Rh:        RandomNullFloat4(0, 100),
-			Pres:      RandomNullFloat4(990, 1100),
-			Wspd:      RandomNullFloat4(20, 35),
-			Wspdx:     RandomNullFloat4(35, 50),
-			Wdir:      RandomNullFloat4(0, 359),
-			Srad:      RandomNullFloat4(0, 1000),
-			Td:        RandomNullFloat4(20, 35),
-			Wchill:    RandomNullFloat4(20, 35),
-			Rr:        RandomNullFloat4(0, 100),
+			Temp: pgtype.Float4{
+				Float32: RandomFloat(20, 35),
+				Valid:   true,
+			},
+			Rh: pgtype.Float4{
+				Float32: RandomFloat(0, 100),
+				Valid:   true,
+			},
+			Pres: pgtype.Float4{
+				Float32: RandomFloat(990, 1100),
+				Valid:   true,
+			},
+			Wspd: pgtype.Float4{
+				Float32: RandomFloat(20, 35),
+				Valid:   true,
+			},
+			Wspdx: pgtype.Float4{
+				Float32: RandomFloat(35, 50),
+				Valid:   true,
+			},
+			Wdir: pgtype.Float4{
+				Float32: RandomFloat(0, 359),
+				Valid:   true,
+			},
+			Srad: pgtype.Float4{
+				Float32: RandomFloat(0, 1000),
+				Valid:   true,
+			},
+			Td: pgtype.Float4{
+				Float32: RandomFloat(20, 35),
+				Valid:   true,
+			},
+			Wchill: pgtype.Float4{
+				Float32: RandomFloat(20, 35),
+				Valid:   true,
+			},
+			Rr: pgtype.Float4{
+				Float32: RandomFloat(0, 100),
+				Valid:   true,
+			},
 			Timestamp: timestamp,
 		},
 		Health: StationHealth{
-			Vb1:  RandomNullFloat4(0, 20),
-			Vb2:  RandomNullFloat4(0, 20),
-			Curr: RandomNullFloat4(0, 1),
-			Bp1:  RandomNullFloat4(0, 30),
-			Bp2:  RandomNullFloat4(0, 30),
-			Cm: NullString{
-				Text: pgtype.Text{
-					String: RandomString(6),
-					Valid:  true,
-				},
+			Vb1: pgtype.Float4{
+				Float32: RandomFloat(0, 20),
+				Valid:   true,
 			},
-			Ss:      RandomNullInt4(0, 100),
-			TempArq: RandomNullFloat4(20, 35),
-			RhArq:   RandomNullFloat4(0, 100),
-			Fpm: NullString{Text: pgtype.Text{
+			Vb2: pgtype.Float4{
+				Float32: RandomFloat(0, 20),
+				Valid:   true,
+			},
+			Curr: pgtype.Float4{
+				Float32: RandomFloat(0, 1),
+				Valid:   true,
+			},
+			Bp1: pgtype.Float4{
+				Float32: RandomFloat(0, 30),
+				Valid:   true,
+			},
+			Bp2: pgtype.Float4{
+				Float32: RandomFloat(0, 30),
+				Valid:   true,
+			},
+			Cm: pgtype.Text{
 				String: RandomString(6),
 				Valid:  true,
-			}},
+			},
+			Ss: pgtype.Int4{
+				Int32: int32(RandomInt(0, 100)),
+				Valid: true,
+			},
+			TempArq: pgtype.Float4{
+				Float32: RandomFloat(20, 35),
+				Valid:   true,
+			},
+			RhArq: pgtype.Float4{
+				Float32: RandomFloat(0, 100),
+				Valid:   true,
+			},
+			Fpm: pgtype.Text{
+				String: RandomString(6),
+				Valid:  true,
+			},
 			Timestamp: timestamp,
 		},
 	}
 }
 
-func parseFloat(s string, skipValidation bool) NullFloat4 {
-	ret := NullFloat4{
-		Float4: pgtype.Float4{
-			Float32: 0.0,
-			Valid:   false,
-		},
+func parseFloat(s string, skipValidation bool) pgtype.Float4 {
+	ret := pgtype.Float4{
+		Float32: 0.0,
+		Valid:   false,
 	}
 
 	val, err := strconv.ParseFloat(s, 32)
@@ -352,7 +446,7 @@ func parseFloat(s string, skipValidation bool) NullFloat4 {
 	return ret
 }
 
-func parseFloatWithCF(s string, skipValidation bool, cf float32) NullFloat4 {
+func parseFloatWithCF(s string, skipValidation bool, cf float32) pgtype.Float4 {
 	ret := parseFloat(s, skipValidation)
 
 	if ret.Valid {
@@ -362,12 +456,10 @@ func parseFloatWithCF(s string, skipValidation bool, cf float32) NullFloat4 {
 	return ret
 }
 
-func parseInt(s string) NullInt4 {
-	ret := NullInt4{
-		Int4: pgtype.Int4{
-			Int32: 0,
-			Valid: false,
-		},
+func parseInt(s string) pgtype.Int4 {
+	ret := pgtype.Int4{
+		Int32: 0,
+		Valid: false,
 	}
 
 	val, err := strconv.ParseInt(s, 10, 0)

@@ -31,11 +31,11 @@ func TestLufft(t *testing.T) {
 				require.NoError(t, err)
 				requireLufftEqual(t, lufft, *lufft2)
 
-				require.Equal(t, lufft2.Health.Message.String(), valStr)
+				require.Equal(t, lufft2.Health.Message.String, valStr)
 				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String(), "")
+				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
 				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String(), "1111111111")
+				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
 			},
 		},
 		{
@@ -55,11 +55,11 @@ func TestLufft(t *testing.T) {
 				require.False(t, lufft2.Health.Bp2.Valid)
 				require.False(t, lufft2.Health.Cm.Valid)
 
-				require.Equal(t, lufft2.Health.Message.String(), valStr)
+				require.Equal(t, lufft2.Health.Message.String, valStr)
 				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String(), "")
+				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
 				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String(), "1111111111")
+				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
 			},
 		},
 		{
@@ -74,11 +74,11 @@ func TestLufft(t *testing.T) {
 				require.NoError(t, err)
 				requireLufftEqual(t, lufft, *lufft2)
 
-				require.Equal(t, lufft2.Health.Message.String(), valStr)
+				require.Equal(t, lufft2.Health.Message.String, valStr)
 				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String(), "")
+				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
 				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String(), "1111111111")
+				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
 			},
 		},
 		{
@@ -98,11 +98,11 @@ func TestLufft(t *testing.T) {
 				require.False(t, lufft2.Health.Bp2.Valid)
 				require.False(t, lufft2.Health.Cm.Valid)
 
-				require.Equal(t, lufft2.Health.Message.String(), valStr)
+				require.Equal(t, lufft2.Health.Message.String, valStr)
 				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String(), "")
+				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
 				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String(), "1111111111")
+				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
 			},
 		},
 		{

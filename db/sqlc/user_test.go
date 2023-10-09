@@ -98,10 +98,10 @@ func (ts *UserTestSuite) TestUpdateUser() {
 				newFullName = util.RandomString(12)
 				return UpdateUserParams{
 					ID: oldUser.ID,
-					FullName: util.NullString{Text: pgtype.Text{
+					FullName: pgtype.Text{
 						String: newFullName,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedUser User, err error) {
@@ -119,10 +119,10 @@ func (ts *UserTestSuite) TestUpdateUser() {
 				newEmail = util.RandomEmail()
 				return UpdateUserParams{
 					ID: oldUser.ID,
-					Email: util.NullString{Text: pgtype.Text{
+					Email: pgtype.Text{
 						String: newEmail,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedUser User, err error) {
@@ -143,10 +143,10 @@ func (ts *UserTestSuite) TestUpdateUser() {
 				require.NoError(t, err)
 				return UpdateUserParams{
 					ID: oldUser.ID,
-					Password: util.NullString{Text: pgtype.Text{
+					Password: pgtype.Text{
 						String: newHashedPassword,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedUser User, err error) {
@@ -169,18 +169,18 @@ func (ts *UserTestSuite) TestUpdateUser() {
 				require.NoError(t, err)
 				return UpdateUserParams{
 					ID: oldUser.ID,
-					FullName: util.NullString{Text: pgtype.Text{
+					FullName: pgtype.Text{
 						String: newFullName,
 						Valid:  true,
-					}},
-					Email: util.NullString{Text: pgtype.Text{
+					},
+					Email: pgtype.Text{
 						String: newEmail,
 						Valid:  true,
-					}},
-					Password: util.NullString{Text: pgtype.Text{
+					},
+					Password: pgtype.Text{
 						String: newHashedPassword,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedUser User, err error) {

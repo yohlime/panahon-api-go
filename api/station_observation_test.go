@@ -791,8 +791,8 @@ func randomStationObservation(stationID int64) db.ObservationsObservation {
 	return db.ObservationsObservation{
 		ID:        util.RandomInt(1, 1000),
 		StationID: stationID,
-		Pres:      util.NullFloat4{Float4: pgtype.Float4{Float32: util.RandomFloat(900.0, 1000.0), Valid: true}},
-		Temp:      util.NullFloat4{Float4: pgtype.Float4{Float32: util.RandomFloat(25.0, 35.0), Valid: true}},
+		Pres:      pgtype.Float4{Float32: util.RandomFloat(900.0, 1000.0), Valid: true},
+		Temp:      pgtype.Float4{Float32: util.RandomFloat(25.0, 35.0), Valid: true},
 	}
 }
 
@@ -800,10 +800,10 @@ func requireBodyMatchStationObservation(t *testing.T, body *bytes.Buffer, statio
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStationObs stationObsResponse
+	var gotStationObs StationObservation
 	err = json.Unmarshal(data, &gotStationObs)
 	require.NoError(t, err)
-	require.Equal(t, newStationObsResponse(stationObs), gotStationObs)
+	require.Equal(t, newStationObservation(stationObs), gotStationObs)
 }
 
 func requireBodyMatchStationObservations(t *testing.T, body *bytes.Buffer, stationObsSlice []db.ObservationsObservation) {
@@ -814,9 +814,9 @@ func requireBodyMatchStationObservations(t *testing.T, body *bytes.Buffer, stati
 	err = json.Unmarshal(data, &gotStationObsSlice)
 	require.NoError(t, err)
 
-	stationObsSliceRes := make([]stationObsResponse, len(stationObsSlice))
+	stationObsSliceRes := make([]StationObservation, len(stationObsSlice))
 	for i, obs := range stationObsSlice {
-		stationObsSliceRes[i] = newStationObsResponse(obs)
+		stationObsSliceRes[i] = newStationObservation(obs)
 	}
 	require.Equal(t, stationObsSliceRes, gotStationObsSlice.Data)
 }

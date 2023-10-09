@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog/log"
 )
 
 type FirstOrCreateSimAccessTokenTxParams struct {
-	MobileNumber     string          `json:"mobile_number"`
-	MobileNumberType util.NullString `json:"mobile_number_type"`
-	AccessToken      string          `json:"access_token"`
-	AccessTokenType  string          `json:"access_token_type"`
+	MobileNumber     string      `json:"mobile_number"`
+	MobileNumberType pgtype.Text `json:"mobile_number_type"`
+	AccessToken      string      `json:"access_token"`
+	AccessTokenType  string      `json:"access_token_type"`
 }
 
 type FirstOrCreateSimAccessTokenTxResult struct {

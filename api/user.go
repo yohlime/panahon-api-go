@@ -14,17 +14,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type userResponse struct {
+type User struct {
 	Username          string             `json:"username"`
 	FullName          string             `json:"full_name"`
 	Email             string             `json:"email"`
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	Roles             []string           `json:"roles,omitempty"`
-} //@name UserResponse
+	Roles             []string           `json:"roles"`
+} //@name User
 
-func newUserResponse(user db.User, roleNames []string) userResponse {
-	ret := userResponse{
+func newUserResponse(user db.User, roleNames []string) User {
+	ret := User{
 		Username:          user.Username,
 		FullName:          user.FullName,
 		Email:             user.Email,
@@ -45,10 +45,10 @@ type listUsersReq struct {
 } //@name ListUsersParams
 
 type listUsersRes struct {
-	Page    int32          `json:"page"`
-	PerPage int32          `json:"per_page"`
-	Total   int64          `json:"total"`
-	Data    []userResponse `json:"data"`
+	Page    int32  `json:"page"`
+	PerPage int32  `json:"per_page"`
+	Total   int64  `json:"total"`
+	Data    []User `json:"data"`
 } //@name ListUsersResponse
 
 // ListUsers
@@ -80,7 +80,7 @@ func (s *Server) ListUsers(ctx *gin.Context) {
 	}
 
 	numUsers := len(users)
-	usersRes := make([]userResponse, numUsers)
+	usersRes := make([]User, numUsers)
 	for i, user := range users {
 		usersRes[i] = newUserResponse(user, nil)
 	}
@@ -113,7 +113,7 @@ type getUserReq struct {
 //	@Produce	json
 //	@Param		id	path	int	true	"User ID"
 //	@Security	BearerAuth
-//	@Success	200	{object}	userResponse
+//	@Success	200	{object}	User
 //	@Router		/users/{id} [get]
 func (s *Server) GetUser(ctx *gin.Context) {
 	var req getUserReq
@@ -153,7 +153,7 @@ type createUserReq struct {
 //	@Produce	json
 //	@Param		req	body	createUserReq	true	"Create user parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	userResponse
+//	@Success	200	{object}	User
 //	@Router		/users/{id} [post]
 func (s *Server) CreateUser(ctx *gin.Context) {
 	var req createUserReq
@@ -209,10 +209,10 @@ type updateUserUri struct {
 }
 
 type updateUserReq struct {
-	Password util.NullString `json:"password" binding:"omitempty,min=6"`
-	FullName util.NullString `json:"full_name" binding:"omitempty,alphanumspace"`
-	Email    util.NullString `json:"email" binding:"omitempty,email"`
-	Roles    []string        `json:"roles"`
+	Password string   `json:"password" binding:"omitempty,min=6"`
+	FullName string   `json:"full_name" binding:"omitempty,alphanumspace"`
+	Email    string   `json:"email" binding:"omitempty,email"`
+	Roles    []string `json:"roles"`
 } //@name UpdateUserParams
 
 // UpdateUser
@@ -224,7 +224,7 @@ type updateUserReq struct {
 //	@Param		id	path	int				true	"User ID"
 //	@Param		req	body	updateUserReq	true	"Update user parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	userResponse
+//	@Success	200	{object}	User
 //	@Router		/users/{id} [put]
 func (s *Server) UpdateUser(ctx *gin.Context) {
 	var uri updateUserUri
@@ -239,15 +239,15 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	var newPassword util.NullString
+	var newPassword pgtype.Text
 	var passwordChangedAt pgtype.Timestamptz
-	if req.Password.Valid {
-		hashedPassword, err := util.HashPassword(req.Password.Text.String)
+	if len(req.Password) > 0 {
+		hashedPassword, err := util.HashPassword(req.Password)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
-		newPassword.Text.String = hashedPassword
+		newPassword.String = hashedPassword
 		newPassword.Valid = true
 		passwordChangedAt.Time = time.Now()
 		passwordChangedAt.Valid = true
@@ -257,8 +257,14 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 		ID:                uri.ID,
 		Password:          newPassword,
 		PasswordChangedAt: passwordChangedAt,
-		FullName:          req.FullName,
-		Email:             req.Email,
+		FullName: pgtype.Text{
+			String: req.FullName,
+			Valid:  len(req.FullName) > 0,
+		},
+		Email: pgtype.Text{
+			String: req.Email,
+			Valid:  len(req.Email) > 0,
+		},
 	}
 
 	user, err := s.store.UpdateUser(ctx, arg)
@@ -357,7 +363,7 @@ type registerUserReq struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	body		registerUserReq	true	"Register user parameters"
-//	@Success	200	{object}	userResponse
+//	@Success	200	{object}	User
 //	@Router		/users/register [post]
 func (s *Server) RegisterUser(ctx *gin.Context) {
 	var req registerUserReq
@@ -408,12 +414,12 @@ type loginUserRequest struct {
 } //@name LoginUserParams
 
 type loginUserResponse struct {
-	SessionID             uuid.UUID    `json:"session_id"`
-	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
-	AccessToken           string       `json:"access_token"`
-	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
-	RefreshToken          string       `json:"refresh_token"`
-	User                  userResponse `json:"user"`
+	SessionID             uuid.UUID `json:"session_id"`
+	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
+	AccessToken           string    `json:"access_token"`
+	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
+	RefreshToken          string    `json:"refresh_token"`
+	User                  User      `json:"user"`
 } //@name LoginUserResponse
 
 // LoginUser
@@ -499,7 +505,7 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 //	@Accept		json
 //	@Produce	json
 //	@Security	BearerAuth
-//	@Success	200	{object}	userResponse
+//	@Success	200	{object}	User
 //	@Router		/users/auth [get]
 func (s *Server) GetAuthUser(ctx *gin.Context) {
 	_authPayload, _ := ctx.Get(authorizationPayloadKey)

@@ -31,23 +31,22 @@ func (ts *GLabsTestSuite) TearDownTest() {
 func (ts *GLabsTestSuite) TestCreateGLabsLoad() {
 	t := ts.T()
 	station := createRandomStation(t, false)
-	createRandomGlabsLoad(t, station.MobileNumber.Text.String)
+	createRandomGlabsLoad(t, station.MobileNumber.String)
 }
 
 func createRandomGlabsLoad(t *testing.T, mobileNumber string) GlabsLoad {
 	arg := CreateGLabsLoadParams{
-		Promo: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(10),
-				Valid:  true,
-			},
+		Promo: pgtype.Text{
+			String: util.RandomString(10),
+			Valid:  true,
 		},
-		TransactionID: util.RandomNullInt4(1000000, 9999999),
-		Status: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(10),
-				Valid:  true,
-			},
+		TransactionID: pgtype.Int4{
+			Int32: int32(util.RandomInt(1000000, 9999999)),
+			Valid: true,
+		},
+		Status: pgtype.Text{
+			String: util.RandomString(10),
+			Valid:  true,
 		},
 		MobileNumber: mobileNumber,
 	}

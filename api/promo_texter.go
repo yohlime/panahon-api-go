@@ -55,11 +55,9 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 		return
 	}
 
-	station, err := s.store.GetStationByMobileNumber(ctx, util.NullString{
-		Text: pgtype.Text{
-			String: mobileNumber,
-			Valid:  true,
-		},
+	station, err := s.store.GetStationByMobileNumber(ctx, pgtype.Text{
+		String: mobileNumber,
+		Valid:  true,
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {

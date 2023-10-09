@@ -56,11 +56,9 @@ func createRandomSimCard(t *testing.T) SimCard {
 func randomSimCard() SimCard {
 	return SimCard{
 		MobileNumber: util.RandomMobileNumber(),
-		Type: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(6),
-				Valid:  true,
-			},
+		Type: pgtype.Text{
+			String: util.RandomString(6),
+			Valid:  true,
 		},
 		CreatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),

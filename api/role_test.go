@@ -480,11 +480,9 @@ func randomRole(t *testing.T) db.Role {
 	return db.Role{
 		ID:   util.RandomInt(1, 1000),
 		Name: strings.ToUpper(util.RandomString(12)),
-		Description: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(24),
-				Valid:  true,
-			},
+		Description: pgtype.Text{
+			String: util.RandomString(24),
+			Valid:  true,
 		},
 	}
 }
@@ -511,6 +509,6 @@ func requireBodyMatchRoles(t *testing.T, body *bytes.Buffer, roles []db.Role) {
 	require.NoError(t, err)
 	for i, role := range roles {
 		require.Equal(t, role.Name, gotRoles.Data[i].Name)
-		require.Equal(t, role.Description, gotRoles.Data[i].Description)
+		require.Equal(t, role.Description.String, gotRoles.Data[i].Description)
 	}
 }

@@ -99,10 +99,10 @@ func (ts *RoleTestSuite) TestUpdateRole() {
 				newName = util.RandomString(12)
 				return UpdateRoleParams{
 					ID: oldRole.ID,
-					Name: util.NullString{Text: pgtype.Text{
+					Name: pgtype.Text{
 						String: newName,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedRole Role, err error) {
@@ -119,16 +119,16 @@ func (ts *RoleTestSuite) TestUpdateRole() {
 				newDescription = util.RandomString(16)
 				return UpdateRoleParams{
 					ID: oldRole.ID,
-					Description: util.NullString{Text: pgtype.Text{
+					Description: pgtype.Text{
 						String: newDescription,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedRole Role, err error) {
 				require.NoError(t, err)
 				require.NotEqual(t, oldRole.Description, updatedRole.Description)
-				require.Equal(t, newDescription, updatedRole.Description.String())
+				require.Equal(t, newDescription, updatedRole.Description.String)
 				require.Equal(t, oldRole.Name, updatedRole.Name)
 			},
 		},
@@ -142,14 +142,14 @@ func (ts *RoleTestSuite) TestUpdateRole() {
 				require.NoError(t, err)
 				return UpdateRoleParams{
 					ID: oldRole.ID,
-					Name: util.NullString{Text: pgtype.Text{
+					Name: pgtype.Text{
 						String: newName,
 						Valid:  true,
-					}},
-					Description: util.NullString{Text: pgtype.Text{
+					},
+					Description: pgtype.Text{
 						String: newDescription,
 						Valid:  true,
-					}},
+					},
 				}
 			},
 			checkResult: func(updatedRole Role, err error) {
@@ -157,7 +157,7 @@ func (ts *RoleTestSuite) TestUpdateRole() {
 				require.NotEqual(t, oldRole.Name, updatedRole.Name)
 				require.Equal(t, newName, updatedRole.Name)
 				require.NotEqual(t, oldRole.Description, updatedRole.Description)
-				require.Equal(t, newDescription, updatedRole.Description.String())
+				require.Equal(t, newDescription, updatedRole.Description.String)
 			},
 		},
 	}
@@ -189,11 +189,9 @@ func (ts *RoleTestSuite) TestDeleteRole() {
 func createRandomRole(t *testing.T) Role {
 	arg := CreateRoleParams{
 		Name: util.RandomString(12),
-		Description: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(16),
-				Valid:  true,
-			},
+		Description: pgtype.Text{
+			String: util.RandomString(16),
+			Valid:  true,
 		},
 	}
 

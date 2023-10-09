@@ -12,44 +12,71 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type stationObsResponse struct {
+type StationObservation struct {
 	ID        int64              `json:"id"`
-	Pres      util.NullFloat4    `json:"pres"`
-	Rr        util.NullFloat4    `json:"rr"`
-	Rh        util.NullFloat4    `json:"rh"`
-	Temp      util.NullFloat4    `json:"temp"`
-	Td        util.NullFloat4    `json:"td"`
-	Wdir      util.NullFloat4    `json:"wdir"`
-	Wspd      util.NullFloat4    `json:"wspd"`
-	Wspdx     util.NullFloat4    `json:"wspdx"`
-	Srad      util.NullFloat4    `json:"srad"`
-	Mslp      util.NullFloat4    `json:"mslp"`
-	Hi        util.NullFloat4    `json:"hi"`
+	Pres      float32            `json:"pres"`
+	Rr        float32            `json:"rr"`
+	Rh        float32            `json:"rh"`
+	Temp      float32            `json:"temp"`
+	Td        float32            `json:"td"`
+	Wdir      float32            `json:"wdir"`
+	Wspd      float32            `json:"wspd"`
+	Wspdx     float32            `json:"wspdx"`
+	Srad      float32            `json:"srad"`
+	Mslp      float32            `json:"mslp"`
+	Hi        float32            `json:"hi"`
 	StationID int64              `json:"station_id"`
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
-	Wchill    util.NullFloat4    `json:"wchill"`
+	Wchill    float32            `json:"wchill"`
 	QcLevel   int32              `json:"qc_level"`
-} //@name StationObservationResponse
+} //@name StationObservation
 
-func newStationObsResponse(obs db.ObservationsObservation) stationObsResponse {
-	return stationObsResponse{
+func newStationObservation(obs db.ObservationsObservation) StationObservation {
+	res := StationObservation{
 		ID:        obs.ID,
 		StationID: obs.StationID,
-		Pres:      obs.Pres,
-		Rr:        obs.Rr,
-		Rh:        obs.Rh,
-		Temp:      obs.Temp,
-		Td:        obs.Td,
-		Wdir:      obs.Wdir,
-		Wspd:      obs.Wspd,
-		Wspdx:     obs.Wspdx,
-		Srad:      obs.Srad,
-		Mslp:      obs.Mslp,
-		Hi:        obs.Hi,
-		Wchill:    obs.Wchill,
 		Timestamp: obs.Timestamp,
 		QcLevel:   obs.QcLevel,
 	}
+
+	if obs.Pres.Valid {
+		res.Pres = obs.Pres.Float32
+	}
+	if obs.Rr.Valid {
+		res.Rr = obs.Rr.Float32
+	}
+	if obs.Rh.Valid {
+		res.Rh = obs.Rh.Float32
+	}
+	if obs.Temp.Valid {
+		res.Temp = obs.Temp.Float32
+	}
+	if obs.Td.Valid {
+		res.Td = obs.Td.Float32
+	}
+	if obs.Wdir.Valid {
+		res.Wdir = obs.Wdir.Float32
+	}
+	if obs.Wspd.Valid {
+		res.Wspd = obs.Wspd.Float32
+	}
+	if obs.Wspdx.Valid {
+		res.Wspdx = obs.Wspdx.Float32
+	}
+	if obs.Srad.Valid {
+		res.Srad = obs.Srad.Float32
+	}
+	if obs.Mslp.Valid {
+		res.Mslp = obs.Mslp.Float32
+	}
+	if obs.Hi.Valid {
+		res.Hi = obs.Hi.Float32
+	}
+	if obs.Wchill.Valid {
+		res.Wchill = obs.Wchill.Float32
+	}
+
+	return res
 }
 
 type listStationObsUri struct {
@@ -67,7 +94,7 @@ type listStationObsRes struct {
 	Page    int32                `json:"page"`
 	PerPage int32                `json:"per_page"`
 	Total   int64                `json:"total"`
-	Data    []stationObsResponse `json:"data"`
+	Data    []StationObservation `json:"data"`
 } //@name ListStationObservationsResponse
 
 // ListStationObservations
@@ -98,11 +125,9 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListStationObservationsParams{
 		StationID: uri.StationID,
-		Limit: util.NullInt4{
-			Int4: pgtype.Int4{
-				Int32: req.PerPage,
-				Valid: true,
-			},
+		Limit: pgtype.Int4{
+			Int32: req.PerPage,
+			Valid: true,
 		},
 		Offset:      offset,
 		IsStartDate: isStartDate,
@@ -124,9 +149,9 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 	}
 
 	numObs := len(observations)
-	obsRes := make([]stationObsResponse, numObs)
+	obsRes := make([]StationObservation, numObs)
 	for i, observation := range observations {
-		obsRes[i] = newStationObsResponse(observation)
+		obsRes[i] = newStationObservation(observation)
 	}
 
 	totalObs, err := s.store.CountStationObservations(ctx, db.CountStationObservationsParams{
@@ -164,7 +189,7 @@ type getStationObsReq struct {
 //	@Produce	json
 //	@Param		station_id	path		int	true	"Station ID"
 //	@Param		id			path		int	true	"Station Observation ID"
-//	@Success	200			{object}	stationObsResponse
+//	@Success	200			{object}	StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [get]
 func (s *Server) GetStationObservation(ctx *gin.Context) {
 	var req getStationObsReq
@@ -188,7 +213,7 @@ func (s *Server) GetStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStationObsResponse(obs))
+	ctx.JSON(http.StatusOK, newStationObservation(obs))
 }
 
 type createStationObsUri struct {
@@ -196,20 +221,20 @@ type createStationObsUri struct {
 }
 
 type createStationObsReq struct {
-	Pres      util.NullFloat4    `json:"pres" binding:"omitempty,numeric"`
-	Rr        util.NullFloat4    `json:"rr" binding:"omitempty,numeric"`
-	Rh        util.NullFloat4    `json:"rh" binding:"omitempty,numeric"`
-	Temp      util.NullFloat4    `json:"temp" binding:"omitempty,numeric"`
-	Td        util.NullFloat4    `json:"td" binding:"omitempty,numeric"`
-	Wdir      util.NullFloat4    `json:"wdir" binding:"omitempty,numeric"`
-	Wspd      util.NullFloat4    `json:"wspd" binding:"omitempty,numeric"`
-	Wspdx     util.NullFloat4    `json:"wspdx" binding:"omitempty,numeric"`
-	Srad      util.NullFloat4    `json:"srad" binding:"omitempty,numeric"`
-	Mslp      util.NullFloat4    `json:"mslp" binding:"omitempty,numeric"`
-	Hi        util.NullFloat4    `json:"hi" binding:"omitempty,numeric"`
-	Wchill    util.NullFloat4    `json:"wchill" binding:"omitempty,numeric"`
-	QcLevel   int32              `json:"qc_level" binding:"omitempty,numeric"`
-	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"omitempty,numeric"`
+	Pres      pgtype.Float4      `json:"pres" binding:"numeric"`
+	Rr        pgtype.Float4      `json:"rr" binding:"numeric"`
+	Rh        pgtype.Float4      `json:"rh" binding:"numeric"`
+	Temp      pgtype.Float4      `json:"temp" binding:"numeric"`
+	Td        pgtype.Float4      `json:"td" binding:"numeric"`
+	Wdir      pgtype.Float4      `json:"wdir" binding:"numeric"`
+	Wspd      pgtype.Float4      `json:"wspd" binding:"numeric"`
+	Wspdx     pgtype.Float4      `json:"wspdx" binding:"numeric"`
+	Srad      pgtype.Float4      `json:"srad" binding:"numeric"`
+	Mslp      pgtype.Float4      `json:"mslp" binding:"numeric"`
+	Hi        pgtype.Float4      `json:"hi" binding:"numeric"`
+	Wchill    pgtype.Float4      `json:"wchill" binding:"numeric"`
+	QcLevel   int32              `json:"qc_level" binding:"numeric"`
+	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"numeric"`
 } //@name CreateStationObservationParams
 
 // CreateStationObservation
@@ -221,7 +246,7 @@ type createStationObsReq struct {
 //	@Param		station_id	path	int					true	"Station ID"
 //	@Param		stnObs		body	createStationObsReq	true	"Create station observation parameters"
 //	@Security	BearerAuth
-//	@Success	201	{object}	stationObsResponse
+//	@Success	201	{object}	StationObservation
 //	@Router		/stations/{station_id}/observations [post]
 func (s *Server) CreateStationObservation(ctx *gin.Context) {
 	var uri createStationObsUri
@@ -260,7 +285,7 @@ func (s *Server) CreateStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, newStationObsResponse(obs))
+	ctx.JSON(http.StatusCreated, newStationObservation(obs))
 }
 
 type updateStationObsUri struct {
@@ -269,20 +294,20 @@ type updateStationObsUri struct {
 }
 
 type updateStationObsReq struct {
-	Pres      util.NullFloat4    `json:"pres" binding:"omitempty,numeric"`
-	Rr        util.NullFloat4    `json:"rr" binding:"omitempty,numeric"`
-	Rh        util.NullFloat4    `json:"rh" binding:"omitempty,numeric"`
-	Temp      util.NullFloat4    `json:"temp" binding:"omitempty,numeric"`
-	Td        util.NullFloat4    `json:"td" binding:"omitempty,numeric"`
-	Wdir      util.NullFloat4    `json:"wdir" binding:"omitempty,numeric"`
-	Wspd      util.NullFloat4    `json:"wspd" binding:"omitempty,numeric"`
-	Wspdx     util.NullFloat4    `json:"wspdx" binding:"omitempty,numeric"`
-	Srad      util.NullFloat4    `json:"srad" binding:"omitempty,numeric"`
-	Mslp      util.NullFloat4    `json:"mslp" binding:"omitempty,numeric"`
-	Hi        util.NullFloat4    `json:"hi" binding:"omitempty,numeric"`
-	Wchill    util.NullFloat4    `json:"wchill" binding:"omitempty,numeric"`
-	QcLevel   util.NullInt4      `json:"qc_level" binding:"omitempty,numeric"`
-	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"omitempty,numeric"`
+	Pres      pgtype.Float4      `json:"pres" binding:"numeric"`
+	Rr        pgtype.Float4      `json:"rr" binding:"numeric"`
+	Rh        pgtype.Float4      `json:"rh" binding:"numeric"`
+	Temp      pgtype.Float4      `json:"temp" binding:"numeric"`
+	Td        pgtype.Float4      `json:"td" binding:"numeric"`
+	Wdir      pgtype.Float4      `json:"wdir" binding:"numeric"`
+	Wspd      pgtype.Float4      `json:"wspd" binding:"numeric"`
+	Wspdx     pgtype.Float4      `json:"wspdx" binding:"numeric"`
+	Srad      pgtype.Float4      `json:"srad" binding:"numeric"`
+	Mslp      pgtype.Float4      `json:"mslp" binding:"numeric"`
+	Hi        pgtype.Float4      `json:"hi" binding:"numeric"`
+	Wchill    pgtype.Float4      `json:"wchill" binding:"numeric"`
+	QcLevel   pgtype.Int4        `json:"qc_level" binding:"numeric"`
+	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"numeric"`
 } //@name UpdateStationObservationParams
 
 // UpdateStationObservation
@@ -294,7 +319,7 @@ type updateStationObsReq struct {
 //	@Param		id			path	int					true	"Station Observation ID"
 //	@Param		stnObs		body	updateStationObsReq	true	"Update station observation parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	stationObsResponse
+//	@Success	200	{object}	StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [put]
 func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 	var uri updateStationObsUri
@@ -338,7 +363,7 @@ func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStationObsResponse(obs))
+	ctx.JSON(http.StatusOK, newStationObservation(obs))
 }
 
 type deleteStationObsReq struct {
@@ -433,11 +458,9 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListObservationsParams{
 		StationIds: stationIDs,
-		Limit: util.NullInt4{
-			Int4: pgtype.Int4{
-				Int32: req.PerPage,
-				Valid: true,
-			},
+		Limit: pgtype.Int4{
+			Int32: req.PerPage,
+			Valid: true,
 		},
 		Offset:      offset,
 		IsStartDate: isStartDate,
@@ -459,9 +482,9 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 	}
 
 	numObs := len(obs)
-	obsRes := make([]stationObsResponse, numObs)
+	obsRes := make([]StationObservation, numObs)
 	for i, observation := range obs {
-		obsRes[i] = newStationObsResponse(observation)
+		obsRes[i] = newStationObservation(observation)
 	}
 
 	totalObs, err := s.store.CountObservations(ctx, db.CountObservationsParams{
@@ -488,10 +511,10 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 
 type latestObservationRes struct {
 	Name      string                   `json:"name"`
-	Lat       util.NullFloat4          `json:"lat"`
-	Lon       util.NullFloat4          `json:"lon"`
-	Elevation util.NullFloat4          `json:"elevation"`
-	Address   util.NullString          `json:"address"`
+	Lat       pgtype.Float4            `json:"lat"`
+	Lon       pgtype.Float4            `json:"lon"`
+	Elevation pgtype.Float4            `json:"elevation"`
+	Address   pgtype.Text              `json:"address"`
 	Obs       db.MvObservationsCurrent `json:"obs"`
 } //@name LatestObservation
 

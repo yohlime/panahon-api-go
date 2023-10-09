@@ -69,11 +69,9 @@ func (ts *LufftStationMsgTestSuite) TestCountLufftStationMsg() {
 
 func createRandomLufftStationMsg(t *testing.T, stationID int64) ObservationsStationhealth {
 	arg := CreateStationHealthParams{
-		Message: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(120),
-				Valid:  true,
-			},
+		Message: pgtype.Text{
+			String: util.RandomString(120),
+			Valid:  true,
 		},
 		Timestamp: pgtype.Timestamptz{
 			Time:  time.Now(),

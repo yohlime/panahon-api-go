@@ -102,7 +102,7 @@ definitions:
       status:
         type: string
       transaction_id:
-        type: number
+        type: integer
     type: object
   GlobeLabsOptInResponse:
     properties:
@@ -134,7 +134,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/RoleResponse'
+          $ref: '#/definitions/Role'
         type: array
       page:
         type: integer
@@ -147,7 +147,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/StationObservationResponse'
+          $ref: '#/definitions/StationObservation'
         type: array
       page:
         type: integer
@@ -160,7 +160,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/StationResponse'
+          $ref: '#/definitions/Station'
         type: array
       page:
         type: integer
@@ -173,7 +173,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/UserResponse'
+          $ref: '#/definitions/User'
         type: array
       page:
         type: integer
@@ -206,7 +206,7 @@ definitions:
       session_id:
         type: string
       user:
-        $ref: '#/definitions/UserResponse'
+        $ref: '#/definitions/User'
     type: object
   LufftMsgLogResponse:
     properties:
@@ -231,11 +231,11 @@ definitions:
   LufftResponse:
     properties:
       health:
-        $ref: '#/definitions/StationHealthResponse'
+        $ref: '#/definitions/StationHealth'
       observation:
-        $ref: '#/definitions/StationObservationResponse'
+        $ref: '#/definitions/StationObservation'
       station:
-        $ref: '#/definitions/StationResponse'
+        $ref: '#/definitions/Station'
     type: object
   RegisterUserParams:
     properties:
@@ -272,7 +272,7 @@ definitions:
       access_token_expires_at:
         type: string
     type: object
-  RoleResponse:
+  Role:
     properties:
       created_at:
         type: string
@@ -283,79 +283,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  StationHealthResponse:
-    properties:
-      bp1:
-        type: number
-      bp2:
-        type: number
-      cm:
-        type: string
-      curr:
-        type: number
-      data_count:
-        type: number
-      data_status:
-        type: string
-      error_msg:
-        type: string
-      fpm:
-        type: string
-      id:
-        type: integer
-      message:
-        type: string
-      rh_arq:
-        type: number
-      ss:
-        type: number
-      station_id:
-        type: integer
-      temp_arq:
-        type: number
-      timestamp:
-        type: string
-      vb1:
-        type: number
-      vb2:
-        type: number
-    type: object
-  StationObservationResponse:
-    properties:
-      hi:
-        type: number
-      id:
-        type: integer
-      mslp:
-        type: number
-      pres:
-        type: number
-      qc_level:
-        type: integer
-      rh:
-        type: number
-      rr:
-        type: number
-      srad:
-        type: number
-      station_id:
-        type: integer
-      td:
-        type: number
-      temp:
-        type: number
-      timestamp:
-        type: string
-      wchill:
-        type: number
-      wdir:
-        type: number
-      wspd:
-        type: number
-      wspdx:
-        type: number
-    type: object
-  StationResponse:
+  Station:
     properties:
       address:
         type: string
@@ -386,29 +314,63 @@ definitions:
       status:
         type: string
     type: object
-  UpdateRoleParams:
+  StationHealth:
     properties:
-      description:
+      bp1:
+        type: number
+      bp2:
+        type: number
+      cm:
         type: string
-      name:
+      curr:
+        type: number
+      data_count:
+        type: integer
+      data_status:
         type: string
+      error_msg:
+        type: string
+      fpm:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      rh_arq:
+        type: number
+      ss:
+        type: integer
+      station_id:
+        type: integer
+      temp_arq:
+        type: number
+      timestamp:
+        type: string
+      vb1:
+        type: number
+      vb2:
+        type: number
     type: object
-  UpdateStationObservationParams:
+  StationObservation:
     properties:
       hi:
         type: number
+      id:
+        type: integer
       mslp:
         type: number
       pres:
         type: number
       qc_level:
-        type: number
+        type: integer
       rh:
         type: number
       rr:
         type: number
       srad:
         type: number
+      station_id:
+        type: integer
       td:
         type: number
       temp:
@@ -423,6 +385,15 @@ definitions:
         type: number
       wspdx:
         type: number
+    type: object
+  UpdateRoleParams:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  UpdateStationObservationParams:
     type: object
   UpdateStationParams:
     properties:
@@ -467,7 +438,7 @@ definitions:
           type: string
         type: array
     type: object
-  UserResponse:
+  User:
     properties:
       created_at:
         type: string
@@ -736,7 +707,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/RoleResponse'
+            $ref: '#/definitions/Role'
       security:
       - BearerAuth: []
       summary: Get role
@@ -758,7 +729,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/RoleResponse'
+            $ref: '#/definitions/Role'
       security:
       - BearerAuth: []
       summary: Create role
@@ -785,7 +756,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/RoleResponse'
+            $ref: '#/definitions/Role'
       security:
       - BearerAuth: []
       summary: Update role
@@ -839,7 +810,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/StationResponse'
+            $ref: '#/definitions/Station'
       security:
       - BearerAuth: []
       summary: Create station
@@ -880,7 +851,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/StationResponse'
+            $ref: '#/definitions/Station'
       summary: Get station
       tags:
       - stations
@@ -905,7 +876,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/StationResponse'
+            $ref: '#/definitions/Station'
       security:
       - BearerAuth: []
       summary: Update station
@@ -969,7 +940,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/StationObservationResponse'
+            $ref: '#/definitions/StationObservation'
       security:
       - BearerAuth: []
       summary: Create station observation
@@ -1020,7 +991,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/StationObservationResponse'
+            $ref: '#/definitions/StationObservation'
       summary: Get station observation
       tags:
       - observations
@@ -1048,7 +1019,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/StationObservationResponse'
+            $ref: '#/definitions/StationObservation'
       security:
       - BearerAuth: []
       summary: Update station observation
@@ -1156,7 +1127,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserResponse'
+            $ref: '#/definitions/User'
       security:
       - BearerAuth: []
       summary: Get user
@@ -1178,7 +1149,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserResponse'
+            $ref: '#/definitions/User'
       security:
       - BearerAuth: []
       summary: Create user
@@ -1205,7 +1176,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserResponse'
+            $ref: '#/definitions/User'
       security:
       - BearerAuth: []
       summary: Update user
@@ -1221,7 +1192,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserResponse'
+            $ref: '#/definitions/User'
       security:
       - BearerAuth: []
       summary: Get Auth User
@@ -1265,7 +1236,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserResponse'
+            $ref: '#/definitions/User'
       summary: Register user
       tags:
       - users

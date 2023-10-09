@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -35,20 +34,25 @@ func isAdminRole(role string) bool {
 	return true
 }
 
-type roleResponse struct {
+type Role struct {
 	Name        string             `json:"name"`
-	Description util.NullString    `json:"description"`
+	Description string             `json:"description"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-} //@name RoleResponse
+} //@name Role
 
-func newRoleResponse(role db.Role) roleResponse {
-	return roleResponse{
-		Name:        role.Name,
-		Description: role.Description,
-		UpdatedAt:   role.UpdatedAt,
-		CreatedAt:   role.CreatedAt,
+func newRole(role db.Role) Role {
+	res := Role{
+		Name:      role.Name,
+		UpdatedAt: role.UpdatedAt,
+		CreatedAt: role.CreatedAt,
 	}
+
+	if role.Description.Valid {
+		res.Description = role.Description.String
+	}
+
+	return res
 }
 
 type listRolesReq struct {
@@ -57,10 +61,10 @@ type listRolesReq struct {
 } //@name ListRolesParams
 
 type listRolesRes struct {
-	Page    int32          `json:"page"`
-	PerPage int32          `json:"per_page"`
-	Total   int64          `json:"total"`
-	Data    []roleResponse `json:"data"`
+	Page    int32  `json:"page"`
+	PerPage int32  `json:"per_page"`
+	Total   int64  `json:"total"`
+	Data    []Role `json:"data"`
 } //@name ListRolessResponse
 
 // ListRoles
@@ -92,9 +96,9 @@ func (s *Server) ListRoles(ctx *gin.Context) {
 	}
 
 	numRoles := len(roles)
-	rolesRes := make([]roleResponse, numRoles)
+	rolesRes := make([]Role, numRoles)
 	for i, role := range roles {
-		rolesRes[i] = newRoleResponse(role)
+		rolesRes[i] = newRole(role)
 	}
 
 	totalRoles, err := s.store.CountRoles(ctx)
@@ -125,7 +129,7 @@ type getRoleReq struct {
 //	@Produce	json
 //	@Param		id	path	int	true	"Role ID"
 //	@Security	BearerAuth
-//	@Success	200	{object}	roleResponse
+//	@Success	200	{object}	Role
 //	@Router		/roles/{id} [get]
 func (s *Server) GetRole(ctx *gin.Context) {
 	var req getRoleReq
@@ -144,12 +148,12 @@ func (s *Server) GetRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newRoleResponse(role))
+	ctx.JSON(http.StatusOK, newRole(role))
 }
 
 type createRoleReq struct {
-	Name        string          `json:"name" binding:"required,alphanum"`
-	Description util.NullString `json:"description" binding:"omitempty,alphanumspace"`
+	Name        string `json:"name" binding:"required,alphanum"`
+	Description string `json:"description" binding:"alphanumspace"`
 } //@name CreateRoleParams
 
 // CreateRole
@@ -160,7 +164,7 @@ type createRoleReq struct {
 //	@Produce	json
 //	@Param		req	body	createRoleReq	true	"Create role parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	roleResponse
+//	@Success	200	{object}	Role
 //	@Router		/roles/{id} [post]
 func (s *Server) CreateRole(ctx *gin.Context) {
 	var req createRoleReq
@@ -170,8 +174,11 @@ func (s *Server) CreateRole(ctx *gin.Context) {
 	}
 
 	arg := db.CreateRoleParams{
-		Name:        strings.ToUpper(req.Name),
-		Description: req.Description,
+		Name: strings.ToUpper(req.Name),
+		Description: pgtype.Text{
+			String: req.Description,
+			Valid:  true,
+		},
 	}
 
 	role, err := s.store.CreateRole(ctx, arg)
@@ -184,7 +191,7 @@ func (s *Server) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newRoleResponse(role))
+	ctx.JSON(http.StatusOK, newRole(role))
 }
 
 type updateRoleUri struct {
@@ -192,8 +199,8 @@ type updateRoleUri struct {
 }
 
 type updateRoleReq struct {
-	Name        util.NullString `json:"name" binding:"omitempty,alphanum"`
-	Description util.NullString `json:"description" binding:"omitempty,alphanumspace"`
+	Name        pgtype.Text `json:"name" binding:"alphanum"`
+	Description pgtype.Text `json:"description" binding:"alphanumspace"`
 } //@name UpdateRoleParams
 
 // UpdateRole
@@ -205,7 +212,7 @@ type updateRoleReq struct {
 //	@Param		id	path	int				true	"Role ID"
 //	@Param		req	body	updateRoleReq	true	"Update role parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	roleResponse
+//	@Success	200	{object}	Role
 //	@Router		/roles/{id} [put]
 func (s *Server) UpdateRole(ctx *gin.Context) {
 	var uri updateRoleUri
@@ -221,7 +228,7 @@ func (s *Server) UpdateRole(ctx *gin.Context) {
 	}
 
 	if req.Name.Valid {
-		req.Name.Text.String = strings.ToUpper(req.Name.Text.String)
+		req.Name.String = strings.ToUpper(req.Name.String)
 	}
 
 	arg := db.UpdateRoleParams{
@@ -243,7 +250,7 @@ func (s *Server) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newRoleResponse(role))
+	ctx.JSON(http.StatusOK, newRole(role))
 }
 
 type deleteRoleReq struct {

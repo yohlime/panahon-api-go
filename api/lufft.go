@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	"github.com/emiliogozo/panahon-api-go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -20,7 +19,7 @@ type lufftMsgLogReq struct {
 
 type lufftMsgLogRes struct {
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
-	Message   util.NullString    `json:"message"`
+	Message   pgtype.Text        `json:"message"`
 } //@name LufftMsgLogResponse
 
 func newLufftMsgLoResponse(res db.ListLufftStationMsgRow) lufftMsgLogRes {
@@ -95,15 +94,15 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 }
 
 type lufftRes struct {
-	Station stationResponse       `json:"station"`
-	Obs     stationObsResponse    `json:"observation"`
-	Health  stationHealthResponse `json:"health"`
+	Station Station            `json:"station"`
+	Obs     StationObservation `json:"observation"`
+	Health  StationHealth      `json:"health"`
 } //@name LufftResponse
 
 func newLufftResponse(stn db.ObservationsStation, obs db.ObservationsObservation, h db.ObservationsStationhealth) lufftRes {
 	return lufftRes{
-		Station: newStationResponse(stn),
-		Obs:     newStationObsResponse(obs),
-		Health:  newStationHealthResponse(h),
+		Station: newStation(stn),
+		Obs:     newStationObservation(obs),
+		Health:  newStationHealth(h),
 	}
 }

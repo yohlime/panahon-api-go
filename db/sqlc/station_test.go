@@ -223,10 +223,10 @@ func (ts *StationTestSuite) TestCountStationsWithinBBox() {
 func (ts *StationTestSuite) TestUpdateStation() {
 	var (
 		oldStation      ObservationsStation
-		newName         util.NullString
-		newMobileNumber util.NullString
-		newLat          util.NullFloat4
-		newLon          util.NullFloat4
+		newName         pgtype.Text
+		newMobileNumber pgtype.Text
+		newLat          pgtype.Float4
+		newLon          pgtype.Float4
 	)
 
 	t := ts.T()
@@ -240,11 +240,9 @@ func (ts *StationTestSuite) TestUpdateStation() {
 			name: "NameOnly",
 			buildArg: func() UpdateStationParams {
 				oldStation = createRandomStation(t, true)
-				newName = util.NullString{
-					Text: pgtype.Text{
-						String: util.RandomString(12),
-						Valid:  true,
-					},
+				newName = pgtype.Text{
+					String: util.RandomString(12),
+					Valid:  true,
 				}
 
 				return UpdateStationParams{
@@ -265,11 +263,9 @@ func (ts *StationTestSuite) TestUpdateStation() {
 			name: "MobileNumberOnly",
 			buildArg: func() UpdateStationParams {
 				oldStation = createRandomStation(t, true)
-				newMobileNumber = util.NullString{
-					Text: pgtype.Text{
-						String: util.RandomMobileNumber(),
-						Valid:  true,
-					},
+				newMobileNumber = pgtype.Text{
+					String: util.RandomMobileNumber(),
+					Valid:  true,
 				}
 				return UpdateStationParams{
 					ID:           oldStation.ID,
@@ -289,8 +285,14 @@ func (ts *StationTestSuite) TestUpdateStation() {
 			name: "LatLonOnly",
 			buildArg: func() UpdateStationParams {
 				oldStation = createRandomStation(t, true)
-				newLat = util.RandomNullFloat4(-90.0, 90.0)
-				newLon = util.RandomNullFloat4(0.0, 359.9)
+				newLat = pgtype.Float4{
+					Float32: getRandomLat(),
+					Valid:   true,
+				}
+				newLon = pgtype.Float4{
+					Float32: getRandomLon(),
+					Valid:   true,
+				}
 
 				return UpdateStationParams{
 					ID:  oldStation.ID,
@@ -336,42 +338,32 @@ func createRandomStation(t *testing.T, geom any) ObservationsStation {
 
 	arg := CreateStationParams{
 		Name: util.RandomString(16),
-		MobileNumber: util.NullString{
-			Text: pgtype.Text{
-				String: mobileNum,
-				Valid:  true,
-			},
+		MobileNumber: pgtype.Text{
+			String: mobileNum,
+			Valid:  true,
 		},
 	}
 
 	switch g := geom.(type) {
 	case bool:
 		if g {
-			arg.Lat = util.NullFloat4{
-				Float4: pgtype.Float4{
-					Float32: getRandomLat(),
-					Valid:   true,
-				},
+			arg.Lat = pgtype.Float4{
+				Float32: getRandomLat(),
+				Valid:   true,
 			}
-			arg.Lon = util.NullFloat4{
-				Float4: pgtype.Float4{
-					Float32: getRandomLon(),
-					Valid:   true,
-				},
+			arg.Lon = pgtype.Float4{
+				Float32: getRandomLon(),
+				Valid:   true,
 			}
 		}
 	case util.Point:
-		arg.Lon = util.NullFloat4{
-			Float4: pgtype.Float4{
-				Float32: float32(g.X()),
-				Valid:   true,
-			},
+		arg.Lon = pgtype.Float4{
+			Float32: float32(g.X()),
+			Valid:   true,
 		}
-		arg.Lat = util.NullFloat4{
-			Float4: pgtype.Float4{
-				Float32: float32(g.Y()),
-				Valid:   true,
-			},
+		arg.Lat = pgtype.Float4{
+			Float32: float32(g.Y()),
+			Valid:   true,
 		}
 	}
 

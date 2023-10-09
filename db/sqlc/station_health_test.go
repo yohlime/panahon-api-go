@@ -79,7 +79,7 @@ func (ts *StationHealthTestSuite) TestListStationHealths() {
 func (ts *StationHealthTestSuite) TestUpdateStationHealth() {
 	var (
 		oldHealth ObservationsStationhealth
-		newBp1    util.NullFloat4
+		newBp1    pgtype.Float4
 	)
 
 	t := ts.T()
@@ -95,7 +95,10 @@ func (ts *StationHealthTestSuite) TestUpdateStationHealth() {
 			name: "SomeValues",
 			buildArg: func() UpdateStationHealthParams {
 				oldHealth = createRandomStationHealth(t, station.ID)
-				newBp1 = util.RandomNullFloat4(0.0, 15.0)
+				newBp1 = pgtype.Float4{
+					Float32: util.RandomFloat(0.0, 15.0),
+					Valid:   true,
+				}
 
 				return UpdateStationHealthParams{
 					StationID: station.ID,
@@ -145,8 +148,14 @@ func (ts *StationHealthTestSuite) TestDeleteStationHealth() {
 
 func createRandomStationHealth(t *testing.T, stationID int64) ObservationsStationhealth {
 	arg := CreateStationHealthParams{
-		Vb1:  util.RandomNullFloat4(15.0, 30.0),
-		Curr: util.RandomNullFloat4(0, 5.0),
+		Vb1: pgtype.Float4{
+			Float32: util.RandomFloat(15.0, 30.0),
+			Valid:   true,
+		},
+		Curr: pgtype.Float4{
+			Float32: util.RandomFloat(0, 5.0),
+			Valid:   true,
+		},
 		Timestamp: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,

@@ -402,11 +402,10 @@ func TestUpdateStationAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.UpdateStationParams{
 					ID: station.ID,
-					Name: util.NullString{
-						Text: pgtype.Text{
-							String: station.Name,
-							Valid:  true,
-						}},
+					Name: pgtype.Text{
+						String: station.Name,
+						Valid:  true,
+					},
 					Lat:      station.Lat,
 					Lon:      station.Lon,
 					Province: station.Province,
@@ -535,10 +534,10 @@ func randomStation() db.ObservationsStation {
 	return db.ObservationsStation{
 		ID:       util.RandomInt(1, 1000),
 		Name:     fmt.Sprintf("%s %s", util.RandomString(12), util.RandomString(8)),
-		Lat:      util.NullFloat4{Float4: pgtype.Float4{Float32: util.RandomFloat(-90.0, 90.0), Valid: true}},
-		Lon:      util.NullFloat4{Float4: pgtype.Float4{Float32: util.RandomFloat(0.0, 360.0), Valid: true}},
-		Province: util.NullString{Text: pgtype.Text{String: util.RandomString(16), Valid: true}},
-		Region:   util.NullString{Text: pgtype.Text{String: util.RandomString(16), Valid: true}},
+		Lat:      pgtype.Float4{Float32: util.RandomFloat(-90.0, 90.0), Valid: true},
+		Lon:      pgtype.Float4{Float32: util.RandomFloat(0.0, 360.0), Valid: true},
+		Province: pgtype.Text{String: util.RandomString(16), Valid: true},
+		Region:   pgtype.Text{String: util.RandomString(16), Valid: true},
 	}
 }
 
@@ -546,10 +545,10 @@ func requireBodyMatchStation(t *testing.T, body *bytes.Buffer, station db.Observ
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStation stationResponse
+	var gotStation Station
 	err = json.Unmarshal(data, &gotStation)
 	require.NoError(t, err)
-	require.Equal(t, newStationResponse(station), gotStation)
+	require.Equal(t, newStation(station), gotStation)
 }
 
 func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.ObservationsStation) {
@@ -560,9 +559,9 @@ func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.Ob
 	err = json.Unmarshal(data, &gotStations)
 	require.NoError(t, err)
 
-	stationsRes := make([]stationResponse, len(stations))
+	stationsRes := make([]Station, len(stations))
 	for i, stn := range stations {
-		stationsRes[i] = newStationResponse(stn)
+		stationsRes[i] = newStation(stn)
 	}
 	require.Equal(t, stationsRes, gotStations.Data)
 }

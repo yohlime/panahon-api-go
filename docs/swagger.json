@@ -313,7 +313,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/RoleResponse"
+                            "$ref": "#/definitions/Role"
                         }
                     }
                 }
@@ -356,7 +356,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/RoleResponse"
+                            "$ref": "#/definitions/Role"
                         }
                     }
                 }
@@ -392,7 +392,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/RoleResponse"
+                            "$ref": "#/definitions/Role"
                         }
                     }
                 }
@@ -508,7 +508,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/StationResponse"
+                            "$ref": "#/definitions/Station"
                         }
                     }
                 }
@@ -539,7 +539,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationResponse"
+                            "$ref": "#/definitions/Station"
                         }
                     }
                 }
@@ -582,7 +582,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationResponse"
+                            "$ref": "#/definitions/Station"
                         }
                     }
                 }
@@ -712,7 +712,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/StationObservationResponse"
+                            "$ref": "#/definitions/StationObservation"
                         }
                     }
                 }
@@ -781,7 +781,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationObservationResponse"
+                            "$ref": "#/definitions/StationObservation"
                         }
                     }
                 }
@@ -828,7 +828,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationObservationResponse"
+                            "$ref": "#/definitions/StationObservation"
                         }
                     }
                 }
@@ -968,7 +968,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1034,7 +1034,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1070,7 +1070,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1113,7 +1113,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1149,7 +1149,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1342,7 +1342,7 @@
                     "type": "string"
                 },
                 "transaction_id": {
-                    "type": "number"
+                    "type": "integer"
                 }
             }
         },
@@ -1392,7 +1392,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/RoleResponse"
+                        "$ref": "#/definitions/Role"
                     }
                 },
                 "page": {
@@ -1412,7 +1412,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/StationObservationResponse"
+                        "$ref": "#/definitions/StationObservation"
                     }
                 },
                 "page": {
@@ -1432,7 +1432,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/StationResponse"
+                        "$ref": "#/definitions/Station"
                     }
                 },
                 "page": {
@@ -1452,7 +1452,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/UserResponse"
+                        "$ref": "#/definitions/User"
                     }
                 },
                 "page": {
@@ -1501,7 +1501,7 @@
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/UserResponse"
+                    "$ref": "#/definitions/User"
                 }
             }
         },
@@ -1540,13 +1540,13 @@
             "type": "object",
             "properties": {
                 "health": {
-                    "$ref": "#/definitions/StationHealthResponse"
+                    "$ref": "#/definitions/StationHealth"
                 },
                 "observation": {
-                    "$ref": "#/definitions/StationObservationResponse"
+                    "$ref": "#/definitions/StationObservation"
                 },
                 "station": {
-                    "$ref": "#/definitions/StationResponse"
+                    "$ref": "#/definitions/Station"
                 }
             }
         },
@@ -1601,7 +1601,7 @@
                 }
             }
         },
-        "RoleResponse": {
+        "Role": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1618,116 +1618,7 @@
                 }
             }
         },
-        "StationHealthResponse": {
-            "type": "object",
-            "properties": {
-                "bp1": {
-                    "type": "number"
-                },
-                "bp2": {
-                    "type": "number"
-                },
-                "cm": {
-                    "type": "string"
-                },
-                "curr": {
-                    "type": "number"
-                },
-                "data_count": {
-                    "type": "number"
-                },
-                "data_status": {
-                    "type": "string"
-                },
-                "error_msg": {
-                    "type": "string"
-                },
-                "fpm": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "rh_arq": {
-                    "type": "number"
-                },
-                "ss": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "temp_arq": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "vb1": {
-                    "type": "number"
-                },
-                "vb2": {
-                    "type": "number"
-                }
-            }
-        },
-        "StationObservationResponse": {
-            "type": "object",
-            "properties": {
-                "hi": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mslp": {
-                    "type": "number"
-                },
-                "pres": {
-                    "type": "number"
-                },
-                "qc_level": {
-                    "type": "integer"
-                },
-                "rh": {
-                    "type": "number"
-                },
-                "rr": {
-                    "type": "number"
-                },
-                "srad": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "td": {
-                    "type": "number"
-                },
-                "temp": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "wchill": {
-                    "type": "number"
-                },
-                "wdir": {
-                    "type": "number"
-                },
-                "wspd": {
-                    "type": "number"
-                },
-                "wspdx": {
-                    "type": "number"
-                }
-            }
-        },
-        "StationResponse": {
+        "Station": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1774,22 +1665,70 @@
                 }
             }
         },
-        "UpdateRoleParams": {
+        "StationHealth": {
             "type": "object",
             "properties": {
-                "description": {
+                "bp1": {
+                    "type": "number"
+                },
+                "bp2": {
+                    "type": "number"
+                },
+                "cm": {
                     "type": "string"
                 },
-                "name": {
+                "curr": {
+                    "type": "number"
+                },
+                "data_count": {
+                    "type": "integer"
+                },
+                "data_status": {
                     "type": "string"
+                },
+                "error_msg": {
+                    "type": "string"
+                },
+                "fpm": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "rh_arq": {
+                    "type": "number"
+                },
+                "ss": {
+                    "type": "integer"
+                },
+                "station_id": {
+                    "type": "integer"
+                },
+                "temp_arq": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "vb1": {
+                    "type": "number"
+                },
+                "vb2": {
+                    "type": "number"
                 }
             }
         },
-        "UpdateStationObservationParams": {
+        "StationObservation": {
             "type": "object",
             "properties": {
                 "hi": {
                     "type": "number"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "mslp": {
                     "type": "number"
@@ -1798,7 +1737,7 @@
                     "type": "number"
                 },
                 "qc_level": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "rh": {
                     "type": "number"
@@ -1808,6 +1747,9 @@
                 },
                 "srad": {
                     "type": "number"
+                },
+                "station_id": {
+                    "type": "integer"
                 },
                 "td": {
                     "type": "number"
@@ -1831,6 +1773,20 @@
                     "type": "number"
                 }
             }
+        },
+        "UpdateRoleParams": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateStationObservationParams": {
+            "type": "object"
         },
         "UpdateStationParams": {
             "type": "object",
@@ -1897,7 +1853,7 @@
                 }
             }
         },
-        "UserResponse": {
+        "User": {
             "type": "object",
             "properties": {
                 "created_at": {

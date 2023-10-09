@@ -321,7 +321,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/RoleResponse"
+                            "$ref": "#/definitions/Role"
                         }
                     }
                 }
@@ -364,7 +364,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/RoleResponse"
+                            "$ref": "#/definitions/Role"
                         }
                     }
                 }
@@ -400,7 +400,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/RoleResponse"
+                            "$ref": "#/definitions/Role"
                         }
                     }
                 }
@@ -516,7 +516,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/StationResponse"
+                            "$ref": "#/definitions/Station"
                         }
                     }
                 }
@@ -547,7 +547,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationResponse"
+                            "$ref": "#/definitions/Station"
                         }
                     }
                 }
@@ -590,7 +590,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationResponse"
+                            "$ref": "#/definitions/Station"
                         }
                     }
                 }
@@ -720,7 +720,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/StationObservationResponse"
+                            "$ref": "#/definitions/StationObservation"
                         }
                     }
                 }
@@ -789,7 +789,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationObservationResponse"
+                            "$ref": "#/definitions/StationObservation"
                         }
                     }
                 }
@@ -836,7 +836,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/StationObservationResponse"
+                            "$ref": "#/definitions/StationObservation"
                         }
                     }
                 }
@@ -976,7 +976,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1042,7 +1042,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1078,7 +1078,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1121,7 +1121,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1157,7 +1157,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/UserResponse"
+                            "$ref": "#/definitions/User"
                         }
                     }
                 }
@@ -1350,7 +1350,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "transaction_id": {
-                    "type": "number"
+                    "type": "integer"
                 }
             }
         },
@@ -1400,7 +1400,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/RoleResponse"
+                        "$ref": "#/definitions/Role"
                     }
                 },
                 "page": {
@@ -1420,7 +1420,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/StationObservationResponse"
+                        "$ref": "#/definitions/StationObservation"
                     }
                 },
                 "page": {
@@ -1440,7 +1440,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/StationResponse"
+                        "$ref": "#/definitions/Station"
                     }
                 },
                 "page": {
@@ -1460,7 +1460,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/UserResponse"
+                        "$ref": "#/definitions/User"
                     }
                 },
                 "page": {
@@ -1509,7 +1509,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/UserResponse"
+                    "$ref": "#/definitions/User"
                 }
             }
         },
@@ -1548,13 +1548,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "health": {
-                    "$ref": "#/definitions/StationHealthResponse"
+                    "$ref": "#/definitions/StationHealth"
                 },
                 "observation": {
-                    "$ref": "#/definitions/StationObservationResponse"
+                    "$ref": "#/definitions/StationObservation"
                 },
                 "station": {
-                    "$ref": "#/definitions/StationResponse"
+                    "$ref": "#/definitions/Station"
                 }
             }
         },
@@ -1609,7 +1609,7 @@ const docTemplate = `{
                 }
             }
         },
-        "RoleResponse": {
+        "Role": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1626,116 +1626,7 @@ const docTemplate = `{
                 }
             }
         },
-        "StationHealthResponse": {
-            "type": "object",
-            "properties": {
-                "bp1": {
-                    "type": "number"
-                },
-                "bp2": {
-                    "type": "number"
-                },
-                "cm": {
-                    "type": "string"
-                },
-                "curr": {
-                    "type": "number"
-                },
-                "data_count": {
-                    "type": "number"
-                },
-                "data_status": {
-                    "type": "string"
-                },
-                "error_msg": {
-                    "type": "string"
-                },
-                "fpm": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "rh_arq": {
-                    "type": "number"
-                },
-                "ss": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "temp_arq": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "vb1": {
-                    "type": "number"
-                },
-                "vb2": {
-                    "type": "number"
-                }
-            }
-        },
-        "StationObservationResponse": {
-            "type": "object",
-            "properties": {
-                "hi": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mslp": {
-                    "type": "number"
-                },
-                "pres": {
-                    "type": "number"
-                },
-                "qc_level": {
-                    "type": "integer"
-                },
-                "rh": {
-                    "type": "number"
-                },
-                "rr": {
-                    "type": "number"
-                },
-                "srad": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "td": {
-                    "type": "number"
-                },
-                "temp": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "wchill": {
-                    "type": "number"
-                },
-                "wdir": {
-                    "type": "number"
-                },
-                "wspd": {
-                    "type": "number"
-                },
-                "wspdx": {
-                    "type": "number"
-                }
-            }
-        },
-        "StationResponse": {
+        "Station": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1782,22 +1673,70 @@ const docTemplate = `{
                 }
             }
         },
-        "UpdateRoleParams": {
+        "StationHealth": {
             "type": "object",
             "properties": {
-                "description": {
+                "bp1": {
+                    "type": "number"
+                },
+                "bp2": {
+                    "type": "number"
+                },
+                "cm": {
                     "type": "string"
                 },
-                "name": {
+                "curr": {
+                    "type": "number"
+                },
+                "data_count": {
+                    "type": "integer"
+                },
+                "data_status": {
                     "type": "string"
+                },
+                "error_msg": {
+                    "type": "string"
+                },
+                "fpm": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "rh_arq": {
+                    "type": "number"
+                },
+                "ss": {
+                    "type": "integer"
+                },
+                "station_id": {
+                    "type": "integer"
+                },
+                "temp_arq": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "vb1": {
+                    "type": "number"
+                },
+                "vb2": {
+                    "type": "number"
                 }
             }
         },
-        "UpdateStationObservationParams": {
+        "StationObservation": {
             "type": "object",
             "properties": {
                 "hi": {
                     "type": "number"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "mslp": {
                     "type": "number"
@@ -1806,7 +1745,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "qc_level": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "rh": {
                     "type": "number"
@@ -1816,6 +1755,9 @@ const docTemplate = `{
                 },
                 "srad": {
                     "type": "number"
+                },
+                "station_id": {
+                    "type": "integer"
                 },
                 "td": {
                     "type": "number"
@@ -1839,6 +1781,20 @@ const docTemplate = `{
                     "type": "number"
                 }
             }
+        },
+        "UpdateRoleParams": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateStationObservationParams": {
+            "type": "object"
         },
         "UpdateStationParams": {
             "type": "object",
@@ -1905,7 +1861,7 @@ const docTemplate = `{
                 }
             }
         },
-        "UserResponse": {
+        "User": {
             "type": "object",
             "properties": {
                 "created_at": {

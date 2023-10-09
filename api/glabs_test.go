@@ -46,11 +46,9 @@ func TestGLabsOptInApi(t *testing.T) {
 					AccessToken:     simAccessToken.AccessToken,
 					AccessTokenType: simAccessToken.Type,
 					MobileNumber:    simAccessToken.MobileNumber,
-					MobileNumberType: util.NullString{
-						Text: pgtype.Text{
-							String: GLabsMobileNumberType,
-							Valid:  true,
-						},
+					MobileNumberType: pgtype.Text{
+						String: GLabsMobileNumberType,
+						Valid:  true,
 					},
 				}
 				store.EXPECT().FirstOrCreateSimAccessTokenTx(mock.AnythingOfType("*gin.Context"), arg).
@@ -83,11 +81,9 @@ func TestGLabsOptInApi(t *testing.T) {
 					AccessToken:     simAccessToken.AccessToken,
 					AccessTokenType: simAccessToken.Type,
 					MobileNumber:    simAccessToken.MobileNumber,
-					MobileNumberType: util.NullString{
-						Text: pgtype.Text{
-							String: GLabsMobileNumberType,
-							Valid:  true,
-						},
+					MobileNumberType: pgtype.Text{
+						String: GLabsMobileNumberType,
+						Valid:  true,
 					},
 				}
 				store.EXPECT().FirstOrCreateSimAccessTokenTx(mock.AnythingOfType("*gin.Context"), arg).
@@ -312,12 +308,12 @@ func TestCreateGLabsLoadApi(t *testing.T) {
 					Promo:         gLabsLoad.Promo,
 					MobileNumber:  gLabsLoad.MobileNumber,
 				}
-				store.EXPECT().GetStationByMobileNumber(mock.AnythingOfType("*gin.Context"), util.NullString{
-					Text: pgtype.Text{
+				store.EXPECT().GetStationByMobileNumber(mock.AnythingOfType("*gin.Context"),
+					pgtype.Text{
 						String: arg.MobileNumber,
 						Valid:  true,
 					},
-				}).
+				).
 					Return(db.ObservationsStation{}, nil)
 				store.EXPECT().CreateGLabsLoad(mock.AnythingOfType("*gin.Context"), arg).
 					Return(gLabsLoad, nil)
@@ -345,12 +341,12 @@ func TestCreateGLabsLoadApi(t *testing.T) {
 					Promo:         gLabsLoad.Promo,
 					MobileNumber:  gLabsLoad.MobileNumber,
 				}
-				store.EXPECT().GetStationByMobileNumber(mock.AnythingOfType("*gin.Context"), util.NullString{
-					Text: pgtype.Text{
+				store.EXPECT().GetStationByMobileNumber(mock.AnythingOfType("*gin.Context"),
+					pgtype.Text{
 						String: arg.MobileNumber,
 						Valid:  true,
 					},
-				}).
+				).
 					Return(db.ObservationsStation{}, db.ErrRecordNotFound)
 				store.EXPECT().CreateGLabsLoad(mock.AnythingOfType("*gin.Context"), arg).
 					Return(gLabsLoad, nil)
@@ -412,19 +408,18 @@ func requireBodyMatchGlabsAccessToken(t *testing.T, body *bytes.Buffer, accessTo
 
 func randomGLabsLoad() db.GlabsLoad {
 	return db.GlabsLoad{
-		ID:            util.RandomInt(0, 100),
-		TransactionID: util.RandomNullInt4(1000000, 9999999),
-		Promo: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(8),
-				Valid:  true,
-			},
+		ID: util.RandomInt(0, 100),
+		TransactionID: pgtype.Int4{
+			Int32: int32(util.RandomInt(1000000, 9999999)),
+			Valid: true,
 		},
-		Status: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(8),
-				Valid:  true,
-			},
+		Promo: pgtype.Text{
+			String: util.RandomString(8),
+			Valid:  true,
+		},
+		Status: pgtype.Text{
+			String: util.RandomString(8),
+			Valid:  true,
 		},
 		MobileNumber: util.RandomMobileNumber(),
 	}

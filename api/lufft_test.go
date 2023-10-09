@@ -169,11 +169,9 @@ func randomLufftMsgLog(stationID int64) db.ObservationsStationhealth {
 	return db.ObservationsStationhealth{
 		ID:        util.RandomInt(1, 1000),
 		StationID: stationID,
-		Message: util.NullString{
-			Text: pgtype.Text{
-				String: util.RandomString(120),
-				Valid:  true,
-			},
+		Message: pgtype.Text{
+			String: util.RandomString(120),
+			Valid:  true,
 		},
 		Timestamp: pgtype.Timestamptz{
 			Time:  time.Now(),

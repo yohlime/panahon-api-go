@@ -8,7 +8,7 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	mock "github.com/stretchr/testify/mock"
 
-	util "github.com/emiliogozo/panahon-api-go/util"
+	pgtype "github.com/jackc/pgx/v5/pgtype"
 
 	uuid "github.com/google/uuid"
 )
@@ -1799,21 +1799,21 @@ func (_c *MockStore_GetStation_Call) RunAndReturn(run func(context.Context, int6
 }
 
 // GetStationByMobileNumber provides a mock function with given fields: ctx, mobileNumber
-func (_m *MockStore) GetStationByMobileNumber(ctx context.Context, mobileNumber util.NullString) (db.ObservationsStation, error) {
+func (_m *MockStore) GetStationByMobileNumber(ctx context.Context, mobileNumber pgtype.Text) (db.ObservationsStation, error) {
 	ret := _m.Called(ctx, mobileNumber)
 
 	var r0 db.ObservationsStation
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, util.NullString) (db.ObservationsStation, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, pgtype.Text) (db.ObservationsStation, error)); ok {
 		return rf(ctx, mobileNumber)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, util.NullString) db.ObservationsStation); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, pgtype.Text) db.ObservationsStation); ok {
 		r0 = rf(ctx, mobileNumber)
 	} else {
 		r0 = ret.Get(0).(db.ObservationsStation)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, util.NullString) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, pgtype.Text) error); ok {
 		r1 = rf(ctx, mobileNumber)
 	} else {
 		r1 = ret.Error(1)
@@ -1829,14 +1829,14 @@ type MockStore_GetStationByMobileNumber_Call struct {
 
 // GetStationByMobileNumber is a helper method to define mock.On call
 //   - ctx context.Context
-//   - mobileNumber util.NullString
+//   - mobileNumber pgtype.Text
 func (_e *MockStore_Expecter) GetStationByMobileNumber(ctx interface{}, mobileNumber interface{}) *MockStore_GetStationByMobileNumber_Call {
 	return &MockStore_GetStationByMobileNumber_Call{Call: _e.mock.On("GetStationByMobileNumber", ctx, mobileNumber)}
 }
 
-func (_c *MockStore_GetStationByMobileNumber_Call) Run(run func(ctx context.Context, mobileNumber util.NullString)) *MockStore_GetStationByMobileNumber_Call {
+func (_c *MockStore_GetStationByMobileNumber_Call) Run(run func(ctx context.Context, mobileNumber pgtype.Text)) *MockStore_GetStationByMobileNumber_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(util.NullString))
+		run(args[0].(context.Context), args[1].(pgtype.Text))
 	})
 	return _c
 }
@@ -1846,7 +1846,7 @@ func (_c *MockStore_GetStationByMobileNumber_Call) Return(_a0 db.ObservationsSta
 	return _c
 }
 
-func (_c *MockStore_GetStationByMobileNumber_Call) RunAndReturn(run func(context.Context, util.NullString) (db.ObservationsStation, error)) *MockStore_GetStationByMobileNumber_Call {
+func (_c *MockStore_GetStationByMobileNumber_Call) RunAndReturn(run func(context.Context, pgtype.Text) (db.ObservationsStation, error)) *MockStore_GetStationByMobileNumber_Call {
 	_c.Call.Return(run)
 	return _c
 }
