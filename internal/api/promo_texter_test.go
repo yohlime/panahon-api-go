@@ -11,6 +11,7 @@ import (
 
 	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/sensor"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
@@ -19,7 +20,7 @@ import (
 
 func TestPromoTexterStoreLufft(t *testing.T) {
 	mobileNum := util.RandomMobileNumber()
-	lufft := util.RandomLufft()
+	lufft := sensor.RandomLufft()
 	testCases := []struct {
 		name          string
 		body          gin.H

@@ -1,4 +1,4 @@
-package util
+package sensor
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -342,86 +343,86 @@ func RandomLufft() Lufft {
 	return Lufft{
 		Obs: StationObservation{
 			Temp: pgtype.Float4{
-				Float32: RandomFloat(20, 35),
+				Float32: util.RandomFloat(20, 35),
 				Valid:   true,
 			},
 			Rh: pgtype.Float4{
-				Float32: RandomFloat(0, 100),
+				Float32: util.RandomFloat(0, 100),
 				Valid:   true,
 			},
 			Pres: pgtype.Float4{
-				Float32: RandomFloat(990, 1100),
+				Float32: util.RandomFloat(990, 1100),
 				Valid:   true,
 			},
 			Wspd: pgtype.Float4{
-				Float32: RandomFloat(20, 35),
+				Float32: util.RandomFloat(20, 35),
 				Valid:   true,
 			},
 			Wspdx: pgtype.Float4{
-				Float32: RandomFloat(35, 50),
+				Float32: util.RandomFloat(35, 50),
 				Valid:   true,
 			},
 			Wdir: pgtype.Float4{
-				Float32: RandomFloat(0, 359),
+				Float32: util.RandomFloat(0, 359),
 				Valid:   true,
 			},
 			Srad: pgtype.Float4{
-				Float32: RandomFloat(0, 1000),
+				Float32: util.RandomFloat(0, 1000),
 				Valid:   true,
 			},
 			Td: pgtype.Float4{
-				Float32: RandomFloat(20, 35),
+				Float32: util.RandomFloat(20, 35),
 				Valid:   true,
 			},
 			Wchill: pgtype.Float4{
-				Float32: RandomFloat(20, 35),
+				Float32: util.RandomFloat(20, 35),
 				Valid:   true,
 			},
 			Rr: pgtype.Float4{
-				Float32: RandomFloat(0, 100),
+				Float32: util.RandomFloat(0, 100),
 				Valid:   true,
 			},
 			Timestamp: timestamp,
 		},
 		Health: StationHealth{
 			Vb1: pgtype.Float4{
-				Float32: RandomFloat(0, 20),
+				Float32: util.RandomFloat(0, 20),
 				Valid:   true,
 			},
 			Vb2: pgtype.Float4{
-				Float32: RandomFloat(0, 20),
+				Float32: util.RandomFloat(0, 20),
 				Valid:   true,
 			},
 			Curr: pgtype.Float4{
-				Float32: RandomFloat(0, 1),
+				Float32: util.RandomFloat(0, 1),
 				Valid:   true,
 			},
 			Bp1: pgtype.Float4{
-				Float32: RandomFloat(0, 30),
+				Float32: util.RandomFloat(0, 30),
 				Valid:   true,
 			},
 			Bp2: pgtype.Float4{
-				Float32: RandomFloat(0, 30),
+				Float32: util.RandomFloat(0, 30),
 				Valid:   true,
 			},
 			Cm: pgtype.Text{
-				String: RandomString(6),
+				String: util.RandomString(6),
 				Valid:  true,
 			},
 			Ss: pgtype.Int4{
-				Int32: int32(RandomInt(0, 100)),
+				Int32: int32(util.RandomInt(0, 100)),
 				Valid: true,
 			},
 			TempArq: pgtype.Float4{
-				Float32: RandomFloat(20, 35),
+				Float32: util.RandomFloat(20, 35),
 				Valid:   true,
 			},
 			RhArq: pgtype.Float4{
-				Float32: RandomFloat(0, 100),
+				Float32: util.RandomFloat(0, 100),
 				Valid:   true,
 			},
 			Fpm: pgtype.Text{
-				String: RandomString(6),
+				String: util.RandomString(6),
 				Valid:  true,
 			},
 			Timestamp: timestamp,

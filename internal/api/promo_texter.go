@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/sensor"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -34,7 +35,7 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 		return
 	}
 
-	lufft, err := util.NewLufftFromString(req.Msg)
+	lufft, err := sensor.NewLufftFromString(req.Msg)
 	if err != nil {
 		s.logger.Error().Err(err).
 			Str("sender", req.Number).
