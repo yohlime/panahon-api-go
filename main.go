@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/emiliogozo/panahon-api-go/api"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	docs "github.com/emiliogozo/panahon-api-go/docs"
-	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/emiliogozo/panahon-api-go/internal/api"
+	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/go-co-op/gocron"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

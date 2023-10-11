@@ -5,7 +5,7 @@
 package db
 
 import (
-	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )

@@ -25,14 +25,14 @@ sqlc:
 	sqlc generate
 
 server:
-	go run main.go
+	go run cmd/api/main.go
 
 mock:
 	mockery
 
 swag:
-	swag fmt -d main.go,./api
-	swag init
+	swag fmt -d cmd/server/main.go,internal/api
+	swag init -o internal/docs/api -d cmd/server,internal/api --pd
 
 test:
 	go test -v -cover ./...

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emiliogozo/panahon-api-go/util"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
