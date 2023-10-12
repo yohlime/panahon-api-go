@@ -186,10 +186,10 @@ func TestListStationObservationsAPI(t *testing.T) {
 				q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			}
 			if len(tc.query.StartDate) > 0 {
-				q.Add("start_date", fmt.Sprintf("%s", tc.query.StartDate))
+				q.Add("start_date", tc.query.StartDate)
 			}
 			if len(tc.query.EndDate) > 0 {
-				q.Add("end_date", fmt.Sprintf("%s", tc.query.EndDate))
+				q.Add("end_date", tc.query.EndDate)
 			}
 			request.URL.RawQuery = q.Encode()
 
@@ -770,13 +770,13 @@ func TestListObservationsAPI(t *testing.T) {
 				q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			}
 			if len(tc.query.StationIDs) > 0 {
-				q.Add("station_ids", fmt.Sprintf("%s", tc.query.StationIDs))
+				q.Add("station_ids", tc.query.StationIDs)
 			}
 			if len(tc.query.StartDate) > 0 {
-				q.Add("start_date", fmt.Sprintf("%s", tc.query.StartDate))
+				q.Add("start_date", tc.query.StartDate)
 			}
 			if len(tc.query.EndDate) > 0 {
-				q.Add("end_date", fmt.Sprintf("%s", tc.query.EndDate))
+				q.Add("end_date", tc.query.EndDate)
 			}
 			request.URL.RawQuery = q.Encode()
 

@@ -6,3 +6,10 @@ packages:
           dir: "db/mocks"
           filename: "store.go"
           outpkg: "mockdb"
+  github.com/emiliogozo/panahon-api-go/internal/sensor:
+    interfaces:
+      Fetcher:
+        config:
+          dir: "internal/mocks"
+          filename: "fetcher.go"
+          outpkg: "mocksensor"
