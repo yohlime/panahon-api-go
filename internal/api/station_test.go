@@ -110,11 +110,8 @@ func TestListStationsAPI(t *testing.T) {
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
-			name: "Default",
-			query: listStationsReq{
-				Page:    1,
-				PerPage: int32(n),
-			},
+			name:  "Default",
+			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(stations, nil)
@@ -129,9 +126,7 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "WithinCircle",
 			query: listStationsReq{
-				Circle:  "121.0,5.5,1.0",
-				Page:    1,
-				PerPage: int32(n),
+				Circle: "121.0,5.5,1.0",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -147,9 +142,7 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "InvalidCircle",
 			query: listStationsReq{
-				Circle:  "121.0,5.5",
-				Page:    1,
-				PerPage: int32(n),
+				Circle: "121.0,5.5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -161,9 +154,7 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "WithinBBox",
 			query: listStationsReq{
-				BBox:    "121.0,5.5,122.5,7.6",
-				Page:    1,
-				PerPage: int32(n),
+				BBox: "121.0,5.5,122.5,7.6",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -179,9 +170,7 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "InvalidBBox",
 			query: listStationsReq{
-				BBox:    "121.0,5.5",
-				Page:    1,
-				PerPage: int32(n),
+				BBox: "121.0,5.5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -191,11 +180,8 @@ func TestListStationsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "InternalError",
-			query: listStationsReq{
-				Page:    1,
-				PerPage: int32(n),
-			},
+			name:  "InternalError",
+			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsStation{}, sql.ErrConnDone)
@@ -208,8 +194,7 @@ func TestListStationsAPI(t *testing.T) {
 		{
 			name: "InvalidPage",
 			query: listStationsReq{
-				Page:    -1,
-				PerPage: int32(n),
+				Page: -1,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -219,10 +204,9 @@ func TestListStationsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "InvalidLimit",
+			name: "InvalidPerPage",
 			query: listStationsReq{
-				Page:    1,
-				PerPage: 10000,
+				PerPage: -1,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -232,11 +216,8 @@ func TestListStationsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "EmptySlice",
-			query: listStationsReq{
-				Page:    1,
-				PerPage: int32(n),
-			},
+			name:  "EmptySlice",
+			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsStation{}, nil)
@@ -249,11 +230,8 @@ func TestListStationsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "CountInternalError",
-			query: listStationsReq{
-				Page:    1,
-				PerPage: int32(n),
-			},
+			name:  "CountInternalError",
+			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsStation{}, nil)

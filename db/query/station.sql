@@ -38,21 +38,21 @@ WHERE mobile_number = $1 LIMIT 1;
 -- name: ListStations :many
 SELECT * FROM observations_station
 ORDER BY id
-LIMIT $1
-OFFSET $2;
+LIMIT sqlc.narg('limit')
+OFFSET sqlc.arg('offset');
 
 -- name: ListStationsWithinRadius :many
 SELECT * FROM observations_station
 WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real)
 ORDER BY id
-LIMIT sqlc.arg('limit')
+LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
 -- name: ListStationsWithinBBox :many
 SELECT * FROM observations_station
 WHERE geom && ST_MakeEnvelope(@xmin::real, @ymin::real, @xmax::real, @ymax::real, 4326)
 ORDER BY id
-LIMIT sqlc.arg('limit')
+LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
 -- name: CountStations :one

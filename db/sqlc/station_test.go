@@ -55,7 +55,7 @@ func (ts *StationTestSuite) TestListStations() {
 	}
 
 	arg := ListStationsParams{
-		Limit:  5,
+		Limit:  pgtype.Int4{Int32: 5, Valid: true},
 		Offset: 5,
 	}
 	gotStations, err := testStore.ListStations(context.Background(), arg)
@@ -98,7 +98,7 @@ func (ts *StationTestSuite) TestListStationsWithinRadius() {
 		Cx:     cLon,
 		Cy:     cLat,
 		R:      cR,
-		Limit:  int32(n),
+		Limit:  pgtype.Int4{Int32: int32(n), Valid: true},
 		Offset: 0,
 	}
 	gotStations, err := testStore.ListStationsWithinRadius(context.Background(), arg)
@@ -132,7 +132,7 @@ func (ts *StationTestSuite) TestListStationsWithinBBox() {
 		Ymin:   float32(yMin),
 		Xmax:   float32(xMax),
 		Ymax:   float32(yMax),
-		Limit:  int32(n),
+		Limit:  pgtype.Int4{Int32: int32(n), Valid: true},
 		Offset: 0,
 	}
 	gotStations, err := testStore.ListStationsWithinBBox(context.Background(), arg)

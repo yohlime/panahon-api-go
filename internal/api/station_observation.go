@@ -420,7 +420,7 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 	var stationIDs []int64
 	if len(req.StationIDs) == 0 {
 		stations, err := s.store.ListStations(ctx, db.ListStationsParams{
-			Limit:  10,
+			Limit:  pgtype.Int4{Int32: 10, Valid: true},
 			Offset: 0,
 		})
 

@@ -468,7 +468,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "maximum": 30,
                         "minimum": 1,
                         "type": "integer",
                         "description": "limit",
@@ -1378,19 +1377,19 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "elevation": {
-                    "type": "number"
+                    "$ref": "#/definitions/util.Float4"
                 },
                 "lat": {
-                    "type": "number"
+                    "$ref": "#/definitions/util.Float4"
                 },
                 "lon": {
-                    "type": "number"
+                    "$ref": "#/definitions/util.Float4"
                 },
                 "name": {
                     "type": "string"
                 },
                 "obs": {
-                    "$ref": "#/definitions/db.MvObservationsCurrent"
+                    "$ref": "#/definitions/api.latestObsRes"
                 }
             }
         },
@@ -1496,7 +1495,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/util.StationObservation"
+                        "$ref": "#/definitions/StationObservation"
                     }
                 },
                 "next_page": {
@@ -1947,6 +1946,56 @@ const docTemplate = `{
                 }
             }
         },
+        "api.latestObsRes": {
+            "type": "object",
+            "properties": {
+                "gust": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "gust_timestamp": {
+                    "type": "string"
+                },
+                "mslp": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "rain": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "rain_accum": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "rh": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "srad": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "temp": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "tn": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "tn_timestamp": {
+                    "type": "string"
+                },
+                "tx": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "tx_timestamp": {
+                    "type": "string"
+                },
+                "wdir": {
+                    "$ref": "#/definitions/util.Float4"
+                },
+                "wspd": {
+                    "$ref": "#/definitions/util.Float4"
+                }
+            }
+        },
         "api.paginatedLufftMsgLogs": {
             "type": "object",
             "properties": {
@@ -1976,59 +2025,6 @@ const docTemplate = `{
                 }
             }
         },
-        "db.MvObservationsCurrent": {
-            "type": "object",
-            "properties": {
-                "gust": {
-                    "type": "number"
-                },
-                "gust_timestamp": {
-                    "type": "string"
-                },
-                "mslp": {
-                    "type": "number"
-                },
-                "rain": {
-                    "type": "number"
-                },
-                "rain_accum": {
-                    "type": "number"
-                },
-                "rh": {
-                    "type": "number"
-                },
-                "srad": {
-                    "type": "number"
-                },
-                "station_id": {
-                    "type": "integer"
-                },
-                "temp": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "tn": {
-                    "type": "number"
-                },
-                "tn_timestamp": {
-                    "type": "string"
-                },
-                "tx": {
-                    "type": "number"
-                },
-                "tx_timestamp": {
-                    "type": "string"
-                },
-                "wdir": {
-                    "type": "number"
-                },
-                "wspd": {
-                    "type": "number"
-                }
-            }
-        },
         "pgtype.Int4": {
             "type": "object",
             "properties": {
@@ -2040,46 +2036,10 @@ const docTemplate = `{
                 }
             }
         },
-        "util.StationObservation": {
+        "util.Float4": {
             "type": "object",
             "properties": {
-                "hi": {
-                    "type": "number"
-                },
-                "mslp": {
-                    "type": "number"
-                },
-                "pres": {
-                    "type": "number"
-                },
-                "rh": {
-                    "type": "number"
-                },
-                "rr": {
-                    "type": "number"
-                },
-                "srad": {
-                    "type": "number"
-                },
-                "td": {
-                    "type": "number"
-                },
-                "temp": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "wchill": {
-                    "type": "number"
-                },
-                "wdir": {
-                    "type": "number"
-                },
-                "wspd": {
-                    "type": "number"
-                },
-                "wspdx": {
+                "pgtype.Float4": {
                     "type": "number"
                 }
             }

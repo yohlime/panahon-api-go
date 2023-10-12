@@ -249,17 +249,17 @@ func (q *Queries) GetStationByMobileNumber(ctx context.Context, mobileNumber pgt
 const listStations = `-- name: ListStations :many
 SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 ORDER BY id
-LIMIT $1
-OFFSET $2
+LIMIT $2
+OFFSET $1
 `
 
 type ListStationsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Offset int32       `json:"offset"`
+	Limit  pgtype.Int4 `json:"limit"`
 }
 
 func (q *Queries) ListStations(ctx context.Context, arg ListStationsParams) ([]ObservationsStation, error) {
-	rows, err := q.db.Query(ctx, listStations, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listStations, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -311,12 +311,12 @@ OFFSET $5
 `
 
 type ListStationsWithinBBoxParams struct {
-	Xmin   float32 `json:"xmin"`
-	Ymin   float32 `json:"ymin"`
-	Xmax   float32 `json:"xmax"`
-	Ymax   float32 `json:"ymax"`
-	Offset int32   `json:"offset"`
-	Limit  int32   `json:"limit"`
+	Xmin   float32     `json:"xmin"`
+	Ymin   float32     `json:"ymin"`
+	Xmax   float32     `json:"xmax"`
+	Ymax   float32     `json:"ymax"`
+	Offset int32       `json:"offset"`
+	Limit  pgtype.Int4 `json:"limit"`
 }
 
 func (q *Queries) ListStationsWithinBBox(ctx context.Context, arg ListStationsWithinBBoxParams) ([]ObservationsStation, error) {
@@ -379,11 +379,11 @@ OFFSET $4
 `
 
 type ListStationsWithinRadiusParams struct {
-	Cx     float32 `json:"cx"`
-	Cy     float32 `json:"cy"`
-	R      float32 `json:"r"`
-	Offset int32   `json:"offset"`
-	Limit  int32   `json:"limit"`
+	Cx     float32     `json:"cx"`
+	Cy     float32     `json:"cy"`
+	R      float32     `json:"r"`
+	Offset int32       `json:"offset"`
+	Limit  pgtype.Int4 `json:"limit"`
 }
 
 func (q *Queries) ListStationsWithinRadius(ctx context.Context, arg ListStationsWithinRadiusParams) ([]ObservationsStation, error) {

@@ -135,8 +135,8 @@ func (s *Server) CreateStation(ctx *gin.Context) {
 type listStationsReq struct {
 	Circle  string `form:"circle" binding:"omitempty"`
 	BBox    string `form:"bbox" binding:"omitempty"`
-	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
-	PerPage int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
+	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
+	PerPage int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
 } //@name ListStationsParams
 
 type paginatedStations = util.PaginatedList[Station] //@name PaginatedStations
@@ -191,7 +191,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Cx:     float32(cX),
 				Cy:     float32(cY),
 				R:      float32(cR),
-				Limit:  req.PerPage,
+				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 				Offset: offset,
 			})
 	} else if len(req.BBox) > 0 {
@@ -225,12 +225,12 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Ymin:   float32(yMin),
 				Xmax:   float32(xMax),
 				Ymax:   float32(yMax),
-				Limit:  req.PerPage,
+				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 				Offset: offset,
 			})
 	} else {
 		arg := db.ListStationsParams{
-			Limit:  req.PerPage,
+			Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 			Offset: offset,
 		}
 		stations, err = s.store.ListStations(ctx, arg)

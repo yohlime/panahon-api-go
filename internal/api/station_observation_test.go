@@ -569,7 +569,7 @@ func TestListObservationsAPI(t *testing.T) {
 			query: listObservationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
-					Limit:  10,
+					Limit:  pgtype.Int4{Int32: 10, Valid: true},
 					Offset: 0,
 				}).
 					Return(stations, nil)
@@ -622,7 +622,7 @@ func TestListObservationsAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
-					Limit:  10,
+					Limit:  pgtype.Int4{Int32: 10, Valid: true},
 					Offset: 0,
 				}).
 					Return(stations, nil)
@@ -662,7 +662,7 @@ func TestListObservationsAPI(t *testing.T) {
 			query: listObservationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
-					Limit:  10,
+					Limit:  pgtype.Int4{Int32: 10, Valid: true},
 					Offset: 0,
 				}).
 					Return([]db.ObservationsStation{}, sql.ErrConnDone)
@@ -677,7 +677,7 @@ func TestListObservationsAPI(t *testing.T) {
 			query: listObservationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
-					Limit:  10,
+					Limit:  pgtype.Int4{Int32: 10, Valid: true},
 					Offset: 0,
 				}).
 					Return(stations, nil)
@@ -700,7 +700,7 @@ func TestListObservationsAPI(t *testing.T) {
 			query: listObservationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), db.ListStationsParams{
-					Limit:  10,
+					Limit:  pgtype.Int4{Int32: 10, Valid: true},
 					Offset: 0,
 				}).
 					Return(stations, nil)
