@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
-	"github.com/emiliogozo/panahon-api-go/internal/sensor"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -531,21 +530,21 @@ func newLatestObservationResponse(data any) latestObservationRes {
 			Elevation: util.Float4{Float4: d.Elevation},
 			Address:   d.Address,
 			Obs: latestObsRes{
-				Rain:          util.Float4{Float4: d.MvObservationsCurrent.Rain},
-				Temp:          util.Float4{Float4: d.MvObservationsCurrent.Temp},
-				Rh:            util.Float4{Float4: d.MvObservationsCurrent.Rh},
-				Wdir:          util.Float4{Float4: d.MvObservationsCurrent.Wdir},
-				Wspd:          util.Float4{Float4: d.MvObservationsCurrent.Wspd},
-				Srad:          util.Float4{Float4: d.MvObservationsCurrent.Srad},
-				Mslp:          util.Float4{Float4: d.MvObservationsCurrent.Mslp},
-				Tn:            util.Float4{Float4: d.MvObservationsCurrent.Tn},
-				Tx:            util.Float4{Float4: d.MvObservationsCurrent.Tx},
-				Gust:          util.Float4{Float4: d.MvObservationsCurrent.Gust},
-				RainAccum:     util.Float4{Float4: d.MvObservationsCurrent.RainAccum},
-				TnTimestamp:   d.MvObservationsCurrent.TnTimestamp,
-				TxTimestamp:   d.MvObservationsCurrent.TxTimestamp,
-				GustTimestamp: d.MvObservationsCurrent.GustTimestamp,
-				Timestamp:     d.MvObservationsCurrent.Timestamp,
+				Rain:          util.Float4{Float4: d.Rain},
+				Temp:          util.Float4{Float4: d.Temp},
+				Rh:            util.Float4{Float4: d.Rh},
+				Wdir:          util.Float4{Float4: d.Wdir},
+				Wspd:          util.Float4{Float4: d.Wspd},
+				Srad:          util.Float4{Float4: d.Srad},
+				Mslp:          util.Float4{Float4: d.Mslp},
+				Tn:            util.Float4{Float4: d.Tn},
+				Tx:            util.Float4{Float4: d.Tx},
+				Gust:          util.Float4{Float4: d.Gust},
+				RainAccum:     util.Float4{Float4: d.RainAccum},
+				TnTimestamp:   d.TnTimestamp,
+				TxTimestamp:   d.TxTimestamp,
+				GustTimestamp: d.GustTimestamp,
+				Timestamp:     d.Timestamp,
 			},
 		}
 	case db.GetLatestStationObservationRow:
@@ -556,21 +555,21 @@ func newLatestObservationResponse(data any) latestObservationRes {
 			Elevation: util.Float4{Float4: d.Elevation},
 			Address:   d.Address,
 			Obs: latestObsRes{
-				Rain:          util.Float4{Float4: d.MvObservationsCurrent.Rain},
-				Temp:          util.Float4{Float4: d.MvObservationsCurrent.Temp},
-				Rh:            util.Float4{Float4: d.MvObservationsCurrent.Rh},
-				Wdir:          util.Float4{Float4: d.MvObservationsCurrent.Wdir},
-				Wspd:          util.Float4{Float4: d.MvObservationsCurrent.Wspd},
-				Srad:          util.Float4{Float4: d.MvObservationsCurrent.Srad},
-				Mslp:          util.Float4{Float4: d.MvObservationsCurrent.Mslp},
-				Tn:            util.Float4{Float4: d.MvObservationsCurrent.Tn},
-				Tx:            util.Float4{Float4: d.MvObservationsCurrent.Tx},
-				Gust:          util.Float4{Float4: d.MvObservationsCurrent.Gust},
-				RainAccum:     util.Float4{Float4: d.MvObservationsCurrent.RainAccum},
-				TnTimestamp:   d.MvObservationsCurrent.TnTimestamp,
-				TxTimestamp:   d.MvObservationsCurrent.TxTimestamp,
-				GustTimestamp: d.MvObservationsCurrent.GustTimestamp,
-				Timestamp:     d.MvObservationsCurrent.Timestamp,
+				Rain:          util.Float4{Float4: d.ObservationsCurrent.Rain},
+				Temp:          util.Float4{Float4: d.ObservationsCurrent.Temp},
+				Rh:            util.Float4{Float4: d.ObservationsCurrent.Rh},
+				Wdir:          util.Float4{Float4: d.ObservationsCurrent.Wdir},
+				Wspd:          util.Float4{Float4: d.ObservationsCurrent.Wspd},
+				Srad:          util.Float4{Float4: d.ObservationsCurrent.Srad},
+				Mslp:          util.Float4{Float4: d.ObservationsCurrent.Mslp},
+				Tn:            util.Float4{Float4: d.ObservationsCurrent.Tn},
+				Tx:            util.Float4{Float4: d.ObservationsCurrent.Tx},
+				Gust:          util.Float4{Float4: d.ObservationsCurrent.Gust},
+				RainAccum:     util.Float4{Float4: d.ObservationsCurrent.RainAccum},
+				TnTimestamp:   d.ObservationsCurrent.TnTimestamp,
+				TxTimestamp:   d.ObservationsCurrent.TxTimestamp,
+				GustTimestamp: d.ObservationsCurrent.GustTimestamp,
+				Timestamp:     d.ObservationsCurrent.Timestamp,
 			},
 		}
 	default:
@@ -621,53 +620,14 @@ func (s *Server) GetLatestStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	var obs db.GetLatestStationObservationRow
-	station, _ := s.store.GetStation(ctx, req.StationID)
-	if station.StationType.String == "MO" {
-		if len(station.StationUrl.String) > 0 {
-			url := strings.Replace(station.StationUrl.String, ".xml", ".json", 1)
-			davis := sensor.NewDavis(url)
-			davisObs, err := davis.FetchLatest()
-			if err != nil {
-				ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
-				return
-			}
-			obs = db.GetLatestStationObservationRow{
-				Name:      station.Name,
-				Lat:       station.Lat,
-				Lon:       station.Lon,
-				Elevation: station.Elevation,
-				Address:   station.Address,
-				MvObservationsCurrent: db.MvObservationsCurrent{
-					Rain:          davisObs.Rain,
-					Temp:          davisObs.Temp,
-					Rh:            davisObs.Rh,
-					Wdir:          davisObs.Wdir,
-					Wspd:          davisObs.Wspd,
-					Srad:          davisObs.Srad,
-					Mslp:          davisObs.Mslp,
-					Tn:            davisObs.Tn,
-					Tx:            davisObs.Tx,
-					Gust:          davisObs.Gust,
-					RainAccum:     davisObs.RainAccum,
-					TnTimestamp:   davisObs.TnTimestamp,
-					TxTimestamp:   davisObs.TxTimestamp,
-					GustTimestamp: davisObs.GustTimestamp,
-					Timestamp:     davisObs.Timestamp,
-				},
-			}
-		}
-	} else {
-		var err error
-		obs, err = s.store.GetLatestStationObservation(ctx, req.StationID)
-		if err != nil {
-			if errors.Is(err, db.ErrRecordNotFound) {
-				ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
-				return
-			}
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+	obs, err := s.store.GetLatestStationObservation(ctx, req.StationID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
 			return
 		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
 
 	ctx.JSON(http.StatusOK, newLatestObservationResponse(obs))

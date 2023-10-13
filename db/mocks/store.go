@@ -639,6 +639,59 @@ func (_c *MockStore_CountUsers_Call) RunAndReturn(run func(context.Context) (int
 	return _c
 }
 
+// CreateCurrentObservation provides a mock function with given fields: ctx, arg
+func (_m *MockStore) CreateCurrentObservation(ctx context.Context, arg db.CreateCurrentObservationParams) (db.ObservationsCurrent, error) {
+	ret := _m.Called(ctx, arg)
+
+	var r0 db.ObservationsCurrent
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, db.CreateCurrentObservationParams) (db.ObservationsCurrent, error)); ok {
+		return rf(ctx, arg)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, db.CreateCurrentObservationParams) db.ObservationsCurrent); ok {
+		r0 = rf(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.ObservationsCurrent)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, db.CreateCurrentObservationParams) error); ok {
+		r1 = rf(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStore_CreateCurrentObservation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateCurrentObservation'
+type MockStore_CreateCurrentObservation_Call struct {
+	*mock.Call
+}
+
+// CreateCurrentObservation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.CreateCurrentObservationParams
+func (_e *MockStore_Expecter) CreateCurrentObservation(ctx interface{}, arg interface{}) *MockStore_CreateCurrentObservation_Call {
+	return &MockStore_CreateCurrentObservation_Call{Call: _e.mock.On("CreateCurrentObservation", ctx, arg)}
+}
+
+func (_c *MockStore_CreateCurrentObservation_Call) Run(run func(ctx context.Context, arg db.CreateCurrentObservationParams)) *MockStore_CreateCurrentObservation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(db.CreateCurrentObservationParams))
+	})
+	return _c
+}
+
+func (_c *MockStore_CreateCurrentObservation_Call) Return(_a0 db.ObservationsCurrent, _a1 error) *MockStore_CreateCurrentObservation_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStore_CreateCurrentObservation_Call) RunAndReturn(run func(context.Context, db.CreateCurrentObservationParams) (db.ObservationsCurrent, error)) *MockStore_CreateCurrentObservation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateGLabsLoad provides a mock function with given fields: ctx, arg
 func (_m *MockStore) CreateGLabsLoad(ctx context.Context, arg db.CreateGLabsLoadParams) (db.GlabsLoad, error) {
 	ret := _m.Called(ctx, arg)
@@ -2116,6 +2169,60 @@ func (_c *MockStore_GetUserByUsername_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
+// InsertCurrentObservations provides a mock function with given fields: ctx
+func (_m *MockStore) InsertCurrentObservations(ctx context.Context) ([]db.ObservationsCurrent, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []db.ObservationsCurrent
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]db.ObservationsCurrent, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []db.ObservationsCurrent); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.ObservationsCurrent)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStore_InsertCurrentObservations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InsertCurrentObservations'
+type MockStore_InsertCurrentObservations_Call struct {
+	*mock.Call
+}
+
+// InsertCurrentObservations is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockStore_Expecter) InsertCurrentObservations(ctx interface{}) *MockStore_InsertCurrentObservations_Call {
+	return &MockStore_InsertCurrentObservations_Call{Call: _e.mock.On("InsertCurrentObservations", ctx)}
+}
+
+func (_c *MockStore_InsertCurrentObservations_Call) Run(run func(ctx context.Context)) *MockStore_InsertCurrentObservations_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockStore_InsertCurrentObservations_Call) Return(_a0 []db.ObservationsCurrent, _a1 error) *MockStore_InsertCurrentObservations_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStore_InsertCurrentObservations_Call) RunAndReturn(run func(context.Context) ([]db.ObservationsCurrent, error)) *MockStore_InsertCurrentObservations_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListLatestObservations provides a mock function with given fields: ctx
 func (_m *MockStore) ListLatestObservations(ctx context.Context) ([]db.ListLatestObservationsRow, error) {
 	ret := _m.Called(ctx)
@@ -2716,48 +2823,6 @@ func (_c *MockStore_ListUsers_Call) Return(_a0 []db.User, _a1 error) *MockStore_
 }
 
 func (_c *MockStore_ListUsers_Call) RunAndReturn(run func(context.Context, db.ListUsersParams) ([]db.User, error)) *MockStore_ListUsers_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// RefreshMVCurrentObservations provides a mock function with given fields: ctx
-func (_m *MockStore) RefreshMVCurrentObservations(ctx context.Context) error {
-	ret := _m.Called(ctx)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockStore_RefreshMVCurrentObservations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RefreshMVCurrentObservations'
-type MockStore_RefreshMVCurrentObservations_Call struct {
-	*mock.Call
-}
-
-// RefreshMVCurrentObservations is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockStore_Expecter) RefreshMVCurrentObservations(ctx interface{}) *MockStore_RefreshMVCurrentObservations_Call {
-	return &MockStore_RefreshMVCurrentObservations_Call{Call: _e.mock.On("RefreshMVCurrentObservations", ctx)}
-}
-
-func (_c *MockStore_RefreshMVCurrentObservations_Call) Run(run func(ctx context.Context)) *MockStore_RefreshMVCurrentObservations_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *MockStore_RefreshMVCurrentObservations_Call) Return(_a0 error) *MockStore_RefreshMVCurrentObservations_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockStore_RefreshMVCurrentObservations_Call) RunAndReturn(run func(context.Context) error) *MockStore_RefreshMVCurrentObservations_Call {
 	_c.Call.Return(run)
 	return _c
 }

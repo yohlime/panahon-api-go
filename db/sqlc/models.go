@@ -20,7 +20,8 @@ type GlabsLoad struct {
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
-type MvObservationsCurrent struct {
+type ObservationsCurrent struct {
+	ID            int64              `json:"id"`
 	StationID     int64              `json:"station_id"`
 	Rain          pgtype.Float4      `json:"rain"`
 	Temp          pgtype.Float4      `json:"temp"`
@@ -33,10 +34,10 @@ type MvObservationsCurrent struct {
 	Tx            pgtype.Float4      `json:"tx"`
 	Gust          pgtype.Float4      `json:"gust"`
 	RainAccum     pgtype.Float4      `json:"rain_accum"`
+	Timestamp     pgtype.Timestamptz `json:"timestamp"`
 	TnTimestamp   pgtype.Timestamptz `json:"tn_timestamp"`
 	TxTimestamp   pgtype.Timestamptz `json:"tx_timestamp"`
 	GustTimestamp pgtype.Timestamptz `json:"gust_timestamp"`
-	Timestamp     pgtype.Timestamptz `json:"timestamp"`
 }
 
 type ObservationsMoObservation struct {

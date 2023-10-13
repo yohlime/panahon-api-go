@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/api"
 	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
+	"github.com/emiliogozo/panahon-api-go/internal/service"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
-	"github.com/go-co-op/gocron"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -51,12 +50,7 @@ func main() {
 
 	store := db.NewStore(connPool)
 
-	s := gocron.NewScheduler(time.Local)
-	_, err = s.Cron("2-59/10 * * * *").Tag("refreshMaterialiazedView").Do(refreshMaterialiazedView, ctx, store)
-	if err != nil {
-		log.Fatal().Err(err).Msg("error scheduling job")
-	}
-	s.StartAsync()
+	service.ScheduleJobs(ctx, store, logger)
 
 	runGinServer(config, store, logger)
 }
@@ -71,12 +65,4 @@ func runGinServer(config util.Config, store db.Store, logger *zerolog.Logger) {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("cannot start server")
 	}
-}
-
-func refreshMaterialiazedView(ctx context.Context, store db.Store) error {
-	err := store.RefreshMVCurrentObservations(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
 }
