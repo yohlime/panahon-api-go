@@ -86,7 +86,7 @@ func (q *Queries) CreateCurrentObservation(ctx context.Context, arg CreateCurren
 
 const getLatestStationObservation = `-- name: GetLatestStationObservation :one
 SELECT
-  stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
+  stn.id, stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
   obs.id, obs.station_id, obs.rain, obs.temp, obs.rh, obs.wdir, obs.wspd, obs.srad, obs.mslp, obs.tn, obs.tx, obs.gust, obs.rain_accum, obs.timestamp, obs.tn_timestamp, obs.tx_timestamp, obs.gust_timestamp
 FROM observations_station stn 
   JOIN observations_current obs 
@@ -97,6 +97,7 @@ LIMIT 1
 `
 
 type GetLatestStationObservationRow struct {
+	ID                  int64               `json:"id"`
 	Name                string              `json:"name"`
 	Lat                 pgtype.Float4       `json:"lat"`
 	Lon                 pgtype.Float4       `json:"lon"`
@@ -109,6 +110,7 @@ func (q *Queries) GetLatestStationObservation(ctx context.Context, id int64) (Ge
 	row := q.db.QueryRow(ctx, getLatestStationObservation, id)
 	var i GetLatestStationObservationRow
 	err := row.Scan(
+		&i.ID,
 		&i.Name,
 		&i.Lat,
 		&i.Lon,
@@ -209,26 +211,29 @@ func (q *Queries) InsertCurrentObservations(ctx context.Context) ([]Observations
 const listLatestObservations = `-- name: ListLatestObservations :many
 WITH RankedRows AS (
   SELECT
-    stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
-    obs.id, obs.station_id, obs.rain, obs.temp, obs.rh, obs.wdir, obs.wspd, obs.srad, obs.mslp, obs.tn, obs.tx, obs.gust, obs.rain_accum, obs.timestamp, obs.tn_timestamp, obs.tx_timestamp, obs.gust_timestamp,
-    ROW_NUMBER() OVER (PARTITION BY obs.id ORDER BY obs.timestamp DESC) AS rn
+    stn.id, stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
+    obs.rain, obs."temp", obs.rh,
+	obs.wdir, obs.wspd, obs.srad, obs.mslp,
+	obs.tn, obs.tx, obs.gust, obs.rain_accum,
+	obs.tn_timestamp, obs.tx_timestamp, obs.gust_timestamp, obs."timestamp",
+    ROW_NUMBER() OVER (PARTITION BY stn.id ORDER BY obs.timestamp DESC) AS rn
   FROM observations_station stn 
     JOIN observations_current obs 
     ON stn.id = obs.station_id
+  WHERE obs.timestamp > NOW() - INTERVAL '1 hour'
 )
-SELECT name, lat, lon, elevation, address, id, station_id, rain, temp, rh, wdir, wspd, srad, mslp, tn, tx, gust, rain_accum, timestamp, tn_timestamp, tx_timestamp, gust_timestamp, rn
+SELECT id, name, lat, lon, elevation, address, rain, temp, rh, wdir, wspd, srad, mslp, tn, tx, gust, rain_accum, tn_timestamp, tx_timestamp, gust_timestamp, timestamp, rn
 FROM RankedRows
 WHERE rn = 1
 `
 
 type ListLatestObservationsRow struct {
+	ID            int64              `json:"id"`
 	Name          string             `json:"name"`
 	Lat           pgtype.Float4      `json:"lat"`
 	Lon           pgtype.Float4      `json:"lon"`
 	Elevation     pgtype.Float4      `json:"elevation"`
 	Address       pgtype.Text        `json:"address"`
-	ID            int64              `json:"id"`
-	StationID     int64              `json:"station_id"`
 	Rain          pgtype.Float4      `json:"rain"`
 	Temp          pgtype.Float4      `json:"temp"`
 	Rh            pgtype.Float4      `json:"rh"`
@@ -240,10 +245,10 @@ type ListLatestObservationsRow struct {
 	Tx            pgtype.Float4      `json:"tx"`
 	Gust          pgtype.Float4      `json:"gust"`
 	RainAccum     pgtype.Float4      `json:"rain_accum"`
-	Timestamp     pgtype.Timestamptz `json:"timestamp"`
 	TnTimestamp   pgtype.Timestamptz `json:"tn_timestamp"`
 	TxTimestamp   pgtype.Timestamptz `json:"tx_timestamp"`
 	GustTimestamp pgtype.Timestamptz `json:"gust_timestamp"`
+	Timestamp     pgtype.Timestamptz `json:"timestamp"`
 	Rn            int64              `json:"rn"`
 }
 
@@ -257,13 +262,12 @@ func (q *Queries) ListLatestObservations(ctx context.Context) ([]ListLatestObser
 	for rows.Next() {
 		var i ListLatestObservationsRow
 		if err := rows.Scan(
+			&i.ID,
 			&i.Name,
 			&i.Lat,
 			&i.Lon,
 			&i.Elevation,
 			&i.Address,
-			&i.ID,
-			&i.StationID,
 			&i.Rain,
 			&i.Temp,
 			&i.Rh,
@@ -275,10 +279,10 @@ func (q *Queries) ListLatestObservations(ctx context.Context) ([]ListLatestObser
 			&i.Tx,
 			&i.Gust,
 			&i.RainAccum,
-			&i.Timestamp,
 			&i.TnTimestamp,
 			&i.TxTimestamp,
 			&i.GustTimestamp,
+			&i.Timestamp,
 			&i.Rn,
 		); err != nil {
 			return nil, err

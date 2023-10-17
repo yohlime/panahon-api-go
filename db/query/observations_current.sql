@@ -1,12 +1,16 @@
 -- name: ListLatestObservations :many
 WITH RankedRows AS (
   SELECT
-    stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
-    obs.*,
-    ROW_NUMBER() OVER (PARTITION BY obs.id ORDER BY obs.timestamp DESC) AS rn
+    stn.id, stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
+    obs.rain, obs."temp", obs.rh,
+	obs.wdir, obs.wspd, obs.srad, obs.mslp,
+	obs.tn, obs.tx, obs.gust, obs.rain_accum,
+	obs.tn_timestamp, obs.tx_timestamp, obs.gust_timestamp, obs."timestamp",
+    ROW_NUMBER() OVER (PARTITION BY stn.id ORDER BY obs.timestamp DESC) AS rn
   FROM observations_station stn 
     JOIN observations_current obs 
     ON stn.id = obs.station_id
+  WHERE obs.timestamp > NOW() - INTERVAL '1 hour'
 )
 SELECT *
 FROM RankedRows
@@ -15,7 +19,7 @@ WHERE rn = 1;
 
 -- name: GetLatestStationObservation :one
 SELECT
-  stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
+  stn.id, stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
   sqlc.embed(obs)
 FROM observations_station stn 
   JOIN observations_current obs 

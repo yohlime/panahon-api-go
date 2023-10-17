@@ -512,6 +512,7 @@ type latestObsRes struct {
 	Timestamp     pgtype.Timestamptz `json:"timestamp"`
 }
 type latestObservationRes struct {
+	ID        int64        `json:"id"`
 	Name      string       `json:"name"`
 	Lat       util.Float4  `json:"lat"`
 	Lon       util.Float4  `json:"lon"`
@@ -524,6 +525,7 @@ func newLatestObservationResponse(data any) latestObservationRes {
 	switch d := data.(type) {
 	case db.ListLatestObservationsRow:
 		return latestObservationRes{
+			ID:        d.ID,
 			Name:      d.Name,
 			Lat:       util.Float4{Float4: d.Lat},
 			Lon:       util.Float4{Float4: d.Lon},
@@ -549,6 +551,7 @@ func newLatestObservationResponse(data any) latestObservationRes {
 		}
 	case db.GetLatestStationObservationRow:
 		return latestObservationRes{
+			ID:        d.ID,
 			Name:      d.Name,
 			Lat:       util.Float4{Float4: d.Lat},
 			Lon:       util.Float4{Float4: d.Lon},
