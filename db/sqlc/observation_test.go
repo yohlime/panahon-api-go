@@ -549,11 +549,11 @@ func (ts *ObservationTestSuite) TestUpdateStationObservation() {
 			buildArg: func() UpdateStationObservationParams {
 				oldObs = createRandomObservation(t, station.ID)
 				newPres = pgtype.Float4{
-					Float32: util.RandomFloat(995.0, 1100.0),
+					Float32: util.RandomFloat[float32](995.0, 1100.0),
 					Valid:   true,
 				}
 				newRr = pgtype.Float4{
-					Float32: util.RandomFloat(0.0, 15.0),
+					Float32: util.RandomFloat[float32](0.0, 15.0),
 					Valid:   true,
 				}
 
@@ -608,15 +608,15 @@ func (ts *ObservationTestSuite) TestDeleteStationObservation() {
 func createRandomObservation(t *testing.T, stationID int64) ObservationsObservation {
 	arg := CreateStationObservationParams{
 		Pres: pgtype.Float4{
-			Float32: util.RandomFloat(999.0, 1100.9),
+			Float32: util.RandomFloat[float32](999.0, 1100.9),
 			Valid:   true,
 		},
 		Temp: pgtype.Float4{
-			Float32: util.RandomFloat(16.0, 38.0),
+			Float32: util.RandomFloat[float32](16.0, 38.0),
 			Valid:   true,
 		},
 		Rr: pgtype.Float4{
-			Float32: util.RandomFloat(0.0, 10.0),
+			Float32: util.RandomFloat[float32](0.0, 10.0),
 			Valid:   true,
 		},
 		Timestamp: pgtype.Timestamptz{

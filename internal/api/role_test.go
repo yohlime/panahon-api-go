@@ -478,7 +478,7 @@ func TestDeleteRoleAPI(t *testing.T) {
 
 func randomRole(t *testing.T) db.Role {
 	return db.Role{
-		ID:   util.RandomInt(1, 1000),
+		ID:   util.RandomInt[int64](1, 1000),
 		Name: strings.ToUpper(util.RandomString(12)),
 		Description: pgtype.Text{
 			String: util.RandomString(24),

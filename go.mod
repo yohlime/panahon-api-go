@@ -23,6 +23,7 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/twpayne/go-geom v1.5.2
 	golang.org/x/crypto v0.12.0
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 

@@ -551,7 +551,7 @@ func TestListObservationsAPI(t *testing.T) {
 			idStr := fmt.Sprintf("%d", stations[s].ID)
 			selectedStnIDs = append(selectedStnIDs, idStr)
 			if i < 5 {
-				stationObsSlice[i] = randomStationObservation(stations[s].ID)
+				stationObsSlice[i] = randomStationObservation[int64](stations[s].ID)
 				i++
 			}
 		}
@@ -787,12 +787,12 @@ func TestListObservationsAPI(t *testing.T) {
 	}
 }
 
-func randomStationObservation(stationID int64) db.ObservationsObservation {
+func randomStationObservation[T int | int32 | int64](stationID T) db.ObservationsObservation {
 	return db.ObservationsObservation{
-		ID:        util.RandomInt(1, 1000),
-		StationID: stationID,
-		Pres:      pgtype.Float4{Float32: util.RandomFloat(900.0, 1000.0), Valid: true},
-		Temp:      pgtype.Float4{Float32: util.RandomFloat(25.0, 35.0), Valid: true},
+		ID:        util.RandomInt[int64](1, 1000),
+		StationID: int64(stationID),
+		Pres:      pgtype.Float4{Float32: util.RandomFloat[float32](900.0, 1000.0), Valid: true},
+		Temp:      pgtype.Float4{Float32: util.RandomFloat[float32](25.0, 35.0), Valid: true},
 	}
 }
 

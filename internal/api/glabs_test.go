@@ -408,9 +408,9 @@ func requireBodyMatchGlabsAccessToken(t *testing.T, body *bytes.Buffer, accessTo
 
 func randomGLabsLoad() db.GlabsLoad {
 	return db.GlabsLoad{
-		ID: util.RandomInt(0, 100),
+		ID: util.RandomInt[int64](0, 100),
 		TransactionID: pgtype.Int4{
-			Int32: int32(util.RandomInt(1000000, 9999999)),
+			Int32: util.RandomInt[int32](1000000, 9999999),
 			Valid: true,
 		},
 		Promo: pgtype.Text{

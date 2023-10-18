@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
@@ -14,13 +16,13 @@ func init() {
 }
 
 // RandomInt generates a random integer between min and max
-func RandomInt(min, max int64) int64 {
-	return min + rand.Int63n(max-min+1)
+func RandomInt[T constraints.Integer](min, max T) T {
+	return min + T(rand.Int63n(int64(max-min)+1))
 }
 
 // RandomFloat generates a random float between min and max
-func RandomFloat(min, max float32) float32 {
-	return min + rand.Float32()*(max-min)
+func RandomFloat[T constraints.Float](min, max T) T {
+	return min + T(rand.Float32())*(max-min)
 }
 
 // RandomString generates a random string of length n

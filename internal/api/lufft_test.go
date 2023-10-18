@@ -21,7 +21,7 @@ import (
 
 func TestLufftMsgLog(t *testing.T) {
 	n := 10
-	stationID := util.RandomInt(1, 100)
+	stationID := util.RandomInt[int64](1, 100)
 	lufftStationMsgs := make([]db.ListLufftStationMsgRow, n)
 	for i := 0; i < n; i++ {
 		msgSlice := randomLufftMsgLog(stationID)
@@ -167,7 +167,7 @@ func TestLufftMsgLog(t *testing.T) {
 
 func randomLufftMsgLog(stationID int64) db.ObservationsStationhealth {
 	return db.ObservationsStationhealth{
-		ID:        util.RandomInt(1, 1000),
+		ID:        util.RandomInt[int64](1, 1000),
 		StationID: stationID,
 		Message: pgtype.Text{
 			String: util.RandomString(120),

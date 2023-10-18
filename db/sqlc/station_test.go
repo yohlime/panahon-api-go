@@ -381,11 +381,11 @@ func createRandomStation(t *testing.T, geom any) ObservationsStation {
 }
 
 func getRandomLat() float32 {
-	return util.RandomFloat(5.5, 18.6)
+	return util.RandomFloat[float32](5.5, 18.6)
 }
 
 func getRandomLon() float32 {
-	return util.RandomFloat(117.15, 126.6)
+	return util.RandomFloat[float32](117.15, 126.6)
 }
 
 type getRandomCoordsFromCircleParams struct {

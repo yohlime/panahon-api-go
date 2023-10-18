@@ -1010,7 +1010,7 @@ func randomUser(t *testing.T) (user db.User, password string) {
 	require.NoError(t, err)
 
 	user = db.User{
-		ID:       util.RandomInt(1, 1000),
+		ID:       util.RandomInt[int64](1, 1000),
 		Username: util.RandomString(12),
 		Password: hashedPassword,
 		FullName: util.RandomString(24),
