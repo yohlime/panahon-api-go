@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -634,4 +635,56 @@ func (s *Server) GetLatestStationObservation(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, newLatestObservationResponse(obs))
+}
+
+type getNearestLatestStationObsReq struct {
+	Pt string `form:"pt" binding:"required"`
+} //@name GetNearestLatestStationObservationParams
+
+// GetNearestLatestStationObservation
+//
+//	@Summary	Get nearest latest station observation
+//	@Tags		observations
+//	@Accept		json
+//	@Produce	json
+//	@Param		req	query		getNearestLatestStationObsReq	false	"Get nearest latest station observation parameters"
+//	@Success	200	{object}	latestObservationRes
+//	@Router		/stations/nearest/observations/latest [get]
+func (s *Server) GetNearestLatestStationObservation(ctx *gin.Context) {
+	var req getNearestLatestStationObsReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	ptArgs := strings.Split(req.Pt, ",")
+	if len(ptArgs) != 2 {
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("invalid parameter: pt = %s", req.Pt)))
+		return
+	}
+	lon, err := strconv.ParseFloat(ptArgs[0], 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+	lat, err := strconv.ParseFloat(ptArgs[1], 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	obs, err := s.store.GetNearestLatestStationObservation(ctx, db.GetNearestLatestStationObservationParams{
+		Lon: float32(lon),
+		Lat: float32(lat),
+	})
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newLatestObservationResponse(db.GetLatestStationObservationRow(obs)))
 }

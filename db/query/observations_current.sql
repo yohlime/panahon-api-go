@@ -28,6 +28,23 @@ WHERE stn.id = $1
 ORDER BY obs.timestamp DESC
 LIMIT 1;
 
+-- name: GetNearestLatestStationObservation :one
+WITH NearestStation AS (
+  SELECT
+	id, name, lat, lon, elevation, address
+  FROM observations_station
+  ORDER BY geom <-> ST_Point(@lon::real, @lat::real, 4326)
+  LIMIT 1
+)
+SELECT
+  stn.id, stn.name, stn.lat, stn.lon, stn.elevation, stn.address,
+  sqlc.embed(obs)
+FROM NearestStation stn 
+  JOIN observations_current obs 
+  ON stn.id = obs.station_id
+ORDER BY obs.timestamp DESC
+LIMIT 1;
+
 -- name: InsertCurrentObservations :many
 INSERT INTO observations_current (
   station_id,

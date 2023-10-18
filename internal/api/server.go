@@ -95,6 +95,7 @@ func (s *Server) setupRouter() {
 	{
 		stations.GET("", s.ListStations)
 		stations.GET(":station_id", s.GetStation)
+		stations.GET("/nearest/observations/latest", s.GetNearestLatestStationObservation)
 
 		stnObservations := stations.Group(":station_id/observations")
 		{

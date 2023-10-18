@@ -121,6 +121,8 @@ definitions:
         type: string
       elevation:
         $ref: '#/definitions/util.Float4'
+      id:
+        type: integer
       lat:
         $ref: '#/definitions/util.Float4'
       lon:
@@ -1111,6 +1113,25 @@ paths:
           schema:
             $ref: '#/definitions/LatestObservation'
       summary: Get latest station observation
+      tags:
+      - observations
+  /stations/nearest/observations/latest:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        name: pt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/LatestObservation'
+      summary: Get nearest latest station observation
       tags:
       - observations
   /tokens/renew:

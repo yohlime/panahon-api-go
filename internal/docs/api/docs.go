@@ -521,6 +521,36 @@ const docTemplate = `{
                 }
             }
         },
+        "/stations/nearest/observations/latest": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "observations"
+                ],
+                "summary": "Get nearest latest station observation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "pt",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/LatestObservation"
+                        }
+                    }
+                }
+            }
+        },
         "/stations/{station_id}": {
             "get": {
                 "consumes": [
@@ -1378,6 +1408,9 @@ const docTemplate = `{
                 },
                 "elevation": {
                     "$ref": "#/definitions/util.Float4"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "lat": {
                     "$ref": "#/definitions/util.Float4"

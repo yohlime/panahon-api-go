@@ -787,6 +787,174 @@ func TestListObservationsAPI(t *testing.T) {
 	}
 }
 
+func TestGetNearestLatestStationObservationAPI(t *testing.T) {
+	testCases := []struct {
+		name          string
+		query         getNearestLatestStationObsReq
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name: "OK",
+			query: getNearestLatestStationObsReq{
+				Pt: "12.5,121.6",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetNearestLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.GetNearestLatestStationObservationRow{}, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "NotFound",
+			query: getNearestLatestStationObsReq{
+				Pt: "12.5,121.6",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetNearestLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.GetNearestLatestStationObservationRow{}, db.ErrRecordNotFound)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			query: getNearestLatestStationObsReq{
+				Pt: "12.5,121.6",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetNearestLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.GetNearestLatestStationObservationRow{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidPt",
+			query: getNearestLatestStationObsReq{
+				Pt: "12.5",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "GetNearestLatestStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("%s/stations/nearest/observations/latest", server.config.APIBasePath)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			// Add query parameters to request URL
+			q := request.URL.Query()
+			q.Add("pt", tc.query.Pt)
+			request.URL.RawQuery = q.Encode()
+
+			server.router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
+func TestGetLatestStationObservationAPI(t *testing.T) {
+	stationID := util.RandomInt(1, 100)
+	stationObs := randomStationObservation(stationID)
+
+	testCases := []struct {
+		name          string
+		stationID     int64
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name:      "OK",
+			stationID: stationObs.StationID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.GetLatestStationObservationRow{}, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:      "NotFound",
+			stationID: stationObs.StationID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.GetLatestStationObservationRow{}, db.ErrRecordNotFound)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name:      "InternalError",
+			stationID: stationObs.StationID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.GetLatestStationObservationRow{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name:      "InvalidID",
+			stationID: -3,
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "GetLatestStationObservation", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("%s/stations/%d/observations/latest", server.config.APIBasePath, tc.stationID)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
 func randomStationObservation[T int | int32 | int64](stationID T) db.ObservationsObservation {
 	return db.ObservationsObservation{
 		ID:        util.RandomInt[int64](1, 1000),

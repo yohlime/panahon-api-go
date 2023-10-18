@@ -1533,6 +1533,59 @@ func (_c *MockStore_GetLatestStationObservation_Call) RunAndReturn(run func(cont
 	return _c
 }
 
+// GetNearestLatestStationObservation provides a mock function with given fields: ctx, arg
+func (_m *MockStore) GetNearestLatestStationObservation(ctx context.Context, arg db.GetNearestLatestStationObservationParams) (db.GetNearestLatestStationObservationRow, error) {
+	ret := _m.Called(ctx, arg)
+
+	var r0 db.GetNearestLatestStationObservationRow
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, db.GetNearestLatestStationObservationParams) (db.GetNearestLatestStationObservationRow, error)); ok {
+		return rf(ctx, arg)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, db.GetNearestLatestStationObservationParams) db.GetNearestLatestStationObservationRow); ok {
+		r0 = rf(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.GetNearestLatestStationObservationRow)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, db.GetNearestLatestStationObservationParams) error); ok {
+		r1 = rf(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStore_GetNearestLatestStationObservation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetNearestLatestStationObservation'
+type MockStore_GetNearestLatestStationObservation_Call struct {
+	*mock.Call
+}
+
+// GetNearestLatestStationObservation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.GetNearestLatestStationObservationParams
+func (_e *MockStore_Expecter) GetNearestLatestStationObservation(ctx interface{}, arg interface{}) *MockStore_GetNearestLatestStationObservation_Call {
+	return &MockStore_GetNearestLatestStationObservation_Call{Call: _e.mock.On("GetNearestLatestStationObservation", ctx, arg)}
+}
+
+func (_c *MockStore_GetNearestLatestStationObservation_Call) Run(run func(ctx context.Context, arg db.GetNearestLatestStationObservationParams)) *MockStore_GetNearestLatestStationObservation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(db.GetNearestLatestStationObservationParams))
+	})
+	return _c
+}
+
+func (_c *MockStore_GetNearestLatestStationObservation_Call) Return(_a0 db.GetNearestLatestStationObservationRow, _a1 error) *MockStore_GetNearestLatestStationObservation_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStore_GetNearestLatestStationObservation_Call) RunAndReturn(run func(context.Context, db.GetNearestLatestStationObservationParams) (db.GetNearestLatestStationObservationRow, error)) *MockStore_GetNearestLatestStationObservation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRole provides a mock function with given fields: ctx, id
 func (_m *MockStore) GetRole(ctx context.Context, id int64) (db.Role, error) {
 	ret := _m.Called(ctx, id)

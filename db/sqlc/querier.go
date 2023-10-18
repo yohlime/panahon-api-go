@@ -39,6 +39,7 @@ type Querier interface {
 	DeleteStationObservation(ctx context.Context, arg DeleteStationObservationParams) error
 	DeleteUser(ctx context.Context, id int64) error
 	GetLatestStationObservation(ctx context.Context, id int64) (GetLatestStationObservationRow, error)
+	GetNearestLatestStationObservation(ctx context.Context, arg GetNearestLatestStationObservationParams) (GetNearestLatestStationObservationRow, error)
 	GetRole(ctx context.Context, id int64) (Role, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
