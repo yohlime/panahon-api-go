@@ -558,7 +558,7 @@ func requireBodyMatchStation(t *testing.T, body *bytes.Buffer, station db.Observ
 	var gotStation Station
 	err = json.Unmarshal(data, &gotStation)
 	require.NoError(t, err)
-	require.Equal(t, newStation(station), gotStation)
+	require.Equal(t, newStation(station, false), gotStation)
 }
 
 func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.ObservationsStation) {
@@ -571,7 +571,7 @@ func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.Ob
 
 	stationsRes := make([]Station, len(stations))
 	for i, stn := range stations {
-		stationsRes[i] = newStation(stn)
+		stationsRes[i] = newStation(stn, false)
 	}
 	require.Equal(t, stationsRes, gotStations.Items)
 }

@@ -92,7 +92,7 @@ type lufftRes struct {
 
 func newLufftResponse(stn db.ObservationsStation, obs db.ObservationsObservation, h db.ObservationsStationhealth) lufftRes {
 	return lufftRes{
-		Station: newStation(stn),
+		Station: newStation(stn, false),
 		Obs:     newStationObservation(obs),
 		Health:  newStationHealth(h),
 	}

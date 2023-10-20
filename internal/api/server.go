@@ -93,31 +93,32 @@ func (s *Server) setupRouter() {
 
 	stations := api.Group("/stations")
 	{
-		stations.GET("", s.ListStations)
-		stations.GET(":station_id", s.GetStation)
-		stations.GET("/nearest/observations/latest", s.GetNearestLatestStationObservation)
+		stn := addMiddleware(stations, authPermissiveMiddleware(s.tokenMaker))
+		stn.GET("", s.ListStations)
+		stn.GET(":station_id", s.GetStation)
+		stn.GET("/nearest/observations/latest", s.GetNearestLatestStationObservation)
 
-		stnObservations := stations.Group(":station_id/observations")
+		stnObs := stations.Group(":station_id/observations")
 		{
-			stnObservations.GET("", s.ListStationObservations)
-			stnObservations.GET("/latest", s.GetLatestStationObservation)
-			stnObservations.GET(":id", s.GetStationObservation)
+			stnObs.GET("", s.ListStationObservations)
+			stnObs.GET("/latest", s.GetLatestStationObservation)
+			stnObs.GET(":id", s.GetStationObservation)
 		}
 
-		stationsAuth := addMiddleware(stations,
+		stnAuth := addMiddleware(stations,
 			authMiddleware(s.tokenMaker),
 			adminMiddleware())
-		stationsAuth.POST("", s.CreateStation)
-		stationsAuth.PUT(":station_id", s.UpdateStation)
-		stationsAuth.DELETE(":station_id", s.DeleteStation)
+		stnAuth.POST("", s.CreateStation)
+		stnAuth.PUT(":station_id", s.UpdateStation)
+		stnAuth.DELETE(":station_id", s.DeleteStation)
 
-		stnObservationsAuth := addMiddleware(stnObservations,
+		stnObsAuth := addMiddleware(stnObs,
 			authMiddleware(s.tokenMaker),
 			adminMiddleware())
 		{
-			stnObservationsAuth.POST("", s.CreateStationObservation)
-			stnObservationsAuth.PUT(":id", s.UpdateStationObservation)
-			stnObservationsAuth.DELETE(":id", s.DeleteStationObservation)
+			stnObsAuth.POST("", s.CreateStationObservation)
+			stnObsAuth.PUT(":id", s.UpdateStationObservation)
+			stnObsAuth.DELETE(":id", s.DeleteStationObservation)
 		}
 
 	}

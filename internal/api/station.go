@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,22 +20,21 @@ type Station struct {
 	Lat           float32     `json:"lat"`
 	Lon           float32     `json:"lon"`
 	Elevation     float32     `json:"elevation"`
-	DateInstalled pgtype.Date `json:"date_installed"`
-	MobileNumber  string      `json:"mobile_number"`
-	StationType   string      `json:"station_type"`
-	StationType2  string      `json:"station_type2"`
-	StationUrl    string      `json:"station_url"`
-	Status        string      `json:"status"`
+	DateInstalled pgtype.Date `json:"date_installed,omitempty"`
+	MobileNumber  string      `json:"mobile_number,omitempty"`
+	StationType   string      `json:"station_type,omitempty"`
+	StationType2  string      `json:"station_type2,omitempty"`
+	StationUrl    string      `json:"station_url,omitempty"`
+	Status        string      `json:"status,omitempty"`
 	Province      string      `json:"province"`
 	Region        string      `json:"region"`
 	Address       string      `json:"address"`
 } //@name Station
 
-func newStation(station db.ObservationsStation) Station {
+func newStation(station db.ObservationsStation, simple bool) Station {
 	res := Station{
-		ID:            station.ID,
-		Name:          station.Name,
-		DateInstalled: station.DateInstalled,
+		ID:   station.ID,
+		Name: station.Name,
 	}
 
 	if station.Lat.Valid {
@@ -46,20 +46,23 @@ func newStation(station db.ObservationsStation) Station {
 	if station.Elevation.Valid {
 		res.Elevation = station.Elevation.Float32
 	}
-	if station.MobileNumber.Valid {
-		res.MobileNumber = station.MobileNumber.String
-	}
-	if station.StationType.Valid {
-		res.StationType = station.StationType.String
-	}
-	if station.StationType2.Valid {
-		res.StationType2 = station.StationType2.String
-	}
-	if station.StationUrl.Valid {
-		res.StationUrl = station.StationUrl.String
-	}
-	if station.Status.Valid {
-		res.Status = station.Status.String
+	if !simple {
+		if station.MobileNumber.Valid {
+			res.MobileNumber = station.MobileNumber.String
+		}
+		if station.StationType.Valid {
+			res.StationType = station.StationType.String
+		}
+		if station.StationType2.Valid {
+			res.StationType2 = station.StationType2.String
+		}
+		if station.StationUrl.Valid {
+			res.StationUrl = station.StationUrl.String
+		}
+		if station.Status.Valid {
+			res.Status = station.Status.String
+		}
+		res.DateInstalled = station.DateInstalled
 	}
 	if station.Province.Valid {
 		res.Province = station.Province.String
@@ -129,7 +132,7 @@ func (s *Server) CreateStation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, newStation(result))
+	ctx.JSON(http.StatusCreated, newStation(result, false))
 }
 
 type listStationsReq struct {
@@ -244,10 +247,17 @@ func (s *Server) ListStations(ctx *gin.Context) {
 		return
 	}
 
+	key, exists := ctx.Get(authorizationPayloadKey)
+	var isSimpleResponse bool
+	if exists {
+		authPayload, ok := key.(*token.Payload)
+		isSimpleResponse = !ok || authPayload == nil || len(authPayload.User.Username) == 0
+	}
+
 	numStations := len(stations)
 	items := make([]Station, numStations)
 	for i, station := range stations {
-		items[i] = newStation(station)
+		items[i] = newStation(station, isSimpleResponse)
 	}
 
 	var count int64
@@ -314,7 +324,14 @@ func (s *Server) GetStation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStation(station))
+	key, exists := ctx.Get(authorizationPayloadKey)
+	var isSimpleResponse bool
+	if exists {
+		authPayload, ok := key.(*token.Payload)
+		isSimpleResponse = !ok || authPayload == nil || len(authPayload.User.Username) == 0
+	}
+
+	ctx.JSON(http.StatusOK, newStation(station, isSimpleResponse))
 }
 
 type updateStationUri struct {
@@ -388,7 +405,7 @@ func (s *Server) UpdateStation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStation(station))
+	ctx.JSON(http.StatusOK, newStation(station, false))
 }
 
 type deleteStationReq struct {
