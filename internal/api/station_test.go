@@ -15,6 +15,7 @@ import (
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -113,9 +114,29 @@ func TestListStationsAPI(t *testing.T) {
 			name:  "Default",
 			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.ListStationsParams")).
 					Return(stations, nil)
-				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context")).Return(int64(n), nil)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchStations(t, recorder.Body, stations)
+			},
+		},
+		{
+			name: "HasStatus",
+			query: listStationsReq{
+				Status: "ONLINE",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsParams) bool {
+					return arg.Status.Valid && len(arg.Status.String) > 0
+				})).
+					Return(stations, nil)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg pgtype.Text) bool {
+					return arg.Valid && len(arg.String) > 0
+				})).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -129,9 +150,13 @@ func TestListStationsAPI(t *testing.T) {
 				Circle: "121.0,5.5,1.0",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().ListStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().ListStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsWithinRadiusParams) bool {
+					return assert.InDelta(t, arg.Cx, 121.0, 0.001) && assert.InDelta(t, arg.Cy, 5.5, 0.001) && assert.InDelta(t, arg.R, 1.0, 0.001)
+				})).
 					Return(stations, nil)
-				store.EXPECT().CountStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
+				store.EXPECT().CountStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CountStationsWithinRadiusParams) bool {
+					return assert.InDelta(t, arg.Cx, 121.0, 0.001) && assert.InDelta(t, arg.Cy, 5.5, 0.001) && assert.InDelta(t, arg.R, 1.0, 0.001)
+				})).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -157,9 +182,13 @@ func TestListStationsAPI(t *testing.T) {
 				BBox: "121.0,5.5,122.5,7.6",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().ListStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().ListStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsWithinBBoxParams) bool {
+					return assert.InDelta(t, arg.Xmin, 121.0, 0.001) && assert.InDelta(t, arg.Ymin, 5.5, 0.001) && assert.InDelta(t, arg.Xmax, 122.5, 0.001) && assert.InDelta(t, arg.Ymax, 7.6, 0.001)
+				})).
 					Return(stations, nil)
-				store.EXPECT().CountStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
+				store.EXPECT().CountStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CountStationsWithinBBoxParams) bool {
+					return assert.InDelta(t, arg.Xmin, 121.0, 0.001) && assert.InDelta(t, arg.Ymin, 5.5, 0.001) && assert.InDelta(t, arg.Xmax, 122.5, 0.001) && assert.InDelta(t, arg.Ymax, 7.6, 0.001)
+				})).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -221,7 +250,7 @@ func TestListStationsAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsStation{}, nil)
-				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context")).Return(int64(n), nil)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -235,7 +264,7 @@ func TestListStationsAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.ObservationsStation{}, nil)
-				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context")).Return(0, sql.ErrConnDone)
+				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(0, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -267,6 +296,9 @@ func TestListStationsAPI(t *testing.T) {
 			}
 			if len(tc.query.BBox) > 0 {
 				q.Add("bbox", tc.query.BBox)
+			}
+			if len(tc.query.Status) > 0 {
+				q.Add("status", tc.query.Status)
 			}
 			request.URL.RawQuery = q.Encode()
 

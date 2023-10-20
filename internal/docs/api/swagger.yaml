@@ -854,6 +854,9 @@ paths:
         minimum: 1
         name: per_page
         type: integer
+      - in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:

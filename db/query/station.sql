@@ -37,6 +37,8 @@ WHERE mobile_number = $1 LIMIT 1;
 
 -- name: ListStations :many
 SELECT * FROM observations_station
+WHERE
+  (CASE WHEN sqlc.narg('status')::text IS NOT NULL THEN status = sqlc.narg('status') ELSE TRUE END)
 ORDER BY id
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
@@ -44,6 +46,7 @@ OFFSET sqlc.arg('offset');
 -- name: ListStationsWithinRadius :many
 SELECT * FROM observations_station
 WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real)
+  AND (CASE WHEN sqlc.narg('status')::text IS NOT NULL THEN status = sqlc.narg('status') ELSE TRUE END)
 ORDER BY id
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
@@ -51,20 +54,24 @@ OFFSET sqlc.arg('offset');
 -- name: ListStationsWithinBBox :many
 SELECT * FROM observations_station
 WHERE geom && ST_MakeEnvelope(@xmin::real, @ymin::real, @xmax::real, @ymax::real, 4326)
+  AND (CASE WHEN sqlc.narg('status')::text IS NOT NULL THEN status = sqlc.narg('status') ELSE TRUE END)
 ORDER BY id
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
 -- name: CountStations :one
-SELECT count(*) FROM observations_station;
+SELECT count(*) FROM observations_station
+WHERE (CASE WHEN sqlc.narg('status')::text IS NOT NULL THEN status = sqlc.narg('status') ELSE TRUE END);
 
 -- name: CountStationsWithinRadius :one
 SELECT count(*) FROM observations_station
-WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real);
+WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real)
+  AND (CASE WHEN sqlc.narg('status')::text IS NOT NULL THEN status = sqlc.narg('status') ELSE TRUE END);
 
 -- name: CountStationsWithinBBox :one
 SELECT count(*) FROM observations_station
-WHERE geom && ST_MakeEnvelope(@xmin::real, @ymin::real, @xmax::real, @ymax::real, 4326);
+WHERE geom && ST_MakeEnvelope(@xmin::real, @ymin::real, @xmax::real, @ymax::real, 4326)
+  AND (CASE WHEN sqlc.narg('status')::text IS NOT NULL THEN status = sqlc.narg('status') ELSE TRUE END);
 
 -- name: UpdateStation :one
 UPDATE observations_station

@@ -50,17 +50,44 @@ func (ts *StationTestSuite) TestGetStation() {
 func (ts *StationTestSuite) TestListStations() {
 	t := ts.T()
 	n := 10
+	ctx := context.Background()
 	for i := 0; i < n; i++ {
-		createRandomStation(t, false)
+		station := createRandomStation(t, false)
+		if i%3 == 0 {
+			testStore.UpdateStation(ctx,
+				UpdateStationParams{
+					ID:     station.ID,
+					Status: pgtype.Text{String: "ONLINE", Valid: true},
+				},
+			)
+		} else {
+			testStore.UpdateStation(ctx,
+				UpdateStationParams{
+					ID:     station.ID,
+					Status: pgtype.Text{String: "OFFLINE", Valid: true},
+				},
+			)
+		}
 	}
 
 	arg := ListStationsParams{
 		Limit:  pgtype.Int4{Int32: 5, Valid: true},
 		Offset: 5,
 	}
-	gotStations, err := testStore.ListStations(context.Background(), arg)
+	gotStations, err := testStore.ListStations(ctx, arg)
 	require.NoError(t, err)
 	require.Len(t, gotStations, 5)
+
+	for _, station := range gotStations {
+		require.NotEmpty(t, station)
+	}
+
+	arg = ListStationsParams{
+		Status: pgtype.Text{String: "ONLINE", Valid: true},
+	}
+	gotStations, err = testStore.ListStations(ctx, arg)
+	require.NoError(t, err)
+	require.Len(t, gotStations, 4)
 
 	for _, station := range gotStations {
 		require.NotEmpty(t, station)
@@ -147,13 +174,33 @@ func (ts *StationTestSuite) TestListStationsWithinBBox() {
 func (ts *StationTestSuite) TestCountStations() {
 	t := ts.T()
 	n := 10
+	ctx := context.Background()
 	for i := 0; i < n; i++ {
-		createRandomStation(t, false)
+		station := createRandomStation(t, false)
+		if i%3 == 0 {
+			testStore.UpdateStation(ctx,
+				UpdateStationParams{
+					ID:     station.ID,
+					Status: pgtype.Text{String: "ONLINE", Valid: true},
+				},
+			)
+		} else {
+			testStore.UpdateStation(ctx,
+				UpdateStationParams{
+					ID:     station.ID,
+					Status: pgtype.Text{String: "OFFLINE", Valid: true},
+				},
+			)
+		}
 	}
 
-	numStations, err := testStore.CountStations(context.Background())
+	numStations, err := testStore.CountStations(ctx, pgtype.Text{})
 	require.NoError(t, err)
-	require.Equal(t, numStations, int64(n))
+	require.Equal(t, int64(n), numStations)
+
+	numStations, err = testStore.CountStations(ctx, pgtype.Text{String: "ONLINE", Valid: true})
+	require.NoError(t, err)
+	require.Equal(t, int64(4), numStations)
 }
 
 func (ts *StationTestSuite) TestCountStationsWithinRadius() {

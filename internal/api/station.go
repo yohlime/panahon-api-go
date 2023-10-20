@@ -135,6 +135,7 @@ func (s *Server) CreateStation(ctx *gin.Context) {
 type listStationsReq struct {
 	Circle  string `form:"circle" binding:"omitempty"`
 	BBox    string `form:"bbox" binding:"omitempty"`
+	Status  string `form:"status" binding:"omitempty"`
 	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
 	PerPage int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
 } //@name ListStationsParams
@@ -191,6 +192,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Cx:     float32(cX),
 				Cy:     float32(cY),
 				R:      float32(cR),
+				Status: pgtype.Text{String: req.Status, Valid: len(req.Status) > 0},
 				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 				Offset: offset,
 			})
@@ -225,11 +227,13 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Ymin:   float32(yMin),
 				Xmax:   float32(xMax),
 				Ymax:   float32(yMax),
+				Status: pgtype.Text{String: req.Status, Valid: len(req.Status) > 0},
 				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 				Offset: offset,
 			})
 	} else {
 		arg := db.ListStationsParams{
+			Status: pgtype.Text{String: req.Status, Valid: len(req.Status) > 0},
 			Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 			Offset: offset,
 		}
@@ -251,21 +255,23 @@ func (s *Server) ListStations(ctx *gin.Context) {
 		count, err = s.store.CountStationsWithinRadius(
 			ctx,
 			db.CountStationsWithinRadiusParams{
-				Cx: float32(cX),
-				Cy: float32(cY),
-				R:  float32(cR),
+				Cx:     float32(cX),
+				Cy:     float32(cY),
+				R:      float32(cR),
+				Status: pgtype.Text{String: req.Status, Valid: len(req.Status) > 0},
 			})
 	} else if len(req.BBox) > 0 {
 		count, err = s.store.CountStationsWithinBBox(
 			ctx,
 			db.CountStationsWithinBBoxParams{
-				Xmin: float32(xMin),
-				Ymin: float32(yMin),
-				Xmax: float32(xMax),
-				Ymax: float32(yMax),
+				Xmin:   float32(xMin),
+				Ymin:   float32(yMin),
+				Xmax:   float32(xMax),
+				Ymax:   float32(yMax),
+				Status: pgtype.Text{String: req.Status, Valid: len(req.Status) > 0},
 			})
 	} else {
-		count, err = s.store.CountStations(ctx)
+		count, err = s.store.CountStations(ctx, pgtype.Text{String: req.Status, Valid: len(req.Status) > 0})
 	}
 
 	if err != nil {

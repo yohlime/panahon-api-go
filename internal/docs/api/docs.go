@@ -473,6 +473,11 @@ const docTemplate = `{
                         "description": "limit",
                         "name": "per_page",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {

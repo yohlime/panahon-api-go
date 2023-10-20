@@ -429,23 +429,23 @@ func (_c *MockStore_CountStationObservations_Call) RunAndReturn(run func(context
 	return _c
 }
 
-// CountStations provides a mock function with given fields: ctx
-func (_m *MockStore) CountStations(ctx context.Context) (int64, error) {
-	ret := _m.Called(ctx)
+// CountStations provides a mock function with given fields: ctx, status
+func (_m *MockStore) CountStations(ctx context.Context, status pgtype.Text) (int64, error) {
+	ret := _m.Called(ctx, status)
 
 	var r0 int64
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, pgtype.Text) (int64, error)); ok {
+		return rf(ctx, status)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) int64); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, pgtype.Text) int64); ok {
+		r0 = rf(ctx, status)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, pgtype.Text) error); ok {
+		r1 = rf(ctx, status)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -460,13 +460,14 @@ type MockStore_CountStations_Call struct {
 
 // CountStations is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) CountStations(ctx interface{}) *MockStore_CountStations_Call {
-	return &MockStore_CountStations_Call{Call: _e.mock.On("CountStations", ctx)}
+//   - status pgtype.Text
+func (_e *MockStore_Expecter) CountStations(ctx interface{}, status interface{}) *MockStore_CountStations_Call {
+	return &MockStore_CountStations_Call{Call: _e.mock.On("CountStations", ctx, status)}
 }
 
-func (_c *MockStore_CountStations_Call) Run(run func(ctx context.Context)) *MockStore_CountStations_Call {
+func (_c *MockStore_CountStations_Call) Run(run func(ctx context.Context, status pgtype.Text)) *MockStore_CountStations_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
+		run(args[0].(context.Context), args[1].(pgtype.Text))
 	})
 	return _c
 }
@@ -476,7 +477,7 @@ func (_c *MockStore_CountStations_Call) Return(_a0 int64, _a1 error) *MockStore_
 	return _c
 }
 
-func (_c *MockStore_CountStations_Call) RunAndReturn(run func(context.Context) (int64, error)) *MockStore_CountStations_Call {
+func (_c *MockStore_CountStations_Call) RunAndReturn(run func(context.Context, pgtype.Text) (int64, error)) *MockStore_CountStations_Call {
 	_c.Call.Return(run)
 	return _c
 }

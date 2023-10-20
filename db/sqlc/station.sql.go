@@ -13,10 +13,11 @@ import (
 
 const countStations = `-- name: CountStations :one
 SELECT count(*) FROM observations_station
+WHERE (CASE WHEN $1::text IS NOT NULL THEN status = $1 ELSE TRUE END)
 `
 
-func (q *Queries) CountStations(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countStations)
+func (q *Queries) CountStations(ctx context.Context, status pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countStations, status)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -25,13 +26,15 @@ func (q *Queries) CountStations(ctx context.Context) (int64, error) {
 const countStationsWithinBBox = `-- name: CountStationsWithinBBox :one
 SELECT count(*) FROM observations_station
 WHERE geom && ST_MakeEnvelope($1::real, $2::real, $3::real, $4::real, 4326)
+  AND (CASE WHEN $5::text IS NOT NULL THEN status = $5 ELSE TRUE END)
 `
 
 type CountStationsWithinBBoxParams struct {
-	Xmin float32 `json:"xmin"`
-	Ymin float32 `json:"ymin"`
-	Xmax float32 `json:"xmax"`
-	Ymax float32 `json:"ymax"`
+	Xmin   float32     `json:"xmin"`
+	Ymin   float32     `json:"ymin"`
+	Xmax   float32     `json:"xmax"`
+	Ymax   float32     `json:"ymax"`
+	Status pgtype.Text `json:"status"`
 }
 
 func (q *Queries) CountStationsWithinBBox(ctx context.Context, arg CountStationsWithinBBoxParams) (int64, error) {
@@ -40,6 +43,7 @@ func (q *Queries) CountStationsWithinBBox(ctx context.Context, arg CountStations
 		arg.Ymin,
 		arg.Xmax,
 		arg.Ymax,
+		arg.Status,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -49,16 +53,23 @@ func (q *Queries) CountStationsWithinBBox(ctx context.Context, arg CountStations
 const countStationsWithinRadius = `-- name: CountStationsWithinRadius :one
 SELECT count(*) FROM observations_station
 WHERE ST_DWithin(geom, ST_Point($1::real, $2::real, 4326), $3::real)
+  AND (CASE WHEN $4::text IS NOT NULL THEN status = $4 ELSE TRUE END)
 `
 
 type CountStationsWithinRadiusParams struct {
-	Cx float32 `json:"cx"`
-	Cy float32 `json:"cy"`
-	R  float32 `json:"r"`
+	Cx     float32     `json:"cx"`
+	Cy     float32     `json:"cy"`
+	R      float32     `json:"r"`
+	Status pgtype.Text `json:"status"`
 }
 
 func (q *Queries) CountStationsWithinRadius(ctx context.Context, arg CountStationsWithinRadiusParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countStationsWithinRadius, arg.Cx, arg.Cy, arg.R)
+	row := q.db.QueryRow(ctx, countStationsWithinRadius,
+		arg.Cx,
+		arg.Cy,
+		arg.R,
+		arg.Status,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -248,18 +259,21 @@ func (q *Queries) GetStationByMobileNumber(ctx context.Context, mobileNumber pgt
 
 const listStations = `-- name: ListStations :many
 SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
+WHERE
+  (CASE WHEN $1::text IS NOT NULL THEN status = $1 ELSE TRUE END)
 ORDER BY id
-LIMIT $2
-OFFSET $1
+LIMIT $3
+OFFSET $2
 `
 
 type ListStationsParams struct {
+	Status pgtype.Text `json:"status"`
 	Offset int32       `json:"offset"`
 	Limit  pgtype.Int4 `json:"limit"`
 }
 
 func (q *Queries) ListStations(ctx context.Context, arg ListStationsParams) ([]ObservationsStation, error) {
-	rows, err := q.db.Query(ctx, listStations, arg.Offset, arg.Limit)
+	rows, err := q.db.Query(ctx, listStations, arg.Status, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -305,9 +319,10 @@ func (q *Queries) ListStations(ctx context.Context, arg ListStationsParams) ([]O
 const listStationsWithinBBox = `-- name: ListStationsWithinBBox :many
 SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 WHERE geom && ST_MakeEnvelope($1::real, $2::real, $3::real, $4::real, 4326)
+  AND (CASE WHEN $5::text IS NOT NULL THEN status = $5 ELSE TRUE END)
 ORDER BY id
-LIMIT $6
-OFFSET $5
+LIMIT $7
+OFFSET $6
 `
 
 type ListStationsWithinBBoxParams struct {
@@ -315,6 +330,7 @@ type ListStationsWithinBBoxParams struct {
 	Ymin   float32     `json:"ymin"`
 	Xmax   float32     `json:"xmax"`
 	Ymax   float32     `json:"ymax"`
+	Status pgtype.Text `json:"status"`
 	Offset int32       `json:"offset"`
 	Limit  pgtype.Int4 `json:"limit"`
 }
@@ -325,6 +341,7 @@ func (q *Queries) ListStationsWithinBBox(ctx context.Context, arg ListStationsWi
 		arg.Ymin,
 		arg.Xmax,
 		arg.Ymax,
+		arg.Status,
 		arg.Offset,
 		arg.Limit,
 	)
@@ -373,15 +390,17 @@ func (q *Queries) ListStationsWithinBBox(ctx context.Context, arg ListStationsWi
 const listStationsWithinRadius = `-- name: ListStationsWithinRadius :many
 SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 WHERE ST_DWithin(geom, ST_Point($1::real, $2::real, 4326), $3::real)
+  AND (CASE WHEN $4::text IS NOT NULL THEN status = $4 ELSE TRUE END)
 ORDER BY id
-LIMIT $5
-OFFSET $4
+LIMIT $6
+OFFSET $5
 `
 
 type ListStationsWithinRadiusParams struct {
 	Cx     float32     `json:"cx"`
 	Cy     float32     `json:"cy"`
 	R      float32     `json:"r"`
+	Status pgtype.Text `json:"status"`
 	Offset int32       `json:"offset"`
 	Limit  pgtype.Int4 `json:"limit"`
 }
@@ -391,6 +410,7 @@ func (q *Queries) ListStationsWithinRadius(ctx context.Context, arg ListStations
 		arg.Cx,
 		arg.Cy,
 		arg.R,
+		arg.Status,
 		arg.Offset,
 		arg.Limit,
 	)

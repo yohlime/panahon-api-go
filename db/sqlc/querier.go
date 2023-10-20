@@ -18,7 +18,7 @@ type Querier interface {
 	CountObservations(ctx context.Context, arg CountObservationsParams) (int64, error)
 	CountRoles(ctx context.Context) (int64, error)
 	CountStationObservations(ctx context.Context, arg CountStationObservationsParams) (int64, error)
-	CountStations(ctx context.Context) (int64, error)
+	CountStations(ctx context.Context, status pgtype.Text) (int64, error)
 	CountStationsWithinBBox(ctx context.Context, arg CountStationsWithinBBoxParams) (int64, error)
 	CountStationsWithinRadius(ctx context.Context, arg CountStationsWithinRadiusParams) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
