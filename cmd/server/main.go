@@ -50,7 +50,7 @@ func main() {
 
 	store := db.NewStore(connPool)
 
-	service.ScheduleJobs(ctx, store, logger)
+	service.ScheduleJobs(ctx, store, config, logger)
 
 	runGinServer(config, store, logger)
 }

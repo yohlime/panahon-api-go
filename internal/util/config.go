@@ -29,6 +29,7 @@ type Config struct {
 	LogMaxSize           int           `mapstructure:"LOG_MAX_SIZE"`
 	LogMaxBackups        int           `mapstructure:"LOG_MAX_BACKUPS"`
 	LogMaxAge            int           `mapstructure:"LOG_MAX_AGE"`
+	CronJobs             string        `mapstructure:"CRON_JOBS"`
 }
 
 // LoadConfig read configuration from file or environment variables.
