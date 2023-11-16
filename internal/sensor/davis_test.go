@@ -26,7 +26,7 @@ func TestFetchLatest(t *testing.T) {
 			builStubs: func(client *mocksensor.MockFetcher) {
 				body, _ := json.Marshal(rawObs)
 				bodyReader := bytes.NewReader(body)
-				client.EXPECT().Get(mock.Anything).Return(&http.Response{
+				client.EXPECT().Do(mock.Anything).Return(&http.Response{
 					Body: io.NopCloser(bodyReader),
 				}, nil)
 			},

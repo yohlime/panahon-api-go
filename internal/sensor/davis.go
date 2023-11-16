@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -119,7 +120,17 @@ func newDavisObservation(rawObs davisRawResponse) *DavisCurrentObservation {
 }
 
 func (d Davis) FetchLatest() (*DavisCurrentObservation, error) {
-	res, err := d.client.Get(d.Url)
+	req, err := http.NewRequest("GET", d.Url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36")
+
+	sleepDuration := time.Duration(rand.Intn(4)+2) * time.Second
+	time.Sleep(sleepDuration)
+
+	res, err := d.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
