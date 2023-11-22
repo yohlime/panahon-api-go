@@ -66,7 +66,7 @@ func (s *Server) setupRouter() {
 		users.POST("/register", s.RegisterUser)
 
 		usersAuth := addMiddleware(users,
-			authMiddleware(s.tokenMaker))
+			authMiddleware(s.tokenMaker, false))
 		usersAuth.GET("/auth", s.GetAuthUser)
 		usersAuth = addMiddleware(users,
 			roleMiddleware(string(superAdminRole)))
@@ -82,7 +82,7 @@ func (s *Server) setupRouter() {
 	roles := api.Group("/roles")
 	{
 		rolesAuth := addMiddleware(roles,
-			authMiddleware(s.tokenMaker),
+			authMiddleware(s.tokenMaker, false),
 			roleMiddleware(string(superAdminRole)))
 		rolesAuth.GET("", s.ListRoles)
 		rolesAuth.GET(":id", s.GetRole)
@@ -93,10 +93,9 @@ func (s *Server) setupRouter() {
 
 	stations := api.Group("/stations")
 	{
-		stn := addMiddleware(stations, authPermissiveMiddleware(s.tokenMaker))
-		stn.GET("", s.ListStations)
-		stn.GET(":station_id", s.GetStation)
-		stn.GET("/nearest/observations/latest", s.GetNearestLatestStationObservation)
+		stations.GET("", authMiddleware(s.tokenMaker, true), s.ListStations)
+		stations.GET(":station_id", s.GetStation)
+		stations.GET("/nearest/observations/latest", s.GetNearestLatestStationObservation)
 
 		stnObs := stations.Group(":station_id/observations")
 		{
@@ -106,21 +105,20 @@ func (s *Server) setupRouter() {
 		}
 
 		stnAuth := addMiddleware(stations,
-			authMiddleware(s.tokenMaker),
+			authMiddleware(s.tokenMaker, false),
 			adminMiddleware())
 		stnAuth.POST("", s.CreateStation)
 		stnAuth.PUT(":station_id", s.UpdateStation)
 		stnAuth.DELETE(":station_id", s.DeleteStation)
 
 		stnObsAuth := addMiddleware(stnObs,
-			authMiddleware(s.tokenMaker),
+			authMiddleware(s.tokenMaker, false),
 			adminMiddleware())
 		{
 			stnObsAuth.POST("", s.CreateStationObservation)
 			stnObsAuth.PUT(":id", s.UpdateStationObservation)
 			stnObsAuth.DELETE(":id", s.DeleteStationObservation)
 		}
-
 	}
 
 	observations := api.Group("/observations")

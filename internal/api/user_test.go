@@ -989,7 +989,7 @@ func TestGetAuthUserAPI(t *testing.T) {
 			url := fmt.Sprintf("%s/users/testauth", server.config.APIBasePath)
 			server.router.GET(
 				url,
-				authMiddleware(server.tokenMaker),
+				authMiddleware(server.tokenMaker, false),
 				server.GetAuthUser,
 			)
 

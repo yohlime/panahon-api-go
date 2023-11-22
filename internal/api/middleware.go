@@ -40,22 +40,14 @@ func getAuthKey(tokenMaker token.Maker, ctx *gin.Context) (payload *token.Payloa
 	return
 }
 
-func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
+func authMiddleware(tokenMaker token.Maker, permissive bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		payload, err := getAuthKey(tokenMaker, ctx)
-		if err != nil {
+		if !permissive && err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
-		ctx.Set(authorizationPayloadKey, payload)
-		ctx.Next()
-	}
-}
-
-func authPermissiveMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		payload, _ := getAuthKey(tokenMaker, ctx)
 		ctx.Set(authorizationPayloadKey, payload)
 		ctx.Next()
 	}
