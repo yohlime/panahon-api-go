@@ -15,20 +15,20 @@ import (
 )
 
 type Station struct {
-	ID            int64       `json:"id"`
-	Name          string      `json:"name"`
-	Lat           float32     `json:"lat"`
-	Lon           float32     `json:"lon"`
-	Elevation     float32     `json:"elevation"`
-	DateInstalled pgtype.Date `json:"date_installed,omitempty"`
-	MobileNumber  string      `json:"mobile_number,omitempty"`
-	StationType   string      `json:"station_type,omitempty"`
-	StationType2  string      `json:"station_type2,omitempty"`
-	StationUrl    string      `json:"station_url,omitempty"`
-	Status        string      `json:"status,omitempty"`
-	Province      string      `json:"province"`
-	Region        string      `json:"region"`
-	Address       string      `json:"address"`
+	ID            int64    `json:"id"`
+	Name          string   `json:"name"`
+	Lat           *float32 `json:"lat"`
+	Lon           *float32 `json:"lon"`
+	Elevation     *float32 `json:"elevation"`
+	DateInstalled string   `json:"date_installed,omitempty"`
+	MobileNumber  string   `json:"mobile_number,omitempty"`
+	StationType   string   `json:"station_type,omitempty"`
+	StationType2  string   `json:"station_type2,omitempty"`
+	StationUrl    string   `json:"station_url,omitempty"`
+	Status        string   `json:"status,omitempty"`
+	Province      string   `json:"province"`
+	Region        string   `json:"region"`
+	Address       string   `json:"address"`
 } //@name Station
 
 func newStation(station db.ObservationsStation, simple bool) Station {
@@ -38,13 +38,13 @@ func newStation(station db.ObservationsStation, simple bool) Station {
 	}
 
 	if station.Lat.Valid {
-		res.Lat = station.Lat.Float32
+		res.Lat = &station.Lat.Float32
 	}
 	if station.Lon.Valid {
-		res.Lon = station.Lon.Float32
+		res.Lon = &station.Lon.Float32
 	}
 	if station.Elevation.Valid {
-		res.Elevation = station.Elevation.Float32
+		res.Elevation = &station.Elevation.Float32
 	}
 	if !simple {
 		if station.MobileNumber.Valid {
@@ -62,7 +62,9 @@ func newStation(station db.ObservationsStation, simple bool) Station {
 		if station.Status.Valid {
 			res.Status = station.Status.String
 		}
-		res.DateInstalled = station.DateInstalled
+		if station.Status.Valid {
+			res.DateInstalled = station.DateInstalled.Time.Format("2006-01-02")
+		}
 	}
 	if station.Province.Valid {
 		res.Province = station.Province.String
