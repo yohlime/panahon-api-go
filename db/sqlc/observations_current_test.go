@@ -3,8 +3,10 @@ package db
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/emiliogozo/panahon-api-go/internal/util"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/twpayne/go-geom"
@@ -26,6 +28,10 @@ func (ts *CurrentObservationTestSuite) SetupTest() {
 func (ts *CurrentObservationTestSuite) TearDownTest() {
 	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
 	require.NoError(ts.T(), err, "reverse db migration problem")
+}
+
+func (ts *CurrentObservationTestSuite) TestCreateCurrentObservation() {
+	createRandomCurrentObservation(ts.T())
 }
 
 func (ts *CurrentObservationTestSuite) TestGetLatestStationObservation() {
@@ -83,4 +89,44 @@ func (ts *CurrentObservationTestSuite) TestGetNearestLatestStationObservation() 
 		})
 	require.NoError(t, err)
 	require.Equal(t, obs.Temp, stnObs.ObservationsCurrent.Temp)
+}
+
+func createRandomCurrentObservation(t *testing.T) ObservationsCurrent {
+	stn := createRandomStation(t, false)
+	obs := createRandomObservation(t, stn.ID)
+	arg := CreateCurrentObservationParams{
+		StationID: obs.StationID,
+		Timestamp: obs.Timestamp,
+		Temp:      obs.Temp,
+		Tn: pgtype.Float4{
+			Float32: obs.Temp.Float32 - util.RandomFloat[float32](0.5, 2.0),
+			Valid:   true,
+		},
+		Tx: pgtype.Float4{
+			Float32: obs.Temp.Float32 + util.RandomFloat[float32](0.5, 3.0),
+			Valid:   true,
+		},
+		TnTimestamp:   pgtype.Timestamptz{Valid: true},
+		TxTimestamp:   pgtype.Timestamptz{Valid: true},
+		GustTimestamp: pgtype.Timestamptz{Valid: true},
+	}
+
+	cObs, err := testStore.CreateCurrentObservation(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, cObs)
+
+	require.Equal(t, arg.StationID, cObs.StationID)
+
+	fDel := 0.01
+	require.InDelta(t, arg.Temp.Float32, cObs.Temp.Float32, fDel)
+	require.InDelta(t, arg.Tn.Float32, cObs.Tn.Float32, fDel)
+	require.InDelta(t, arg.Tx.Float32, cObs.Tx.Float32, fDel)
+
+	tDel := 10 * time.Second
+	require.WithinDuration(t, arg.Timestamp.Time, cObs.Timestamp.Time, tDel)
+	require.WithinDuration(t, arg.TnTimestamp.Time, cObs.TnTimestamp.Time, tDel)
+	require.WithinDuration(t, arg.TxTimestamp.Time, cObs.TxTimestamp.Time, tDel)
+	require.WithinDuration(t, arg.GustTimestamp.Time, cObs.GustTimestamp.Time, tDel)
+
+	return cObs
 }

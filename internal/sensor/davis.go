@@ -94,30 +94,30 @@ func newDavisObservation(rawObs davisRawResponse) *DavisCurrentObservation {
 	obs.Mslp = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
 	f, err = rawObs.Obs.TempDayHighF.Float64()
 	obs.Tx = pgtype.Float4{Float32: (float32(f) - 32.0) * (5.0 / 9.0), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
+	obs.TxTimestamp = pgtype.Timestamptz{Valid: true}
+	if dt, err := parseTimeStrToDateTime(rawObs.Obs.TempDayHighTime); err == nil {
+		obs.TxTimestamp.Time = dt
+	}
 	f, err = rawObs.Obs.TempDayLowF.Float64()
 	obs.Tn = pgtype.Float4{Float32: (float32(f) - 32.0) * (5.0 / 9.0), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
+	obs.TnTimestamp = pgtype.Timestamptz{Valid: true}
+	if dt, err := parseTimeStrToDateTime(rawObs.Obs.TempDayLowTime); err == nil {
+		obs.TnTimestamp.Time = dt
+	}
 	f, err = rawObs.Obs.WindDayHighMPH.Float64()
 	obs.Gust = pgtype.Float4{Float32: float32(f) * 0.44704, Valid: err == nil && math.Abs(-999.0-f) > 0.001}
+	obs.GustTimestamp = pgtype.Timestamptz{Valid: true}
+	if dt, err := parseTimeStrToDateTime(rawObs.Obs.WindDayHighTime); err == nil {
+		obs.GustTimestamp.Time = dt
+	}
 	f, err = rawObs.HeatIndexC.Float64()
 	obs.Hi = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	dt, err := parseTimeStrToDateTime(rawObs.Obs.TempDayLowTime)
-	if err == nil {
-		obs.TnTimestamp = pgtype.Timestamptz{Time: dt, Valid: true}
-	}
-	dt, err = parseTimeStrToDateTime(rawObs.Obs.TempDayHighTime)
-	if err == nil {
-		obs.TxTimestamp = pgtype.Timestamptz{Time: dt, Valid: true}
-	}
-	dt, err = parseTimeStrToDateTime(rawObs.Obs.WindDayHighTime)
-	if err == nil {
-		obs.GustTimestamp = pgtype.Timestamptz{Time: dt, Valid: true}
-	}
 
 	layout := "Mon, 02 Jan 2006 15:04:05 -0700"
-	t, err := time.Parse(layout, rawObs.Time)
-	if err == nil {
-		obs.Timestamp = pgtype.Timestamptz{Time: t, Valid: true}
+	if dt, err := time.Parse(layout, rawObs.Time); err == nil {
+		obs.Timestamp = pgtype.Timestamptz{Time: dt, Valid: true}
 	}
+
 	return obs
 }
 
