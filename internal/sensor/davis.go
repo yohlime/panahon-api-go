@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"math/rand"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/emiliogozo/panahon-api-go/internal/util"
@@ -15,6 +15,7 @@ import (
 type Davis struct {
 	Url    string
 	client Fetcher
+	sleep  time.Duration
 }
 
 type DavisCurrentObservation struct {
@@ -64,11 +65,12 @@ type davisRawCurrentObservation struct {
 	WindDayHighTime string      `json:"wind_day_high_time"`
 }
 
-func NewDavis(url string) *Davis {
+func NewDavis(url string, sleep time.Duration) *Davis {
 	client := &http.Client{Timeout: 10 * time.Second}
 	return &Davis{
 		Url:    url,
 		client: client,
+		sleep:  sleep,
 	}
 }
 
@@ -120,15 +122,34 @@ func newDavisObservation(rawObs davisRawResponse) *DavisCurrentObservation {
 }
 
 func (d Davis) FetchLatest() (*DavisCurrentObservation, error) {
-	req, err := http.NewRequest("GET", d.Url, nil)
+	parsedURL, err := url.Parse(d.Url)
+	if err != nil {
+		return nil, err
+	} else if parsedURL.Scheme == "" && parsedURL.Host == "" {
+		return nil, fmt.Errorf("not a valid URL")
+	}
+
+	for _, q := range []string{"user", "pass"} {
+		if !parsedURL.Query().Has(q) {
+			return nil, fmt.Errorf("missing param: '%s'", q)
+		}
+	}
+
+	parsedURL.RawQuery = url.Values{
+		"user":     {parsedURL.Query().Get("user")},
+		"pass":     {parsedURL.Query().Get("pass")},
+		"apiToken": {parsedURL.Query().Get("apiToken")},
+	}.Encode()
+	encodedURL := parsedURL.String()
+
+	req, err := http.NewRequest("GET", encodedURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36")
 
-	sleepDuration := time.Duration(rand.Intn(4)+2) * time.Second
-	time.Sleep(sleepDuration)
+	time.Sleep(d.sleep)
 
 	res, err := d.client.Do(req)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/sensor"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rs/zerolog"
 )
@@ -52,7 +53,8 @@ func InsertCurrentDavisObservations(ctx context.Context, store db.Store, logger 
 			}
 
 			stnUrl := strings.Replace(stn.StationUrl.String, ".xml", ".json", 1)
-			davis := sensor.NewDavis(stnUrl)
+			sleepDuration := time.Duration(util.RandomInt[int](1, 5)) * time.Second
+			davis := sensor.NewDavis(stnUrl, sleepDuration)
 			davisObs, err := davis.FetchLatest()
 			if err != nil {
 				logger.Error().Err(err).Str("service", serviceName).Msg("api error")

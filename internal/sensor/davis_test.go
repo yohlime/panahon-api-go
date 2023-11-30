@@ -10,6 +10,7 @@ import (
 	"time"
 
 	mocksensor "github.com/emiliogozo/panahon-api-go/internal/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -18,21 +19,57 @@ func TestFetchLatest(t *testing.T) {
 	rawObs := RandomDavisRawResponse()
 	testCases := []struct {
 		name          string
+		url           string
 		builStubs     func(client *mocksensor.MockFetcher)
-		checkResponse func(client *mocksensor.MockFetcher, obs DavisCurrentObservation)
+		checkResponse func(client *mocksensor.MockFetcher, obs *DavisCurrentObservation, err error)
 	}{
 		{
 			name: "Default",
+			url:  "https://api.weatherlink.com/v1/NoaaExt.json?user=00DE01CE1D&pass=p@ssW0rd",
 			builStubs: func(client *mocksensor.MockFetcher) {
 				body, _ := json.Marshal(rawObs)
 				bodyReader := bytes.NewReader(body)
-				client.EXPECT().Do(mock.Anything).Return(&http.Response{
+				client.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool { return req.Header.Get("User-Agent") != "" })).Return(&http.Response{
 					Body: io.NopCloser(bodyReader),
 				}, nil)
 			},
-			checkResponse: func(client *mocksensor.MockFetcher, obs DavisCurrentObservation) {
+			checkResponse: func(client *mocksensor.MockFetcher, obs *DavisCurrentObservation, err error) {
 				client.AssertExpectations(t)
-				requireDavisEqual(t, rawObs, obs)
+				assert.NoError(t, err)
+				requireDavisEqual(t, rawObs, *obs)
+			},
+		},
+		{
+			name: "InvalidURL",
+			url:  "api.weatherlink.com/v1/NoaaExt.json?user=00DE01CE1D&pass=p@ssW0rd",
+			builStubs: func(client *mocksensor.MockFetcher) {
+			},
+			checkResponse: func(client *mocksensor.MockFetcher, obs *DavisCurrentObservation, err error) {
+				client.AssertNotCalled(t, "Do")
+				assert.Error(t, err)
+				assert.Empty(t, obs)
+			},
+		},
+		{
+			name: "MissingUserParam",
+			url:  "https://api.weatherlink.com/v1/NoaaExt.json?pass=p@ssW0rd",
+			builStubs: func(client *mocksensor.MockFetcher) {
+			},
+			checkResponse: func(client *mocksensor.MockFetcher, obs *DavisCurrentObservation, err error) {
+				client.AssertExpectations(t)
+				assert.Error(t, err)
+				assert.Empty(t, obs)
+			},
+		},
+		{
+			name: "MissingPassParam",
+			url:  "https://api.weatherlink.com/v1/NoaaExt.json?user=00DE01CE1D",
+			builStubs: func(client *mocksensor.MockFetcher) {
+			},
+			checkResponse: func(client *mocksensor.MockFetcher, obs *DavisCurrentObservation, err error) {
+				client.AssertExpectations(t)
+				assert.Error(t, err)
+				assert.Empty(t, obs)
 			},
 		},
 	}
@@ -42,15 +79,15 @@ func TestFetchLatest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testFetcher := mocksensor.NewMockFetcher(t)
 			testSensor := &Davis{
-				Url:    "",
+				Url:    tc.url,
 				client: testFetcher,
+				sleep:  0,
 			}
 
 			tc.builStubs(testFetcher)
 			obs, err := testSensor.FetchLatest()
-			require.NoError(t, err)
 
-			tc.checkResponse(testFetcher, *obs)
+			tc.checkResponse(testFetcher, obs, err)
 		})
 	}
 }
