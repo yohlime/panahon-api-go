@@ -11,31 +11,37 @@ import (
 )
 
 const (
-	authHeaderKey  = "authorization"
-	authTypeBearer = "bearer"
-	authPayloadKey = "authorization_payload"
+	authHeaderKey          = "authorization"
+	authTypeBearer         = "bearer"
+	authTypeCookie         = "cookie"
+	authPayloadKey         = "authorization_payload"
+	accessTokenCookieName  = "access_token"
+	refreshTokenCookieName = "refresh_token"
 )
 
 func getAuthKey(tokenMaker token.Maker, ctx *gin.Context) (payload *token.Payload, err error) {
-	authHeader := ctx.GetHeader(authHeaderKey)
-	if len(authHeader) == 0 {
-		err = errors.New("authorization header is not provided")
-		return
-	}
+	accessToken, err := ctx.Cookie(accessTokenCookieName)
+	if err != nil {
+		authHeader := ctx.GetHeader(authHeaderKey)
+		if len(authHeader) == 0 {
+			err = errors.New("authorization header is not provided")
+			return
+		}
 
-	fields := strings.Fields(authHeader)
-	if len(fields) < 2 {
-		err = errors.New("invalid authorization header format")
-		return
-	}
+		fields := strings.Fields(authHeader)
+		if len(fields) < 2 {
+			err = errors.New("invalid authorization header format")
+			return
+		}
 
-	authType := strings.ToLower(fields[0])
-	if authType != authTypeBearer {
-		err = fmt.Errorf("unsupported authorization authorization type %s", authType)
-		return
-	}
+		authType := strings.ToLower(fields[0])
+		if authType != authTypeBearer {
+			err = fmt.Errorf("unsupported authorization authorization type %s", authType)
+			return
+		}
 
-	accessToken := fields[1]
+		accessToken = fields[1]
+	}
 
 	payload, err = tokenMaker.VerifyToken(accessToken)
 	return

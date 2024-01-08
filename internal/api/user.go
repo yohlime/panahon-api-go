@@ -10,7 +10,6 @@ import (
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -403,15 +402,6 @@ type loginUserRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 } //@name LoginUserParams
 
-type loginUserResponse struct {
-	SessionID             uuid.UUID `json:"session_id"`
-	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
-	AccessToken           string    `json:"access_token"`
-	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
-	RefreshToken          string    `json:"refresh_token"`
-	User                  User      `json:"user"`
-} //@name LoginUserResponse
-
 // LoginUser
 //
 //	@Summary	User login
@@ -419,7 +409,7 @@ type loginUserResponse struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	body		loginUserRequest	true	"Login user parameters"
-//	@Success	200	{object}	loginUserResponse
+//	@Success	204
 //	@Router		/users/login [post]
 func (s *Server) LoginUser(ctx *gin.Context) {
 	var req loginUserRequest
@@ -463,7 +453,7 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	session, err := s.store.CreateSession(ctx, db.CreateSessionParams{
+	_, err = s.store.CreateSession(ctx, db.CreateSessionParams{
 		ID:           refreshPayload.ID,
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
@@ -477,15 +467,12 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	rsp := loginUserResponse{
-		SessionID:             session.ID,
-		AccessToken:           accessToken,
-		AccessTokenExpiresAt:  accessPayload.ExpiresAt,
-		RefreshToken:          refreshToken,
-		RefreshTokenExpiresAt: refreshPayload.ExpiresAt,
-		User:                  newUser(user, roleNames),
-	}
-	ctx.JSON(http.StatusOK, rsp)
+	cookieDomain := strings.Split(s.config.HTTPServerAddress, ":")[0]
+	cookieIsSecure := s.config.Environment == "production"
+	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), "/", cookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), "/", cookieDomain, cookieIsSecure, true)
+
+	ctx.JSON(http.StatusNoContent, nil)
 }
 
 // GetAuthUser

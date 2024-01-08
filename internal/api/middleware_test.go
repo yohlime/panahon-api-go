@@ -37,6 +37,18 @@ func TestAuthMiddleware(t *testing.T) {
 			},
 		},
 		{
+			name: "AuthorizationCookie",
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeCookie, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&payload, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
 			name:       "NoAuthorization",
 			setupAuth:  func(t *testing.T, request *http.Request) {},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker) {},
@@ -278,5 +290,7 @@ func addAuthorization(
 	if authType == authTypeBearer {
 		authorizationHeader := fmt.Sprintf("%s %s", authType, token)
 		request.Header.Set(authHeaderKey, authorizationHeader)
+	} else if authType == authTypeCookie {
+		request.AddCookie(&http.Cookie{Name: accessTokenCookieName, Value: token})
 	}
 }

@@ -845,7 +845,14 @@ func TestLoginUserAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
-				require.Equal(t, http.StatusOK, recorder.Code)
+				require.Equal(t, http.StatusNoContent, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				require.Len(t, cookies, 2)
+
+				for _, cookie := range cookies {
+					require.Contains(t, []string{accessTokenCookieName, refreshTokenCookieName}, cookie.Name)
+				}
 			},
 		},
 		{
