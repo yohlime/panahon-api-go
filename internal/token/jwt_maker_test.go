@@ -17,7 +17,7 @@ func TestJWTMaker(t *testing.T) {
 	duration := time.Minute
 
 	issuedAt := time.Now()
-	expiredAt := issuedAt.Add(duration)
+	expiresAt := issuedAt.Add(duration)
 
 	token, payload, err := maker.CreateToken(User{Username: username}, duration)
 	require.NoError(t, err)
@@ -31,7 +31,7 @@ func TestJWTMaker(t *testing.T) {
 	require.NotZero(t, payload.ID)
 	require.Equal(t, username, payload.User.Username)
 	require.WithinDuration(t, issuedAt, payload.IssuedAt, time.Second)
-	require.WithinDuration(t, expiredAt, payload.ExpiredAt, time.Second)
+	require.WithinDuration(t, expiresAt, payload.ExpiresAt, time.Second)
 }
 
 func TestExpiredJWTToken(t *testing.T) {

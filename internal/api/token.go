@@ -95,7 +95,7 @@ func (s *Server) RenewAccessToken(c *gin.Context) {
 
 	rsp := renewAccessTokenResponse{
 		AccessToken:          accessToken,
-		AccessTokenExpiresAt: pgtype.Timestamptz{Time: accessPayload.ExpiredAt, Valid: true},
+		AccessTokenExpiresAt: pgtype.Timestamptz{Time: accessPayload.ExpiresAt, Valid: true},
 	}
 	c.JSON(http.StatusOK, rsp)
 }
