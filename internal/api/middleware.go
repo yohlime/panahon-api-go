@@ -11,31 +11,32 @@ import (
 )
 
 const (
-	authorizationHeaderKey  = "authorization"
-	authorizationTypeBearer = "bearer"
-	authorizationPayloadKey = "authorization_payload"
+	authHeaderKey  = "authorization"
+	authTypeBearer = "bearer"
+	authPayloadKey = "authorization_payload"
 )
 
 func getAuthKey(tokenMaker token.Maker, ctx *gin.Context) (payload *token.Payload, err error) {
-	authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
-	if len(authorizationHeader) == 0 {
+	authHeader := ctx.GetHeader(authHeaderKey)
+	if len(authHeader) == 0 {
 		err = errors.New("authorization header is not provided")
 		return
 	}
 
-	fields := strings.Fields(authorizationHeader)
+	fields := strings.Fields(authHeader)
 	if len(fields) < 2 {
 		err = errors.New("invalid authorization header format")
 		return
 	}
 
-	authorizationType := strings.ToLower(fields[0])
-	if authorizationType != authorizationTypeBearer {
-		err = fmt.Errorf("unsupported authorization authorization type %s", authorizationType)
+	authType := strings.ToLower(fields[0])
+	if authType != authTypeBearer {
+		err = fmt.Errorf("unsupported authorization authorization type %s", authType)
 		return
 	}
 
 	accessToken := fields[1]
+
 	payload, err = tokenMaker.VerifyToken(accessToken)
 	return
 }
@@ -48,14 +49,14 @@ func authMiddleware(tokenMaker token.Maker, permissive bool) gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set(authorizationPayloadKey, payload)
+		ctx.Set(authPayloadKey, payload)
 		ctx.Next()
 	}
 }
 
 func roleMiddleware(role string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+		authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
 
 		hasRole := false
 		for _, roleName := range authPayload.User.Roles {
@@ -76,7 +77,7 @@ func roleMiddleware(role string) gin.HandlerFunc {
 
 func adminMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+		authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
 
 		isAdmin := false
 		for _, roleName := range authPayload.User.Roles {

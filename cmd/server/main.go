@@ -7,6 +7,7 @@ import (
 	"github.com/emiliogozo/panahon-api-go/internal/api"
 	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
 	"github.com/emiliogozo/panahon-api-go/internal/service"
+	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -52,11 +53,16 @@ func main() {
 
 	service.ScheduleJobs(ctx, store, config, logger)
 
-	runGinServer(config, store, logger)
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("cannot create token maker")
+	}
+
+	runGinServer(config, store, tokenMaker, logger)
 }
 
-func runGinServer(config util.Config, store db.Store, logger *zerolog.Logger) {
-	server, err := api.NewServer(config, store, logger)
+func runGinServer(config util.Config, store db.Store, tokenMaker token.Maker, logger *zerolog.Logger) {
+	server, err := api.NewServer(config, store, tokenMaker, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("cannot create server")
 	}

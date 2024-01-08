@@ -249,7 +249,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 		return
 	}
 
-	key, exists := ctx.Get(authorizationPayloadKey)
+	key, exists := ctx.Get(authPayloadKey)
 	var isSimpleResponse bool
 	if exists {
 		authPayload, ok := key.(*token.Payload)
@@ -326,7 +326,7 @@ func (s *Server) GetStation(ctx *gin.Context) {
 		return
 	}
 
-	key, exists := ctx.Get(authorizationPayloadKey)
+	key, exists := ctx.Get(authPayloadKey)
 	var isSimpleResponse bool
 	if exists {
 		authPayload, ok := key.(*token.Payload)

@@ -13,3 +13,10 @@ packages:
           dir: "internal/mocks"
           filename: "fetcher.go"
           outpkg: "mocksensor"
+  github.com/emiliogozo/panahon-api-go/internal/token:
+    interfaces:
+      Maker:
+        config:
+          dir: "internal/mocks/token"
+          filename: "maker.go"
+          outpkg: "mocktoken"

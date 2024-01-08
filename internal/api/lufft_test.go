@@ -145,7 +145,7 @@ func TestLufftMsgLog(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("%s/lufft/%d/logs", server.config.APIBasePath, stationID)

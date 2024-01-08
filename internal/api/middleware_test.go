@@ -5,63 +5,73 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
+	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAuthMiddleware(t *testing.T) {
-	user := token.User{
-		Username: "user",
-	}
+	tokenStr := util.RandomString(24)
+	payload := token.Payload{}
 	testCases := []struct {
 		name          string
 		permissive    bool
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request)
+		buildStubs    func(tokenMaker *mocktoken.MockMaker)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&payload, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 		{
-			name: "NoAuthorization",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-
-			},
+			name:       "NoAuthorization",
+			setupAuth:  func(t *testing.T, request *http.Request) {},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
 		{
 			name: "UnsupportedAuthorization",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, "unsupported", user, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, "unsupported", "")
 			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
 		{
 			name: "InvalidAuthorizationFormat",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, "", user, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				authorizationHeader := fmt.Sprintf("%s%s", authTypeBearer, util.RandomString(12))
+				request.Header.Set(authHeaderKey, authorizationHeader)
 			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
 		{
 			name: "ExpiredToken",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user, -time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(nil, token.ErrExpiredToken)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -73,12 +83,15 @@ func TestAuthMiddleware(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
-			server := newTestServer(t, nil)
+			tokenMaker := mocktoken.NewMockMaker(t)
+			server := newTestServer(t, nil, tokenMaker)
+
+			tc.buildStubs(tokenMaker)
 
 			authPath := "/auth"
 			server.router.GET(
 				authPath,
-				authMiddleware(server.tokenMaker, tc.permissive),
+				authMiddleware(tokenMaker, tc.permissive),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
 				},
@@ -88,7 +101,7 @@ func TestAuthMiddleware(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, authPath, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
@@ -96,21 +109,23 @@ func TestAuthMiddleware(t *testing.T) {
 }
 
 func TestRoleMiddleware(t *testing.T) {
-	user := token.User{
-		Username: "user1",
-		Roles:    []string{"USER", "VIEWER"},
-	}
+	tokenStr := util.RandomString(32)
 	testCases := []struct {
 		name          string
 		role          string
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request)
+		buildStubs    func(tokenMaker *mocktoken.MockMaker)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
 			role: "USER",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				payload := token.Payload{User: token.User{Roles: []string{"USER", "VIEWER"}}}
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&payload, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -119,8 +134,12 @@ func TestRoleMiddleware(t *testing.T) {
 		{
 			name: "MissingRole",
 			role: string(adminRole),
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				payload := token.Payload{User: token.User{Roles: []string{}}}
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&payload, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -132,12 +151,15 @@ func TestRoleMiddleware(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
-			server := newTestServer(t, nil)
+			tokenMaker := mocktoken.NewMockMaker(t)
+			server := newTestServer(t, nil, tokenMaker)
+
+			tc.buildStubs(tokenMaker)
 
 			authPath := "/auth"
 			server.router.GET(
 				authPath,
-				authMiddleware(server.tokenMaker, false),
+				authMiddleware(tokenMaker, false),
 				roleMiddleware(tc.role),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
@@ -148,7 +170,7 @@ func TestRoleMiddleware(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, authPath, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
@@ -156,27 +178,21 @@ func TestRoleMiddleware(t *testing.T) {
 }
 
 func TestAdminMiddleware(t *testing.T) {
-	adminUser := token.User{
-		Username: "adminuser",
-		Roles:    []string{string(adminRole)},
-	}
-	sAdminUser := token.User{
-		Username: "superuser",
-		Roles:    []string{string(superAdminRole)},
-	}
-	user := token.User{
-		Username: "user1",
-		Roles:    []string{"USER", "VIEWER"},
-	}
+	tokenStr := util.RandomString(32)
 	testCases := []struct {
 		name          string
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request)
+		buildStubs    func(tokenMaker *mocktoken.MockMaker)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "IsAdmin",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, adminUser, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				payload := token.Payload{User: token.User{Roles: []string{string(adminRole)}}}
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&payload, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -184,8 +200,12 @@ func TestAdminMiddleware(t *testing.T) {
 		},
 		{
 			name: "IsSuperAdmin",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, sAdminUser, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				payload := token.Payload{User: token.User{Roles: []string{string(superAdminRole)}}}
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&payload, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -193,8 +213,25 @@ func TestAdminMiddleware(t *testing.T) {
 		},
 		{
 			name: "NotAdmin",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				payload := token.Payload{User: token.User{Roles: []string{"USER", "VIEWER"}}}
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&payload, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "NoRoles",
+			setupAuth: func(t *testing.T, request *http.Request) {
+				addAuthorization(t, request, authTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker) {
+				payload := token.Payload{User: token.User{Roles: []string{}}}
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&payload, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -206,12 +243,15 @@ func TestAdminMiddleware(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
-			server := newTestServer(t, nil)
+			tokenMaker := mocktoken.NewMockMaker(t)
+			server := newTestServer(t, nil, tokenMaker)
+
+			tc.buildStubs(tokenMaker)
 
 			authPath := "/auth"
 			server.router.GET(
 				authPath,
-				authMiddleware(server.tokenMaker, false),
+				authMiddleware(tokenMaker, false),
 				adminMiddleware(),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
@@ -222,7 +262,7 @@ func TestAdminMiddleware(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, authPath, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
@@ -232,15 +272,11 @@ func TestAdminMiddleware(t *testing.T) {
 func addAuthorization(
 	t *testing.T,
 	request *http.Request,
-	tokenMaker token.Maker,
-	authorizationType string,
-	user token.User,
-	duration time.Duration,
+	authType string,
+	token string,
 ) {
-	token, payload, err := tokenMaker.CreateToken(user, duration)
-	require.NoError(t, err)
-	require.NotEmpty(t, payload)
-
-	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, token)
-	request.Header.Set(authorizationHeaderKey, authorizationHeader)
+	if authType == authTypeBearer {
+		authorizationHeader := fmt.Sprintf("%s %s", authType, token)
+		request.Header.Set(authHeaderKey, authorizationHeader)
+	}
 }

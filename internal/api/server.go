@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
@@ -24,11 +22,7 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP server and setup routing
-func NewServer(config util.Config, store db.Store, logger *zerolog.Logger) (*Server, error) {
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create token maker: %w", err)
-	}
+func NewServer(config util.Config, store db.Store, tokenMaker token.Maker, logger *zerolog.Logger) (*Server, error) {
 	server := &Server{
 		config:     config,
 		store:      store,

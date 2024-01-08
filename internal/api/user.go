@@ -498,8 +498,8 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 //	@Success	200	{object}	User
 //	@Router		/users/auth [get]
 func (s *Server) GetAuthUser(ctx *gin.Context) {
-	_authPayload, _ := ctx.Get(authorizationPayloadKey)
-	authPayload, _ := _authPayload.(*token.Payload)
+	payload, _ := ctx.Get(authPayloadKey)
+	authPayload, _ := payload.(*token.Payload)
 
 	user, err := s.store.GetUserByUsername(ctx, authPayload.User.Username)
 	if err != nil {

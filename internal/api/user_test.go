@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
@@ -139,7 +139,7 @@ func TestListUsersAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("%s/users", server.config.APIBasePath)
@@ -249,7 +249,7 @@ func TestGetUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("%s/users/%d", server.config.APIBasePath, tc.userID)
@@ -445,7 +445,7 @@ func TestCreateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -587,7 +587,7 @@ func TestUpdateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -647,7 +647,7 @@ func TestDeleteUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("%s/users/%d", server.config.APIBasePath, tc.userID)
@@ -801,7 +801,7 @@ func TestRegisterUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -825,7 +825,7 @@ func TestLoginUserAPI(t *testing.T) {
 	testCases := []struct {
 		name          string
 		body          gin.H
-		buildStubs    func(store *mockdb.MockStore)
+		buildStubs    func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker)
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
@@ -834,11 +834,12 @@ func TestLoginUserAPI(t *testing.T) {
 				"username": user.Username,
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]string{}, nil)
+				tokenMaker.EXPECT().CreateToken(mock.Anything, mock.Anything).Return(util.RandomString(32), &token.Payload{}, nil).Twice()
 				store.EXPECT().CreateSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.Session{}, nil)
 			},
@@ -853,13 +854,16 @@ func TestLoginUserAPI(t *testing.T) {
 				"username": "NotFound",
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.User{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusNotFound, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				require.Empty(t, cookies)
 			},
 		},
 		{
@@ -868,13 +872,16 @@ func TestLoginUserAPI(t *testing.T) {
 				"username": user.Username,
 				"password": "incorrect",
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
 					Return(user, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				require.Empty(t, cookies)
 			},
 		},
 		{
@@ -883,13 +890,16 @@ func TestLoginUserAPI(t *testing.T) {
 				"username": user.Username,
 				"password": password,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.User{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				require.Empty(t, cookies)
 			},
 		},
 		{
@@ -900,11 +910,13 @@ func TestLoginUserAPI(t *testing.T) {
 				"full_name": user.FullName,
 				"email":     user.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
-			},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertNotCalled(t, "GetUserByUsername", mock.AnythingOfType("*gin.Context"), mock.Anything)
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				require.Empty(t, cookies)
 			},
 		},
 	}
@@ -914,9 +926,10 @@ func TestLoginUserAPI(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			store := mockdb.NewMockStore(t)
-			tc.buildStubs(store)
+			tokenMaker := mocktoken.NewMockMaker(t)
+			tc.buildStubs(store, tokenMaker)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, tokenMaker)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -936,6 +949,7 @@ func TestLoginUserAPI(t *testing.T) {
 
 func TestGetAuthUserAPI(t *testing.T) {
 	user, _ := randomUser(t)
+	tokenStr := util.RandomString(32)
 
 	authUser := token.User{
 		Username: user.Username,
@@ -944,15 +958,16 @@ func TestGetAuthUserAPI(t *testing.T) {
 	testCases := []struct {
 		name          string
 		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
-		buildStubs    func(store *mockdb.MockStore)
+		buildStubs    func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker)
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
 			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, authUser, time.Minute)
+				addAuthorization(t, request, authTypeBearer, tokenStr)
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
 					Return(user, nil)
 			},
@@ -964,9 +979,10 @@ func TestGetAuthUserAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, authUser, time.Minute)
+				addAuthorization(t, request, authTypeBearer, tokenStr)
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.User{}, sql.ErrConnDone)
 			},
@@ -982,14 +998,15 @@ func TestGetAuthUserAPI(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			store := mockdb.NewMockStore(t)
-			tc.buildStubs(store)
+			tokenMaker := mocktoken.NewMockMaker(t)
+			tc.buildStubs(store, tokenMaker)
 
-			server := newTestServer(t, store)
+			server := newTestServer(t, store, tokenMaker)
 
 			url := fmt.Sprintf("%s/users/testauth", server.config.APIBasePath)
 			server.router.GET(
 				url,
-				authMiddleware(server.tokenMaker, false),
+				authMiddleware(tokenMaker, false),
 				server.GetAuthUser,
 			)
 
