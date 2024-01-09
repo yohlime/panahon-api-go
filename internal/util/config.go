@@ -15,6 +15,8 @@ type Config struct {
 	DBSource             string        `mapstructure:"DB_SOURCE"`
 	MigrationPath        string        `mapstructure:"MIGRATION_PATH"`
 	HTTPServerAddress    string        `mapstructure:"HTTP_SERVER_ADDRESS"`
+	CookieDomain         string        `mapstructure:"COOKIE_DOMAIN"`
+	CookiePath           string        `mapstructure:"COOKIE_PATH"`
 	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
@@ -41,6 +43,8 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("GinMode", "debug")
 	viper.SetDefault("APIBasePath", "/")
 	viper.SetDefault("SwagAPIBasePath", "/")
+	viper.SetDefault("CookieDomain", "localhost")
+	viper.SetDefault("CookiePath", "/")
 	viper.SetDefault("LogDirectory", "./logs")
 	viper.SetDefault("LogFilename", "log")
 

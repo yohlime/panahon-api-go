@@ -467,10 +467,9 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	cookieDomain := strings.Split(s.config.HTTPServerAddress, ":")[0]
 	cookieIsSecure := s.config.Environment == "production"
-	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), "/", cookieDomain, cookieIsSecure, true)
-	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), "/", cookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
