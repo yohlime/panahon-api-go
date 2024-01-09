@@ -663,7 +663,6 @@ func TestDeleteUserAPI(t *testing.T) {
 
 func TestRegisterUserAPI(t *testing.T) {
 	user, password := randomUser(t)
-	userRoles := []string{"USER"}
 
 	testCases := []struct {
 		name          string
@@ -688,8 +687,7 @@ func TestRegisterUserAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, newUser(user, userRoles))
+				require.Equal(t, http.StatusNoContent, recorder.Code)
 			},
 		},
 		{

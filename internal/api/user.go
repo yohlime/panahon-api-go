@@ -352,7 +352,7 @@ type registerUserReq struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	body		registerUserReq	true	"Register user parameters"
-//	@Success	200	{object}	User
+//	@Success	204
 //	@Router		/users/register [post]
 func (s *Server) RegisterUser(ctx *gin.Context) {
 	var req registerUserReq
@@ -394,7 +394,7 @@ func (s *Server) RegisterUser(ctx *gin.Context) {
 
 	s.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
 
-	ctx.JSON(http.StatusOK, newUser(user, roleNames))
+	ctx.JSON(http.StatusNoContent, nil)
 }
 
 type loginUserRequest struct {
