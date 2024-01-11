@@ -9,17 +9,11 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type renewAccessTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `json:"refresh_token"`
 } //@name RenewAccessTokenParams
-
-type renewAccessTokenResponse struct {
-	AccessTokenExpiresAt pgtype.Timestamptz `json:"access_token_expires_at"`
-	AccessToken          string             `json:"access_token"`
-} //@name RenewAccessTokenResponse
 
 // RenewAccessToken
 //
@@ -28,74 +22,78 @@ type renewAccessTokenResponse struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	body		renewAccessTokenRequest	true	"Renew access token parameters"
-//	@Success	200	{object}	renewAccessTokenResponse
+//	@Success	204
 //	@Router		/tokens/renew [post]
-func (s *Server) RenewAccessToken(c *gin.Context) {
-	var req renewAccessTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	refreshPayload, err := s.tokenMaker.VerifyToken(req.RefreshToken)
+func (s *Server) RenewAccessToken(ctx *gin.Context) {
+	refreshToken, err := ctx.Cookie(refreshTokenCookieName)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	session, err := s.store.GetSession(c, refreshPayload.ID)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, errorResponse(err))
+		var req renewAccessTokenRequest
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(err))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		refreshToken = req.RefreshToken
+	}
+
+	refreshPayload, err := s.tokenMaker.VerifyToken(refreshToken)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	session, err := s.store.GetSession(ctx, refreshPayload.ID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	if session.IsBlocked {
 		err := fmt.Errorf("blocked session")
-		c.JSON(http.StatusUnauthorized, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
-	user, err := s.store.GetUser(c, session.UserID)
+	user, err := s.store.GetUser(ctx, session.UserID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusUnauthorized, errorResponse(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	if user.Username != refreshPayload.User.Username {
 		err := fmt.Errorf("incorrect session user")
-		c.JSON(http.StatusUnauthorized, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
-	if session.RefreshToken != req.RefreshToken {
+	if session.RefreshToken != refreshToken {
 		err := fmt.Errorf("mismatched session token")
-		c.JSON(http.StatusUnauthorized, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
 	if time.Now().After(session.ExpiresAt.Time) {
 		err := fmt.Errorf("expired session")
-		c.JSON(http.StatusUnauthorized, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
 	accessToken, accessPayload, err := s.tokenMaker.CreateToken(refreshPayload.User, s.config.AccessTokenDuration)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := renewAccessTokenResponse{
-		AccessToken:          accessToken,
-		AccessTokenExpiresAt: pgtype.Timestamptz{Time: accessPayload.ExpiresAt, Valid: true},
-	}
-	c.JSON(http.StatusOK, rsp)
+	cookieIsSecure := s.config.Environment == "production"
+	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+
+	ctx.JSON(http.StatusNoContent, nil)
 }

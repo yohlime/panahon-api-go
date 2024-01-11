@@ -291,6 +291,6 @@ func addAuthorization(
 		authorizationHeader := fmt.Sprintf("%s %s", authType, token)
 		request.Header.Set(authHeaderKey, authorizationHeader)
 	} else if authType == authTypeCookie {
-		request.AddCookie(&http.Cookie{Name: accessTokenCookieName, Value: token})
+		addAccessTokenCookie(request, token)
 	}
 }
