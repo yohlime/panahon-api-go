@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
@@ -818,7 +819,10 @@ func TestRegisterUserAPI(t *testing.T) {
 }
 
 func TestLoginUserAPI(t *testing.T) {
+	expectedCookieNames := []string{accessTokenCookieName, refreshTokenCookieName}
 	user, password := randomUser(t)
+	tokenStr := util.RandomString(32)
+	tokenExpiresAt := time.Now().Add(6 * time.Hour)
 
 	testCases := []struct {
 		name          string
@@ -837,7 +841,7 @@ func TestLoginUserAPI(t *testing.T) {
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]string{}, nil)
-				tokenMaker.EXPECT().CreateToken(mock.Anything, mock.Anything).Return(util.RandomString(32), &token.Payload{}, nil).Twice()
+				tokenMaker.EXPECT().CreateToken(mock.Anything, mock.Anything).Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil).Twice()
 				store.EXPECT().CreateSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.Session{}, nil)
 			},
@@ -846,11 +850,20 @@ func TestLoginUserAPI(t *testing.T) {
 				require.Equal(t, http.StatusNoContent, recorder.Code)
 
 				cookies := recorder.Result().Cookies()
-				require.Len(t, cookies, 2)
+				require.GreaterOrEqual(t, len(cookies), 2)
 
+				var foundCookieCount int
 				for _, cookie := range cookies {
-					require.Contains(t, []string{accessTokenCookieName, refreshTokenCookieName}, cookie.Name)
+					for _, cName := range expectedCookieNames {
+						if cookie.Name == cName {
+							require.NotEmpty(t, cookie.Value)
+							require.Greater(t, cookie.MaxAge, 0)
+							foundCookieCount++
+							break
+						}
+					}
 				}
+				require.Equal(t, 2, foundCookieCount)
 			},
 		},
 		{
@@ -868,7 +881,19 @@ func TestLoginUserAPI(t *testing.T) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 
 				cookies := recorder.Result().Cookies()
-				require.Empty(t, cookies)
+				var foundCookies []*http.Cookie
+				for _, cookie := range cookies {
+					for _, cookieName := range expectedCookieNames {
+						if cookie.Name == cookieName {
+							foundCookies = append(foundCookies, cookie)
+							break
+						}
+					}
+					if len(foundCookies) == len(expectedCookieNames) {
+						break
+					}
+				}
+				require.Len(t, foundCookies, 0)
 			},
 		},
 		{
@@ -886,7 +911,19 @@ func TestLoginUserAPI(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 				cookies := recorder.Result().Cookies()
-				require.Empty(t, cookies)
+				var foundCookies []*http.Cookie
+				for _, cookie := range cookies {
+					for _, cookieName := range expectedCookieNames {
+						if cookie.Name == cookieName {
+							foundCookies = append(foundCookies, cookie)
+							break
+						}
+					}
+					if len(foundCookies) == len(expectedCookieNames) {
+						break
+					}
+				}
+				require.Len(t, foundCookies, 0)
 			},
 		},
 		{
@@ -904,7 +941,19 @@ func TestLoginUserAPI(t *testing.T) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 
 				cookies := recorder.Result().Cookies()
-				require.Empty(t, cookies)
+				var foundCookies []*http.Cookie
+				for _, cookie := range cookies {
+					for _, cookieName := range expectedCookieNames {
+						if cookie.Name == cookieName {
+							foundCookies = append(foundCookies, cookie)
+							break
+						}
+					}
+					if len(foundCookies) == len(expectedCookieNames) {
+						break
+					}
+				}
+				require.Len(t, foundCookies, 0)
 			},
 		},
 		{
@@ -921,7 +970,19 @@ func TestLoginUserAPI(t *testing.T) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 
 				cookies := recorder.Result().Cookies()
-				require.Empty(t, cookies)
+				var foundCookies []*http.Cookie
+				for _, cookie := range cookies {
+					for _, cookieName := range expectedCookieNames {
+						if cookie.Name == cookieName {
+							foundCookies = append(foundCookies, cookie)
+							break
+						}
+					}
+					if len(foundCookies) == len(expectedCookieNames) {
+						break
+					}
+				}
+				require.Len(t, foundCookies, 0)
 			},
 		},
 	}
@@ -947,6 +1008,142 @@ func TestLoginUserAPI(t *testing.T) {
 
 			server.router.ServeHTTP(recorder, request)
 
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
+func TestLogoutUserAPI(t *testing.T) {
+	expectedCookieNames := []string{accessTokenCookieName, refreshTokenCookieName}
+	tokenStr := util.RandomString(32)
+
+	testCases := []struct {
+		name          string
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		buildStubs    func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name: "OK",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addRefreshTokenCookie(request, tokenStr)
+			},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{}, nil)
+				store.EXPECT().DeleteSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNoContent, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				for _, cookie := range cookies {
+					for _, cName := range expectedCookieNames {
+						if cookie.Name == cName {
+							require.Empty(t, cookie.Value)
+							require.Less(t, cookie.MaxAge, 0)
+							break
+						}
+					}
+				}
+			},
+		},
+		{
+			name:      "NoRefreshCookie",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{}, token.ErrInvalidToken)
+				store.EXPECT().DeleteSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNoContent, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				for _, cookie := range cookies {
+					for _, cName := range expectedCookieNames {
+						if cookie.Name == cName {
+							require.Empty(t, cookie.Value)
+							require.Less(t, cookie.MaxAge, 0)
+							break
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "InvalidRefreshToken",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addRefreshTokenCookie(request, tokenStr)
+			},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{}, token.ErrInvalidToken)
+				store.EXPECT().DeleteSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNoContent, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				for _, cookie := range cookies {
+					for _, cName := range expectedCookieNames {
+						if cookie.Name == cName {
+							require.Empty(t, cookie.Value)
+							require.Less(t, cookie.MaxAge, 0)
+							break
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "InternalError",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addRefreshTokenCookie(request, tokenStr)
+			},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{}, nil)
+				store.EXPECT().DeleteSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusNoContent, recorder.Code)
+
+				cookies := recorder.Result().Cookies()
+				for _, cookie := range cookies {
+					for _, cName := range expectedCookieNames {
+						if cookie.Name == cName {
+							require.Empty(t, cookie.Value)
+							require.Less(t, cookie.MaxAge, 0)
+							break
+						}
+					}
+				}
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tokenMaker := mocktoken.NewMockMaker(t)
+			tc.buildStubs(store, tokenMaker)
+
+			server := newTestServer(t, store, tokenMaker)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("%s/users/logout", server.config.APIBasePath)
+			request, err := http.NewRequest(http.MethodPost, url, nil)
+			require.NoError(t, err)
+
+			tc.setupAuth(t, request, server.tokenMaker)
+			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder, store)
 		})
 	}

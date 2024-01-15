@@ -57,6 +57,7 @@ func (s *Server) setupRouter() {
 	users := api.Group("/users")
 	{
 		users.POST("/login", s.LoginUser)
+		users.POST("/logout", s.LogoutUser)
 		users.POST("/register", s.RegisterUser)
 
 		usersAuth := addMiddleware(users,

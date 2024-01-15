@@ -143,21 +143,6 @@ definitions:
     - password
     - username
     type: object
-  LoginUserResponse:
-    properties:
-      access_token:
-        type: string
-      access_token_expires_at:
-        type: string
-      refresh_token:
-        type: string
-      refresh_token_expires_at:
-        type: string
-      session_id:
-        type: string
-      user:
-        $ref: '#/definitions/User'
-    type: object
   LufftMsgLog:
     properties:
       message:
@@ -274,15 +259,6 @@ definitions:
   RenewAccessTokenParams:
     properties:
       refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  RenewAccessTokenResponse:
-    properties:
-      access_token:
-        type: string
-      access_token_expires_at:
         type: string
     type: object
   Role:
@@ -1151,10 +1127,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/RenewAccessTokenResponse'
+        "204":
+          description: No Content
       summary: Renew access token
       tags:
       - users
@@ -1304,11 +1278,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/LoginUserResponse'
+        "204":
+          description: No Content
       summary: User login
+      tags:
+      - users
+  /users/logout:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: User logout
       tags:
       - users
   /users/register:
@@ -1325,10 +1309,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/User'
+        "204":
+          description: No Content
       summary: Register user
       tags:
       - users

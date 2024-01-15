@@ -21,7 +21,7 @@ type renewAccessTokenRequest struct {
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	body		renewAccessTokenRequest	true	"Renew access token parameters"
+//	@Param		req	body	renewAccessTokenRequest	true	"Renew access token parameters"
 //	@Success	204
 //	@Router		/tokens/renew [post]
 func (s *Server) RenewAccessToken(ctx *gin.Context) {
@@ -93,7 +93,6 @@ func (s *Server) RenewAccessToken(ctx *gin.Context) {
 
 	cookieIsSecure := s.config.Environment == "production"
 	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
-	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }

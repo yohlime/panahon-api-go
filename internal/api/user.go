@@ -351,7 +351,7 @@ type registerUserReq struct {
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	body		registerUserReq	true	"Register user parameters"
+//	@Param		req	body	registerUserReq	true	"Register user parameters"
 //	@Success	204
 //	@Router		/users/register [post]
 func (s *Server) RegisterUser(ctx *gin.Context) {
@@ -408,7 +408,7 @@ type loginUserRequest struct {
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	body		loginUserRequest	true	"Login user parameters"
+//	@Param		req	body	loginUserRequest	true	"Login user parameters"
 //	@Success	204
 //	@Router		/users/login [post]
 func (s *Server) LoginUser(ctx *gin.Context) {
@@ -470,6 +470,26 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 	cookieIsSecure := s.config.Environment == "production"
 	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
 	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+
+	ctx.JSON(http.StatusNoContent, nil)
+}
+
+// LogoutUser
+//
+//	@Summary	User logout
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Success	204
+//	@Router		/users/logout [post]
+func (s *Server) LogoutUser(ctx *gin.Context) {
+	refreshToken, _ := ctx.Cookie(refreshTokenCookieName)
+
+	refreshPayload, _ := s.tokenMaker.VerifyToken(refreshToken)
+
+	s.store.DeleteSession(ctx, refreshPayload.ID)
+	ctx.SetCookie(accessTokenCookieName, "", -1, s.config.CookiePath, s.config.CookieDomain, true, true)
+	ctx.SetCookie(refreshTokenCookieName, "", -1, s.config.CookiePath, s.config.CookieDomain, true, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }

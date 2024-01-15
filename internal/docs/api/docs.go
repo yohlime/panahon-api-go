@@ -938,11 +938,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/RenewAccessTokenResponse"
-                        }
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
@@ -1040,11 +1037,27 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/LoginUserResponse"
-                        }
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/users/logout": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "User logout",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
@@ -1073,11 +1086,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/User"
-                        }
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
@@ -1447,29 +1457,6 @@ const docTemplate = `{
                 }
             }
         },
-        "LoginUserResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "access_token_expires_at": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "refresh_token_expires_at": {
-                    "type": "string"
-                },
-                "session_id": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/User"
-                }
-            }
-        },
         "LufftMsgLog": {
             "type": "object",
             "properties": {
@@ -1642,22 +1629,8 @@ const docTemplate = `{
         },
         "RenewAccessTokenParams": {
             "type": "object",
-            "required": [
-                "refresh_token"
-            ],
             "properties": {
                 "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "RenewAccessTokenResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "access_token_expires_at": {
                     "type": "string"
                 }
             }
