@@ -468,8 +468,9 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 	}
 
 	cookieIsSecure := s.config.Environment == "production"
-	ctx.SetCookie(accessTokenCookieName, accessToken, int(accessPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
-	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(refreshPayload.ExpiresAt.Unix()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+
+	ctx.SetCookie(accessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(time.Until(refreshPayload.ExpiresAt).Seconds()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
