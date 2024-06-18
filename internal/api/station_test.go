@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
@@ -30,21 +31,23 @@ func TestCreateStationAPI(t *testing.T) {
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
-			name: "OK",
+			name: "Default",
 			body: gin.H{
-				"name":     station.Name,
-				"lat":      station.Lat,
-				"lon":      station.Lon,
-				"province": station.Province,
-				"region":   station.Region,
+				"name":           station.Name,
+				"lat":            station.Lat.Float32,
+				"lon":            station.Lon.Float32,
+				"date_installed": station.DateInstalled.Time.Format("2006-01-02"),
+				"province":       station.Province,
+				"region":         station.Region,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateStationParams{
-					Name:     station.Name,
-					Lat:      station.Lat,
-					Lon:      station.Lon,
-					Province: station.Province,
-					Region:   station.Region,
+					Name:          station.Name,
+					Lat:           station.Lat,
+					Lon:           station.Lon,
+					DateInstalled: station.DateInstalled,
+					Province:      station.Province,
+					Region:        station.Region,
 				}
 
 				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), arg).
@@ -68,6 +71,46 @@ func TestCreateStationAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "MissingParams",
+			body: gin.H{
+				"name":     station.Name,
+				"lat":      station.Lat.Float32,
+				"province": station.Province,
+				"region":   station.Region,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateStationParams{
+					Name:     station.Name,
+					Lat:      station.Lat,
+					Province: station.Province,
+					Region:   station.Region,
+				}
+
+				stn := db.ObservationsStation{
+					ID:       station.ID,
+					Name:     station.Name,
+					Lat:      station.Lat,
+					Province: station.Province,
+					Region:   station.Region,
+				}
+
+				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), arg).
+					Return(stn, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				stn := db.ObservationsStation{
+					ID:       station.ID,
+					Name:     station.Name,
+					Lat:      station.Lat,
+					Province: station.Province,
+					Region:   station.Region,
+				}
+				requireBodyMatchStation(t, recorder.Body, stn)
 			},
 		},
 	}
@@ -404,10 +447,10 @@ func TestUpdateStationAPI(t *testing.T) {
 			body: gin.H{
 				"id":       station.ID,
 				"name":     station.Name,
-				"lat":      station.Lat,
-				"lon":      station.Lon,
-				"province": station.Province,
-				"region":   station.Region,
+				"lat":      station.Lat.Float32,
+				"lon":      station.Lon.Float32,
+				"province": station.Province.String,
+				"region":   station.Region.String,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.UpdateStationParams{
@@ -541,13 +584,17 @@ func TestDeleteStationAPI(t *testing.T) {
 }
 
 func randomStation() db.ObservationsStation {
+	dateInstalledStr := fmt.Sprintf("%d-%02d-%02d", util.RandomInt(2000, 2023), util.RandomInt(1, 12), util.RandomInt(1, 25))
+	_dt, err := time.Parse("2006-01-02", dateInstalledStr)
+	dateInstalled := pgtype.Date{Time: _dt, Valid: err == nil}
 	return db.ObservationsStation{
-		ID:       util.RandomInt[int64](1, 1000),
-		Name:     fmt.Sprintf("%s %s", util.RandomString(12), util.RandomString(8)),
-		Lat:      pgtype.Float4{Float32: util.RandomFloat[float32](-90.0, 90.0), Valid: true},
-		Lon:      pgtype.Float4{Float32: util.RandomFloat[float32](0.0, 360.0), Valid: true},
-		Province: pgtype.Text{String: util.RandomString(16), Valid: true},
-		Region:   pgtype.Text{String: util.RandomString(16), Valid: true},
+		ID:            util.RandomInt[int64](1, 1000),
+		Name:          fmt.Sprintf("%s %s", util.RandomString(12), util.RandomString(8)),
+		DateInstalled: dateInstalled,
+		Lat:           pgtype.Float4{Float32: util.RandomFloat[float32](-90.0, 90.0), Valid: true},
+		Lon:           pgtype.Float4{Float32: util.RandomFloat[float32](0.0, 360.0), Valid: true},
+		Province:      pgtype.Text{String: util.RandomString(16), Valid: true},
+		Region:        pgtype.Text{String: util.RandomString(16), Valid: true},
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
@@ -80,19 +81,19 @@ func newStation(station db.ObservationsStation, simple bool) Station {
 }
 
 type createStationReq struct {
-	Name          string        `json:"name" binding:"required,alphanumspace"`
-	Lat           pgtype.Float4 `json:"lat" binding:"numeric"`
-	Lon           pgtype.Float4 `json:"lon" binding:"numeric"`
-	Elevation     pgtype.Float4 `json:"elevation" binding:"numeric"`
-	DateInstalled pgtype.Date   `json:"date_installed"`
-	MobileNumber  pgtype.Text   `json:"mobile_number"`
-	StationType   pgtype.Text   `json:"station_type"`
-	StationType2  pgtype.Text   `json:"station_type2"`
-	StationUrl    pgtype.Text   `json:"station_url"`
-	Status        pgtype.Text   `json:"status"`
-	Province      pgtype.Text   `json:"province"`
-	Region        pgtype.Text   `json:"region"`
-	Address       pgtype.Text   `json:"address"`
+	Name          string   `json:"name" binding:"required,alphanumspace"`
+	Lat           *float32 `json:"lat"`
+	Lon           *float32 `json:"lon"`
+	Elevation     *float32 `json:"elevation"`
+	DateInstalled string   `json:"date_installed"`
+	MobileNumber  string   `json:"mobile_number"`
+	StationType   string   `json:"station_type"`
+	StationType2  string   `json:"station_type2"`
+	StationUrl    string   `json:"station_url"`
+	Status        string   `json:"status"`
+	Province      string   `json:"province"`
+	Region        string   `json:"region"`
+	Address       string   `json:"address"`
 } //@name CreateStationParams
 
 // CreateStation
@@ -112,20 +113,66 @@ func (s *Server) CreateStation(ctx *gin.Context) {
 		return
 	}
 
+	var dateInstalled pgtype.Date
+	if len(req.DateInstalled) == 10 {
+		_dt, err := time.Parse("2006-01-02", req.DateInstalled)
+		dateInstalled = pgtype.Date{Time: _dt, Valid: err == nil}
+	}
+
 	arg := db.CreateStationParams{
 		Name:          req.Name,
-		Lat:           req.Lat,
-		Lon:           req.Lon,
-		Elevation:     req.Elevation,
-		DateInstalled: req.DateInstalled,
-		MobileNumber:  req.MobileNumber,
-		StationType:   req.StationType,
-		StationType2:  req.StationType2,
-		StationUrl:    req.StationUrl,
-		Status:        req.Status,
-		Province:      req.Province,
-		Region:        req.Region,
-		Address:       req.Address,
+		DateInstalled: dateInstalled,
+		MobileNumber: pgtype.Text{
+			String: req.MobileNumber,
+			Valid:  len(req.MobileNumber) > 0,
+		},
+		StationType: pgtype.Text{
+			String: req.StationType,
+			Valid:  len(req.StationType) > 0,
+		},
+		StationType2: pgtype.Text{
+			String: req.StationType2,
+			Valid:  len(req.StationType2) > 0,
+		},
+		StationUrl: pgtype.Text{
+			String: req.StationUrl,
+			Valid:  len(req.StationUrl) > 0,
+		},
+		Status: pgtype.Text{
+			String: req.Status,
+			Valid:  len(req.Status) > 0,
+		},
+		Province: pgtype.Text{
+			String: req.Province,
+			Valid:  len(req.Province) > 0,
+		},
+		Region: pgtype.Text{
+			String: req.Region,
+			Valid:  len(req.Region) > 0,
+		},
+		Address: pgtype.Text{
+			String: req.Address,
+			Valid:  len(req.Address) > 0,
+		},
+	}
+
+	if req.Lat != nil {
+		arg.Lat = pgtype.Float4{
+			Float32: *req.Lat,
+			Valid:   true,
+		}
+	}
+	if req.Lon != nil {
+		arg.Lon = pgtype.Float4{
+			Float32: *req.Lon,
+			Valid:   true,
+		}
+	}
+	if req.Elevation != nil {
+		arg.Elevation = pgtype.Float4{
+			Float32: *req.Elevation,
+			Valid:   true,
+		}
 	}
 
 	result, err := s.store.CreateStation(ctx, arg)
@@ -153,7 +200,8 @@ type paginatedStations = util.PaginatedList[Station] //@name PaginatedStations
 //	@Tags		stations
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query		listStationsReq	false	"List stations parameters"
+//	@Param		req	query	listStationsReq	false	"List stations parameters"
+//	@Security	BearerAuth
 //	@Success	200	{object}	paginatedStations
 //	@Router		/stations [get]
 func (s *Server) ListStations(ctx *gin.Context) {
@@ -341,19 +389,19 @@ type updateStationUri struct {
 }
 
 type updateStationReq struct {
-	Name          pgtype.Text   `json:"name" binding:"alphanumspace"`
-	Lat           pgtype.Float4 `json:"lat" binding:"numeric"`
-	Lon           pgtype.Float4 `json:"lon" binding:"numeric"`
-	Elevation     pgtype.Float4 `json:"elevation" binding:"numeric"`
-	DateInstalled pgtype.Date   `json:"date_installed" binding:"omitempty"`
-	MobileNumber  pgtype.Text   `json:"mobile_number" binding:"omitempty"`
-	StationType   pgtype.Text   `json:"station_type" binding:"omitempty"`
-	StationType2  pgtype.Text   `json:"station_type2" binding:"omitempty"`
-	StationUrl    pgtype.Text   `json:"station_url" binding:"omitempty"`
-	Status        pgtype.Text   `json:"status" binding:"omitempty"`
-	Province      pgtype.Text   `json:"province" binding:"omitempty"`
-	Region        pgtype.Text   `json:"region" binding:"omitempty"`
-	Address       pgtype.Text   `json:"address" binding:"omitempty"`
+	Name          string   `json:"name" binding:"omitempty,alphanumspace"`
+	Lat           *float32 `json:"lat"`
+	Lon           *float32 `json:"lon"`
+	Elevation     *float32 `json:"elevation"`
+	DateInstalled string   `json:"date_installed"`
+	MobileNumber  string   `json:"mobile_number"`
+	StationType   string   `json:"station_type"`
+	StationType2  string   `json:"station_type2"`
+	StationUrl    string   `json:"station_url"`
+	Status        string   `json:"status"`
+	Province      string   `json:"province"`
+	Region        string   `json:"region"`
+	Address       string   `json:"address"`
 } //@name UpdateStationParams
 
 // UpdateStation
@@ -380,21 +428,70 @@ func (s *Server) UpdateStation(ctx *gin.Context) {
 		return
 	}
 
+	var dateInstalled pgtype.Date
+	if len(req.DateInstalled) == 10 {
+		_dt, err := time.Parse("2006-01-02", req.DateInstalled)
+		dateInstalled = pgtype.Date{Time: _dt, Valid: err == nil}
+	}
+
 	arg := db.UpdateStationParams{
-		ID:            uri.ID,
-		Name:          req.Name,
-		Lat:           req.Lat,
-		Lon:           req.Lon,
-		Elevation:     req.Elevation,
-		DateInstalled: req.DateInstalled,
-		MobileNumber:  req.MobileNumber,
-		StationType:   req.StationType,
-		StationType2:  req.StationType2,
-		StationUrl:    req.StationUrl,
-		Status:        req.Status,
-		Province:      req.Province,
-		Region:        req.Region,
-		Address:       req.Address,
+		ID: uri.ID,
+		Name: pgtype.Text{
+			String: req.Name,
+			Valid:  len(req.Name) > 0,
+		},
+		DateInstalled: dateInstalled,
+		MobileNumber: pgtype.Text{
+			String: req.MobileNumber,
+			Valid:  len(req.MobileNumber) > 0,
+		},
+		StationType: pgtype.Text{
+			String: req.StationType,
+			Valid:  len(req.StationType) > 0,
+		},
+		StationType2: pgtype.Text{
+			String: req.StationType2,
+			Valid:  len(req.StationType2) > 0,
+		},
+		StationUrl: pgtype.Text{
+			String: req.StationUrl,
+			Valid:  len(req.StationUrl) > 0,
+		},
+		Status: pgtype.Text{
+			String: req.Status,
+			Valid:  len(req.Status) > 0,
+		},
+		Province: pgtype.Text{
+			String: req.Province,
+			Valid:  len(req.Province) > 0,
+		},
+		Region: pgtype.Text{
+			String: req.Region,
+			Valid:  len(req.Region) > 0,
+		},
+		Address: pgtype.Text{
+			String: req.Address,
+			Valid:  len(req.Address) > 0,
+		},
+	}
+
+	if req.Lat != nil {
+		arg.Lat = pgtype.Float4{
+			Float32: *req.Lat,
+			Valid:   true,
+		}
+	}
+	if req.Lon != nil {
+		arg.Lon = pgtype.Float4{
+			Float32: *req.Lon,
+			Valid:   true,
+		}
+	}
+	if req.Elevation != nil {
+		arg.Elevation = pgtype.Float4{
+			Float32: *req.Elevation,
+			Valid:   true,
+		}
 	}
 
 	station, err := s.store.UpdateStation(ctx, arg)

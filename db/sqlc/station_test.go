@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -383,12 +384,21 @@ func (ts *StationTestSuite) TestDeleteStation() {
 func createRandomStation(t *testing.T, geom any) ObservationsStation {
 	mobileNum := util.RandomMobileNumber()
 
+	rMon := -util.RandomInt(0, 2)
+	rDay := -util.RandomInt(1, 20)
+	timeNow := time.Now().AddDate(0, rMon, rDay)
+	dateInstalled := pgtype.Date{
+		Time:  time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day(), 0, 0, 0, 0, time.UTC),
+		Valid: true,
+	}
+
 	arg := CreateStationParams{
 		Name: util.RandomString(16),
 		MobileNumber: pgtype.Text{
 			String: mobileNum,
 			Valid:  true,
 		},
+		DateInstalled: dateInstalled,
 	}
 
 	switch g := geom.(type) {
@@ -420,6 +430,7 @@ func createRandomStation(t *testing.T, geom any) ObservationsStation {
 
 	require.Equal(t, arg.Name, station.Name)
 	require.Equal(t, arg.MobileNumber, station.MobileNumber)
+	require.WithinDuration(t, dateInstalled.Time, station.DateInstalled.Time, time.Second*10)
 	require.True(t, station.UpdatedAt.Time.IsZero())
 	require.True(t, station.CreatedAt.Valid)
 	require.NotZero(t, station.CreatedAt.Time)
