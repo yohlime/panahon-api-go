@@ -9,6 +9,7 @@ import (
 	"github.com/emiliogozo/panahon-api-go/internal/service"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
+	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,8 +45,12 @@ func main() {
 		logger.Fatal().Err(err).Msg("cannot connect to db")
 	}
 
-	err = util.RunDBMigration(config.MigrationPath, config.DBSource)
+	migration, err := migrate.New("file://"+config.MigrationPath, config.DBSource)
 	if err != nil {
+		logger.Fatal().Err(err).Msg("db migration problem")
+	}
+	err = migration.Up()
+	if err != nil && err != migrate.ErrNoChange {
 		logger.Fatal().Err(err).Msg("db migration problem")
 	}
 
