@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/api"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
 	"github.com/emiliogozo/panahon-api-go/internal/service"
 	"github.com/emiliogozo/panahon-api-go/internal/token"

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -423,7 +423,6 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 			Limit:  pgtype.Int4{Int32: 10, Valid: true},
 			Offset: 0,
 		})
-
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return

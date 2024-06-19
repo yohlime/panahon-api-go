@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/mock"
@@ -191,5 +191,4 @@ func requireBodyMatchLufftMsgLogs(t *testing.T, body *bytes.Buffer, lufftStation
 		require.Equal(t, msg.Message, gotLufftStationMsgs.Items[m].Message)
 		require.WithinDuration(t, msg.Timestamp.Time, gotLufftStationMsgs.Items[m].Timestamp.Time, time.Second)
 	}
-
 }

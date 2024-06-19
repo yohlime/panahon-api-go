@@ -19,12 +19,12 @@ func TestGLabsTestSuite(t *testing.T) {
 }
 
 func (ts *GLabsTestSuite) SetupTest() {
-	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Up()
 	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *GLabsTestSuite) TearDownTest() {
-	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Down()
 	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 

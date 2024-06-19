@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
@@ -21,12 +20,12 @@ func TestSessionTestSuite(t *testing.T) {
 }
 
 func (ts *SessionTestSuite) SetupTest() {
-	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Up()
 	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *SessionTestSuite) TearDownTest() {
-	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Down()
 	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 

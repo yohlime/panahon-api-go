@@ -8,6 +8,6 @@ WORKDIR /app
 COPY --from=builder /app/server .
 COPY app.env .
 COPY --chmod=0755 start.sh .
-COPY db/migration ./db/migration
+COPY internal/db/migration ./internal/db/migration
 
 CMD [ "/app/server" ]

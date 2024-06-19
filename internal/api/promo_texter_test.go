@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/sensor"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"

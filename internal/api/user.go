@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
@@ -286,7 +286,6 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 					RoleName: roleName,
 					Username: user.Username,
 				})
-
 			}
 			createdUserRoles, _ := s.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
 			for _, userRole := range createdUserRoles {

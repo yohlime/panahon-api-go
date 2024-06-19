@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )

@@ -5,7 +5,7 @@ package mockdb
 import (
 	context "context"
 
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mock "github.com/stretchr/testify/mock"
 
 	pgtype "github.com/jackc/pgx/v5/pgtype"

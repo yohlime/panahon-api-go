@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -19,12 +18,12 @@ func TestFOCSimAccessTokenTxTestSuite(t *testing.T) {
 }
 
 func (ts *FOCSimAccessTokenTxTestSuite) SetupTest() {
-	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Up()
 	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *FOCSimAccessTokenTxTestSuite) TearDownTest() {
-	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Down()
 	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 

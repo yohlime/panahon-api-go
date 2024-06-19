@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	mockdb "github.com/emiliogozo/panahon-api-go/db/mocks"
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
@@ -297,7 +297,6 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(db.Session{RefreshToken: "tokenMismatched", ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
-
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.AssertExpectations(t)
@@ -326,7 +325,6 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * -6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
-
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.AssertExpectations(t)

@@ -20,12 +20,12 @@ func TestSimCardTestSuite(t *testing.T) {
 }
 
 func (ts *SimCardTestSuite) SetupTest() {
-	err := util.RunDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Up()
 	require.NoError(ts.T(), err, "db migration problem")
 }
 
 func (ts *SimCardTestSuite) TearDownTest() {
-	err := util.ReverseDBMigration(testConfig.MigrationPath, testConfig.DBSource)
+	err := testMigration.Down()
 	require.NoError(ts.T(), err, "reverse db migration problem")
 }
 

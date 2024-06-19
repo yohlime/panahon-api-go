@@ -1,7 +1,7 @@
 package api
 
 import (
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

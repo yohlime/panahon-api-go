@@ -7,19 +7,19 @@ dropdb:
 	docker exec -it pg12 dropdb --username=${POSTGRES_ADMIN_USER} ${POSTGRES_DB}
 
 migrateup:
-	migrate -path db/migration -database "${DB_SOURCE}" -verbose up
+	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose up
 
 migrateup1:
-	migrate -path db/migration -database "${DB_SOURCE}" -verbose up 1
+	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "${DB_SOURCE}" -verbose down
+	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose down
 
 migratedown1:
-	migrate -path db/migration -database "${DB_SOURCE}" -verbose down 1
+	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose down 1
 
 new_migration:
-	migrate create -ext sql -dir db/migration -seq $(name)
+	migrate create -ext sql -dir internal/db/migration -seq $(name)
 
 sqlc:
 	sqlc generate

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	db "github.com/emiliogozo/panahon-api-go/db/sqlc"
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/go-co-op/gocron"
 	"github.com/rs/zerolog"
