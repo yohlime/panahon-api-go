@@ -9,6 +9,8 @@ import (
 
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
