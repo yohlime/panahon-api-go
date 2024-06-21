@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -79,21 +80,21 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList[lufftMsgLog](req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }
 
 type lufftRes struct {
-	Station Station            `json:"station"`
-	Obs     StationObservation `json:"observation"`
-	Health  StationHealth      `json:"health"`
+	Station models.Station            `json:"station"`
+	Obs     models.StationObservation `json:"observation"`
+	Health  StationHealth             `json:"health"`
 } //@name LufftResponse
 
 func newLufftResponse(stn db.ObservationsStation, obs db.ObservationsObservation, h db.ObservationsStationhealth) lufftRes {
 	return lufftRes{
-		Station: newStation(stn, false),
-		Obs:     newStationObservation(obs),
+		Station: models.NewStation(stn, false),
+		Obs:     models.NewStationObservation(obs),
 		Health:  newStationHealth(h),
 	}
 }

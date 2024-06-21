@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type adminRoleType string
@@ -35,27 +35,6 @@ func isAdminRole(role string) bool {
 	return true
 }
 
-type Role struct {
-	Name        string             `json:"name"`
-	Description string             `json:"description"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-} //@name Role
-
-func newRole(role db.Role) Role {
-	res := Role{
-		Name:      role.Name,
-		UpdatedAt: role.UpdatedAt,
-		CreatedAt: role.CreatedAt,
-	}
-
-	if role.Description.Valid {
-		res.Description = role.Description.String
-	}
-
-	return res
-}
-
 type createRoleReq struct {
 	Name        string `json:"name" binding:"required,alphanum"`
 	Description string `json:"description" binding:"alphanumspace"`
@@ -69,7 +48,7 @@ type createRoleReq struct {
 //	@Produce	json
 //	@Param		req	body	createRoleReq	true	"Create role parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	Role
+//	@Success	200	{object}	models.Role
 //	@Router		/roles/{id} [post]
 func (s *Server) CreateRole(ctx *gin.Context) {
 	var req createRoleReq
@@ -79,11 +58,8 @@ func (s *Server) CreateRole(ctx *gin.Context) {
 	}
 
 	arg := db.CreateRoleParams{
-		Name: strings.ToUpper(req.Name),
-		Description: pgtype.Text{
-			String: req.Description,
-			Valid:  true,
-		},
+		Name:        strings.ToUpper(req.Name),
+		Description: util.ToPgText(req.Description),
 	}
 
 	role, err := s.store.CreateRole(ctx, arg)
@@ -96,7 +72,7 @@ func (s *Server) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newRole(role))
+	ctx.JSON(http.StatusOK, models.NewRole(role))
 }
 
 type listRolesReq struct {
@@ -104,7 +80,7 @@ type listRolesReq struct {
 	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
 } //@name ListRolesParams
 
-type paginatedRoles = util.PaginatedList[Role] //@name PaginatedRoles
+type paginatedRoles = util.PaginatedList[models.Role] //@name PaginatedRoles
 
 // ListRoles
 //
@@ -135,9 +111,9 @@ func (s *Server) ListRoles(ctx *gin.Context) {
 	}
 
 	numRoles := len(roles)
-	items := make([]Role, numRoles)
+	items := make([]models.Role, numRoles)
 	for i, role := range roles {
-		items[i] = newRole(role)
+		items[i] = models.NewRole(role)
 	}
 
 	count, err := s.store.CountRoles(ctx)
@@ -146,7 +122,7 @@ func (s *Server) ListRoles(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList[Role](req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }
@@ -163,7 +139,7 @@ type getRoleReq struct {
 //	@Produce	json
 //	@Param		id	path	int	true	"Role ID"
 //	@Security	BearerAuth
-//	@Success	200	{object}	Role
+//	@Success	200	{object}	models.Role
 //	@Router		/roles/{id} [get]
 func (s *Server) GetRole(ctx *gin.Context) {
 	var req getRoleReq
@@ -182,7 +158,7 @@ func (s *Server) GetRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newRole(role))
+	ctx.JSON(http.StatusOK, models.NewRole(role))
 }
 
 type updateRoleUri struct {
@@ -190,8 +166,8 @@ type updateRoleUri struct {
 }
 
 type updateRoleReq struct {
-	Name        pgtype.Text `json:"name" binding:"alphanum"`
-	Description pgtype.Text `json:"description" binding:"alphanumspace"`
+	Name        string `json:"name" binding:"omitempty,alphanum"`
+	Description string `json:"description" binding:"omitempty,alphanumspace"`
 } //@name UpdateRoleParams
 
 // UpdateRole
@@ -203,7 +179,7 @@ type updateRoleReq struct {
 //	@Param		id	path	int				true	"Role ID"
 //	@Param		req	body	updateRoleReq	true	"Update role parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	Role
+//	@Success	200	{object}	models.Role
 //	@Router		/roles/{id} [put]
 func (s *Server) UpdateRole(ctx *gin.Context) {
 	var uri updateRoleUri
@@ -218,14 +194,14 @@ func (s *Server) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	if req.Name.Valid {
-		req.Name.String = strings.ToUpper(req.Name.String)
+	if len(req.Name) > 0 {
+		req.Name = strings.ToUpper(req.Name)
 	}
 
 	arg := db.UpdateRoleParams{
 		ID:          uri.ID,
-		Name:        req.Name,
-		Description: req.Description,
+		Name:        util.ToPgText(req.Name),
+		Description: util.ToPgText(req.Description),
 	}
 
 	role, err := s.store.UpdateRole(ctx, arg)
@@ -241,7 +217,7 @@ func (s *Server) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newRole(role))
+	ctx.JSON(http.StatusOK, models.NewRole(role))
 }
 
 type deleteRoleReq struct {

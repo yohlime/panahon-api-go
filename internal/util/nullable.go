@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -33,4 +34,31 @@ func (dst *Float4) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+func ToPgText(s string) pgtype.Text {
+	return pgtype.Text{String: s, Valid: len(s) > 0}
+}
+
+func ToInt4(i *int32) pgtype.Int4 {
+	if i != nil {
+		return pgtype.Int4{Int32: *i, Valid: true}
+	}
+	return pgtype.Int4{}
+}
+
+func ToFloat4(f *float32) pgtype.Float4 {
+	if f != nil {
+		return pgtype.Float4{Float32: *f, Valid: true}
+	}
+	return pgtype.Float4{}
+}
+
+func ToPgDate(s string) pgtype.Date {
+	if len(s) == 10 {
+		_dt, err := time.Parse("2006-01-02", s)
+		return pgtype.Date{Time: _dt, Valid: err == nil}
+	}
+
+	return pgtype.Date{}
 }

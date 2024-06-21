@@ -8,98 +8,15 @@ import (
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type StationObservation struct {
-	ID        int64              `json:"id"`
-	Pres      float32            `json:"pres"`
-	Rr        float32            `json:"rr"`
-	Rh        float32            `json:"rh"`
-	Temp      float32            `json:"temp"`
-	Td        float32            `json:"td"`
-	Wdir      float32            `json:"wdir"`
-	Wspd      float32            `json:"wspd"`
-	Wspdx     float32            `json:"wspdx"`
-	Srad      float32            `json:"srad"`
-	Mslp      float32            `json:"mslp"`
-	Hi        float32            `json:"hi"`
-	StationID int64              `json:"station_id"`
-	Timestamp pgtype.Timestamptz `json:"timestamp"`
-	Wchill    float32            `json:"wchill"`
-	QcLevel   int32              `json:"qc_level"`
-} //@name StationObservation
-
-func newStationObservation(obs db.ObservationsObservation) StationObservation {
-	res := StationObservation{
-		ID:        obs.ID,
-		StationID: obs.StationID,
-		Timestamp: obs.Timestamp,
-		QcLevel:   obs.QcLevel,
-	}
-
-	if obs.Pres.Valid {
-		res.Pres = obs.Pres.Float32
-	}
-	if obs.Rr.Valid {
-		res.Rr = obs.Rr.Float32
-	}
-	if obs.Rh.Valid {
-		res.Rh = obs.Rh.Float32
-	}
-	if obs.Temp.Valid {
-		res.Temp = obs.Temp.Float32
-	}
-	if obs.Td.Valid {
-		res.Td = obs.Td.Float32
-	}
-	if obs.Wdir.Valid {
-		res.Wdir = obs.Wdir.Float32
-	}
-	if obs.Wspd.Valid {
-		res.Wspd = obs.Wspd.Float32
-	}
-	if obs.Wspdx.Valid {
-		res.Wspdx = obs.Wspdx.Float32
-	}
-	if obs.Srad.Valid {
-		res.Srad = obs.Srad.Float32
-	}
-	if obs.Mslp.Valid {
-		res.Mslp = obs.Mslp.Float32
-	}
-	if obs.Hi.Valid {
-		res.Hi = obs.Hi.Float32
-	}
-	if obs.Wchill.Valid {
-		res.Wchill = obs.Wchill.Float32
-	}
-
-	return res
-}
-
 type createStationObsUri struct {
 	StationID int64 `uri:"station_id" binding:"required,min=1"`
 }
-
-type createStationObsReq struct {
-	Pres      pgtype.Float4      `json:"pres" binding:"numeric"`
-	Rr        pgtype.Float4      `json:"rr" binding:"numeric"`
-	Rh        pgtype.Float4      `json:"rh" binding:"numeric"`
-	Temp      pgtype.Float4      `json:"temp" binding:"numeric"`
-	Td        pgtype.Float4      `json:"td" binding:"numeric"`
-	Wdir      pgtype.Float4      `json:"wdir" binding:"numeric"`
-	Wspd      pgtype.Float4      `json:"wspd" binding:"numeric"`
-	Wspdx     pgtype.Float4      `json:"wspdx" binding:"numeric"`
-	Srad      pgtype.Float4      `json:"srad" binding:"numeric"`
-	Mslp      pgtype.Float4      `json:"mslp" binding:"numeric"`
-	Hi        pgtype.Float4      `json:"hi" binding:"numeric"`
-	Wchill    pgtype.Float4      `json:"wchill" binding:"numeric"`
-	QcLevel   int32              `json:"qc_level" binding:"numeric"`
-	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"numeric"`
-} //@name CreateStationObservationParams
 
 // CreateStationObservation
 //
@@ -107,10 +24,10 @@ type createStationObsReq struct {
 //	@Tags		observations
 //	@Accept		json
 //	@Produce	json
-//	@Param		station_id	path	int					true	"Station ID"
-//	@Param		stnObs		body	createStationObsReq	true	"Create station observation parameters"
+//	@Param		station_id	path	int							true	"Station ID"
+//	@Param		stnObs		body	models.CreateStationObsReq	true	"Create station observation parameters"
 //	@Security	BearerAuth
-//	@Success	201	{object}	StationObservation
+//	@Success	201	{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations [post]
 func (s *Server) CreateStationObservation(ctx *gin.Context) {
 	var uri createStationObsUri
@@ -119,29 +36,15 @@ func (s *Server) CreateStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	var req createStationObsReq
+	var req models.CreateStationObsReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		fmt.Println(err)
 		return
 	}
+	req.StationID = uri.StationID
 
-	arg := db.CreateStationObservationParams{
-		StationID: uri.StationID,
-		Pres:      req.Pres,
-		Rr:        req.Rr,
-		Rh:        req.Rh,
-		Temp:      req.Temp,
-		Td:        req.Td,
-		Wdir:      req.Wdir,
-		Wspd:      req.Wspd,
-		Wspdx:     req.Wspdx,
-		Srad:      req.Srad,
-		Mslp:      req.Mslp,
-		Hi:        req.Hi,
-		Wchill:    req.Wchill,
-		Timestamp: req.Timestamp,
-		QcLevel:   req.QcLevel,
-	}
+	arg := req.Transform()
 
 	obs, err := s.store.CreateStationObservation(ctx, arg)
 	if err != nil {
@@ -149,7 +52,8 @@ func (s *Server) CreateStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, newStationObservation(obs))
+	res := models.NewStationObservation(obs)
+	ctx.JSON(http.StatusCreated, res)
 }
 
 type listStationObsUri struct {
@@ -163,7 +67,7 @@ type listStationObsReq struct {
 	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
 } //@name ListStationObservationsParams
 
-type paginatedStationObservations = util.PaginatedList[StationObservation] //@name PaginatedStationObservations
+type paginatedStationObservations = util.PaginatedList[models.StationObservation] //@name PaginatedStationObservations
 
 // ListStationObservations
 //
@@ -217,9 +121,9 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 	}
 
 	numObs := len(observations)
-	items := make([]StationObservation, numObs)
+	items := make([]models.StationObservation, numObs)
 	for i, observation := range observations {
-		items[i] = newStationObservation(observation)
+		items[i] = models.NewStationObservation(observation)
 	}
 
 	count, err := s.store.CountStationObservations(ctx, db.CountStationObservationsParams{
@@ -234,7 +138,7 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList[StationObservation](req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }
@@ -252,7 +156,7 @@ type getStationObsReq struct {
 //	@Produce	json
 //	@Param		station_id	path		int	true	"Station ID"
 //	@Param		id			path		int	true	"Station Observation ID"
-//	@Success	200			{object}	StationObservation
+//	@Success	200			{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [get]
 func (s *Server) GetStationObservation(ctx *gin.Context) {
 	var req getStationObsReq
@@ -276,7 +180,8 @@ func (s *Server) GetStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStationObservation(obs))
+	res := models.NewStationObservation(obs)
+	ctx.JSON(http.StatusOK, res)
 }
 
 type updateStationObsUri struct {
@@ -284,33 +189,16 @@ type updateStationObsUri struct {
 	ID        int64 `uri:"id" binding:"required,min=1"`
 }
 
-type updateStationObsReq struct {
-	Pres      pgtype.Float4      `json:"pres" binding:"numeric"`
-	Rr        pgtype.Float4      `json:"rr" binding:"numeric"`
-	Rh        pgtype.Float4      `json:"rh" binding:"numeric"`
-	Temp      pgtype.Float4      `json:"temp" binding:"numeric"`
-	Td        pgtype.Float4      `json:"td" binding:"numeric"`
-	Wdir      pgtype.Float4      `json:"wdir" binding:"numeric"`
-	Wspd      pgtype.Float4      `json:"wspd" binding:"numeric"`
-	Wspdx     pgtype.Float4      `json:"wspdx" binding:"numeric"`
-	Srad      pgtype.Float4      `json:"srad" binding:"numeric"`
-	Mslp      pgtype.Float4      `json:"mslp" binding:"numeric"`
-	Hi        pgtype.Float4      `json:"hi" binding:"numeric"`
-	Wchill    pgtype.Float4      `json:"wchill" binding:"numeric"`
-	QcLevel   pgtype.Int4        `json:"qc_level" binding:"numeric"`
-	Timestamp pgtype.Timestamptz `json:"timestamp" binding:"numeric"`
-} //@name UpdateStationObservationParams
-
 // UpdateStationObservation
 //
 //	@Summary	Update station observation
 //	@Tags		observations
 //	@Produce	json
-//	@Param		station_id	path	int					true	"Station ID"
-//	@Param		id			path	int					true	"Station Observation ID"
-//	@Param		stnObs		body	updateStationObsReq	true	"Update station observation parameters"
+//	@Param		station_id	path	int							true	"Station ID"
+//	@Param		id			path	int							true	"Station Observation ID"
+//	@Param		stnObs		body	models.UpdateStationObsReq	true	"Update station observation parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	StationObservation
+//	@Success	200	{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [put]
 func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 	var uri updateStationObsUri
@@ -319,30 +207,15 @@ func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	var req updateStationObsReq
+	var req models.UpdateStationObsReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	req.ID = uri.ID
+	req.StationID = uri.StationID
 
-	arg := db.UpdateStationObservationParams{
-		ID:        uri.ID,
-		StationID: uri.StationID,
-		Pres:      req.Pres,
-		Rr:        req.Rr,
-		Rh:        req.Rh,
-		Temp:      req.Temp,
-		Td:        req.Td,
-		Wdir:      req.Wdir,
-		Wspd:      req.Wspd,
-		Wspdx:     req.Wspdx,
-		Srad:      req.Srad,
-		Mslp:      req.Mslp,
-		Hi:        req.Hi,
-		Wchill:    req.Wchill,
-		Timestamp: req.Timestamp,
-		QcLevel:   req.QcLevel,
-	}
+	arg := req.Transform()
 
 	obs, err := s.store.UpdateStationObservation(ctx, arg)
 	if err != nil {
@@ -354,7 +227,8 @@ func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newStationObservation(obs))
+	res := models.NewStationObservation(obs)
+	ctx.JSON(http.StatusOK, res)
 }
 
 type deleteStationObsReq struct {
@@ -472,9 +346,9 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 	}
 
 	numObs := len(obs)
-	items := make([]StationObservation, numObs)
+	items := make([]models.StationObservation, numObs)
 	for i, observation := range obs {
-		items[i] = newStationObservation(observation)
+		items[i] = models.NewStationObservation(observation)
 	}
 
 	count, err := s.store.CountObservations(ctx, db.CountObservationsParams{
@@ -489,7 +363,7 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList[StationObservation](req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }

@@ -1,4 +1,6 @@
+replace pgtype.Int4 number
 replace pgtype.Float4 number
 replace pgtype.Text string
 replace pgtype.Date string
 replace pgtype.Timestamptz string
+replace util.Float4 number

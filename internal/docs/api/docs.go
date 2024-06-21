@@ -439,6 +439,11 @@ const docTemplate = `{
         },
         "/stations": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -512,7 +517,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/CreateStationParams"
+                            "$ref": "#/definitions/CreateStationReq"
                         }
                     }
                 ],
@@ -616,7 +621,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/UpdateStationParams"
+                            "$ref": "#/definitions/UpdateStationReq"
                         }
                     }
                 ],
@@ -746,7 +751,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/CreateStationObservationParams"
+                            "$ref": "#/definitions/CreateStationObservationReq"
                         }
                     }
                 ],
@@ -1254,7 +1259,7 @@ const docTemplate = `{
                 }
             }
         },
-        "CreateStationObservationParams": {
+        "CreateStationObservationReq": {
             "type": "object",
             "properties": {
                 "hi": {
@@ -1277,6 +1282,9 @@ const docTemplate = `{
                 },
                 "srad": {
                     "type": "number"
+                },
+                "station_id": {
+                    "type": "integer"
                 },
                 "td": {
                     "type": "number"
@@ -1301,7 +1309,7 @@ const docTemplate = `{
                 }
             }
         },
-        "CreateStationParams": {
+        "CreateStationReq": {
             "type": "object",
             "required": [
                 "name"
@@ -1422,16 +1430,16 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "elevation": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "id": {
                     "type": "integer"
                 },
                 "lat": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "lon": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "name": {
                     "type": "string"
@@ -1457,17 +1465,6 @@ const docTemplate = `{
                 }
             }
         },
-        "LufftMsgLog": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
         "LufftResponse": {
             "type": "object",
             "properties": {
@@ -1483,120 +1480,16 @@ const docTemplate = `{
             }
         },
         "PaginatedRoles": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Role"
-                    }
-                },
-                "next_page": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "per_page": {
-                    "type": "integer"
-                },
-                "prev_page": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
+            "type": "object"
         },
         "PaginatedStationObservations": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/StationObservation"
-                    }
-                },
-                "next_page": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "per_page": {
-                    "type": "integer"
-                },
-                "prev_page": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
+            "type": "object"
         },
         "PaginatedStations": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Station"
-                    }
-                },
-                "next_page": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "per_page": {
-                    "type": "integer"
-                },
-                "prev_page": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
+            "type": "object"
         },
         "PaginatedUsers": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/User"
-                    }
-                },
-                "next_page": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "per_page": {
-                    "type": "integer"
-                },
-                "prev_page": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
+            "type": "object"
         },
         "RegisterUserParams": {
             "type": "object",
@@ -1825,6 +1718,9 @@ const docTemplate = `{
                 "hi": {
                     "type": "number"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "mslp": {
                     "type": "number"
                 },
@@ -1832,7 +1728,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "qc_level": {
-                    "$ref": "#/definitions/pgtype.Int4"
+                    "type": "integer"
                 },
                 "rh": {
                     "type": "number"
@@ -1842,6 +1738,9 @@ const docTemplate = `{
                 },
                 "srad": {
                     "type": "number"
+                },
+                "station_id": {
+                    "type": "integer"
                 },
                 "td": {
                     "type": "number"
@@ -1866,7 +1765,7 @@ const docTemplate = `{
                 }
             }
         },
-        "UpdateStationParams": {
+        "UpdateStationReq": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1877,6 +1776,9 @@ const docTemplate = `{
                 },
                 "elevation": {
                     "type": "number"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "lat": {
                     "type": "number"
@@ -1961,99 +1863,54 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "gust": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "gust_timestamp": {
                     "type": "string"
                 },
                 "mslp": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "rain": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "rain_accum": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "rh": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "srad": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "temp": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "timestamp": {
                     "type": "string"
                 },
                 "tn": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "tn_timestamp": {
                     "type": "string"
                 },
                 "tx": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "tx_timestamp": {
                     "type": "string"
                 },
                 "wdir": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 },
                 "wspd": {
-                    "$ref": "#/definitions/util.Float4"
+                    "type": "number"
                 }
             }
         },
         "api.paginatedLufftMsgLogs": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/LufftMsgLog"
-                    }
-                },
-                "next_page": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "per_page": {
-                    "type": "integer"
-                },
-                "prev_page": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pgtype.Int4": {
-            "type": "object",
-            "properties": {
-                "int32": {
-                    "type": "integer"
-                },
-                "valid": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "util.Float4": {
-            "type": "object",
-            "properties": {
-                "pgtype.Float4": {
-                    "type": "number"
-                }
-            }
+            "type": "object"
         }
     },
     "securityDefinitions": {

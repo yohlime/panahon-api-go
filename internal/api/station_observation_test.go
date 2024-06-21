@@ -13,6 +13,7 @@ import (
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -968,10 +969,10 @@ func requireBodyMatchStationObservation(t *testing.T, body *bytes.Buffer, statio
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStationObs StationObservation
+	var gotStationObs models.StationObservation
 	err = json.Unmarshal(data, &gotStationObs)
 	require.NoError(t, err)
-	require.Equal(t, newStationObservation(stationObs), gotStationObs)
+	require.Equal(t, models.NewStationObservation(stationObs), gotStationObs)
 }
 
 func requireBodyMatchStationObservations(t *testing.T, body *bytes.Buffer, stationObsSlice []db.ObservationsObservation) {
@@ -982,9 +983,9 @@ func requireBodyMatchStationObservations(t *testing.T, body *bytes.Buffer, stati
 	err = json.Unmarshal(data, &gotStationObsSlice)
 	require.NoError(t, err)
 
-	stationObsSliceRes := make([]StationObservation, len(stationObsSlice))
+	stationObsSliceRes := make([]models.StationObservation, len(stationObsSlice))
 	for i, obs := range stationObsSlice {
-		stationObsSliceRes[i] = newStationObservation(obs)
+		stationObsSliceRes[i] = models.NewStationObservation(obs)
 	}
 	require.Equal(t, stationObsSliceRes, gotStationObsSlice.Items)
 }

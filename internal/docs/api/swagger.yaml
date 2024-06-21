@@ -8,7 +8,7 @@ definitions:
     required:
     - name
     type: object
-  CreateStationObservationParams:
+  CreateStationObservationReq:
     properties:
       hi:
         type: number
@@ -24,6 +24,8 @@ definitions:
         type: number
       srad:
         type: number
+      station_id:
+        type: integer
       td:
         type: number
       temp:
@@ -39,7 +41,7 @@ definitions:
       wspdx:
         type: number
     type: object
-  CreateStationParams:
+  CreateStationReq:
     properties:
       address:
         type: string
@@ -120,13 +122,13 @@ definitions:
       address:
         type: string
       elevation:
-        $ref: '#/definitions/util.Float4'
+        type: number
       id:
         type: integer
       lat:
-        $ref: '#/definitions/util.Float4'
+        type: number
       lon:
-        $ref: '#/definitions/util.Float4'
+        type: number
       name:
         type: string
       obs:
@@ -143,13 +145,6 @@ definitions:
     - password
     - username
     type: object
-  LufftMsgLog:
-    properties:
-      message:
-        type: string
-      timestamp:
-        type: string
-    type: object
   LufftResponse:
     properties:
       health:
@@ -160,80 +155,12 @@ definitions:
         $ref: '#/definitions/Station'
     type: object
   PaginatedRoles:
-    properties:
-      count:
-        type: integer
-      items:
-        items:
-          $ref: '#/definitions/Role'
-        type: array
-      next_page:
-        type: integer
-      page:
-        type: integer
-      per_page:
-        type: integer
-      prev_page:
-        type: integer
-      total_pages:
-        type: integer
     type: object
   PaginatedStationObservations:
-    properties:
-      count:
-        type: integer
-      items:
-        items:
-          $ref: '#/definitions/StationObservation'
-        type: array
-      next_page:
-        type: integer
-      page:
-        type: integer
-      per_page:
-        type: integer
-      prev_page:
-        type: integer
-      total_pages:
-        type: integer
     type: object
   PaginatedStations:
-    properties:
-      count:
-        type: integer
-      items:
-        items:
-          $ref: '#/definitions/Station'
-        type: array
-      next_page:
-        type: integer
-      page:
-        type: integer
-      per_page:
-        type: integer
-      prev_page:
-        type: integer
-      total_pages:
-        type: integer
     type: object
   PaginatedUsers:
-    properties:
-      count:
-        type: integer
-      items:
-        items:
-          $ref: '#/definitions/User'
-        type: array
-      next_page:
-        type: integer
-      page:
-        type: integer
-      per_page:
-        type: integer
-      prev_page:
-        type: integer
-      total_pages:
-        type: integer
     type: object
   RegisterUserParams:
     properties:
@@ -386,18 +313,22 @@ definitions:
     properties:
       hi:
         type: number
+      id:
+        type: integer
       mslp:
         type: number
       pres:
         type: number
       qc_level:
-        $ref: '#/definitions/pgtype.Int4'
+        type: integer
       rh:
         type: number
       rr:
         type: number
       srad:
         type: number
+      station_id:
+        type: integer
       td:
         type: number
       temp:
@@ -413,7 +344,7 @@ definitions:
       wspdx:
         type: number
     type: object
-  UpdateStationParams:
+  UpdateStationReq:
     properties:
       address:
         type: string
@@ -421,6 +352,8 @@ definitions:
         type: string
       elevation:
         type: number
+      id:
+        type: integer
       lat:
         type: number
       lon:
@@ -476,66 +409,37 @@ definitions:
   api.latestObsRes:
     properties:
       gust:
-        $ref: '#/definitions/util.Float4'
+        type: number
       gust_timestamp:
         type: string
       mslp:
-        $ref: '#/definitions/util.Float4'
+        type: number
       rain:
-        $ref: '#/definitions/util.Float4'
+        type: number
       rain_accum:
-        $ref: '#/definitions/util.Float4'
+        type: number
       rh:
-        $ref: '#/definitions/util.Float4'
+        type: number
       srad:
-        $ref: '#/definitions/util.Float4'
+        type: number
       temp:
-        $ref: '#/definitions/util.Float4'
+        type: number
       timestamp:
         type: string
       tn:
-        $ref: '#/definitions/util.Float4'
+        type: number
       tn_timestamp:
         type: string
       tx:
-        $ref: '#/definitions/util.Float4'
+        type: number
       tx_timestamp:
         type: string
       wdir:
-        $ref: '#/definitions/util.Float4'
+        type: number
       wspd:
-        $ref: '#/definitions/util.Float4'
+        type: number
     type: object
   api.paginatedLufftMsgLogs:
-    properties:
-      count:
-        type: integer
-      items:
-        items:
-          $ref: '#/definitions/LufftMsgLog'
-        type: array
-      next_page:
-        type: integer
-      page:
-        type: integer
-      per_page:
-        type: integer
-      prev_page:
-        type: integer
-      total_pages:
-        type: integer
-    type: object
-  pgtype.Int4:
-    properties:
-      int32:
-        type: integer
-      valid:
-        type: boolean
-    type: object
-  util.Float4:
-    properties:
-      pgtype.Float4:
-        type: number
     type: object
 info:
   contact:
@@ -840,6 +744,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/PaginatedStations'
+      security:
+      - BearerAuth: []
       summary: List stations
       tags:
       - stations
@@ -852,7 +758,7 @@ paths:
         name: req
         required: true
         schema:
-          $ref: '#/definitions/CreateStationParams'
+          $ref: '#/definitions/CreateStationReq'
       produces:
       - application/json
       responses:
@@ -918,7 +824,7 @@ paths:
         name: req
         required: true
         schema:
-          $ref: '#/definitions/UpdateStationParams'
+          $ref: '#/definitions/UpdateStationReq'
       produces:
       - application/json
       responses:
@@ -982,7 +888,7 @@ paths:
         name: stnObs
         required: true
         schema:
-          $ref: '#/definitions/CreateStationObservationParams'
+          $ref: '#/definitions/CreateStationObservationReq'
       produces:
       - application/json
       responses:

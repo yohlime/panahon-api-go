@@ -13,6 +13,7 @@ import (
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -602,10 +603,10 @@ func requireBodyMatchStation(t *testing.T, body *bytes.Buffer, station db.Observ
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotStation Station
+	var gotStation models.Station
 	err = json.Unmarshal(data, &gotStation)
 	require.NoError(t, err)
-	require.Equal(t, newStation(station, false), gotStation)
+	require.Equal(t, models.NewStation(station, false), gotStation)
 }
 
 func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.ObservationsStation) {
@@ -616,9 +617,9 @@ func requireBodyMatchStations(t *testing.T, body *bytes.Buffer, stations []db.Ob
 	err = json.Unmarshal(data, &gotStations)
 	require.NoError(t, err)
 
-	stationsRes := make([]Station, len(stations))
+	stationsRes := make([]models.Station, len(stations))
 	for i, stn := range stations {
-		stationsRes[i] = newStation(stn, false)
+		stationsRes[i] = models.NewStation(stn, false)
 	}
 	require.Equal(t, stationsRes, gotStations.Items)
 }

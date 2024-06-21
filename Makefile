@@ -32,7 +32,7 @@ mock:
 
 swag:
 	swag fmt -d cmd/server/main.go,internal/api
-	swag init -o internal/docs/api -d cmd/server,internal/api --pd
+	swag init -o internal/docs/api -d cmd/server,internal/api,internal/models
 
 test:
 	go test -v -cover ./...

@@ -7,36 +7,12 @@ import (
 	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-type User struct {
-	Username          string             `json:"username"`
-	FullName          string             `json:"full_name"`
-	Email             string             `json:"email"`
-	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	Roles             []string           `json:"roles"`
-} //@name User
-
-func newUser(user db.User, roleNames []string) User {
-	ret := User{
-		Username:          user.Username,
-		FullName:          user.FullName,
-		Email:             user.Email,
-		PasswordChangedAt: user.PasswordChangedAt,
-		CreatedAt:         user.CreatedAt,
-	}
-
-	if len(roleNames) > 0 {
-		ret.Roles = roleNames
-	}
-
-	return ret
-}
 
 type createUserReq struct {
 	Username string   `json:"username" binding:"required,alphanum"`
@@ -54,7 +30,7 @@ type createUserReq struct {
 //	@Produce	json
 //	@Param		req	body	createUserReq	true	"Create user parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	User
+//	@Success	200	{object}	models.User
 //	@Router		/users/{id} [post]
 func (s *Server) CreateUser(ctx *gin.Context) {
 	var req createUserReq
@@ -102,7 +78,7 @@ func (s *Server) CreateUser(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, newUser(user, roleNames))
+	ctx.JSON(http.StatusOK, models.NewUser(user, roleNames))
 }
 
 type listUsersReq struct {
@@ -110,7 +86,7 @@ type listUsersReq struct {
 	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
 } //@name ListUsersParams
 
-type paginatedUsers = util.PaginatedList[User] //@name PaginatedUsers
+type paginatedUsers = util.PaginatedList[models.User] //@name PaginatedUsers
 
 // ListUsers
 //
@@ -141,9 +117,9 @@ func (s *Server) ListUsers(ctx *gin.Context) {
 	}
 
 	numUsers := len(users)
-	items := make([]User, numUsers)
+	items := make([]models.User, numUsers)
 	for i, user := range users {
-		items[i] = newUser(user, nil)
+		items[i] = models.NewUser(user, nil)
 	}
 
 	count, err := s.store.CountUsers(ctx)
@@ -152,7 +128,7 @@ func (s *Server) ListUsers(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList[User](req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }
@@ -169,7 +145,7 @@ type getUserReq struct {
 //	@Produce	json
 //	@Param		id	path	int	true	"User ID"
 //	@Security	BearerAuth
-//	@Success	200	{object}	User
+//	@Success	200	{object}	models.User
 //	@Router		/users/{id} [get]
 func (s *Server) GetUser(ctx *gin.Context) {
 	var req getUserReq
@@ -190,7 +166,7 @@ func (s *Server) GetUser(ctx *gin.Context) {
 
 	roleNames, _ := s.store.ListUserRoles(ctx, req.ID)
 
-	ctx.JSON(http.StatusOK, newUser(user, roleNames))
+	ctx.JSON(http.StatusOK, models.NewUser(user, roleNames))
 }
 
 type updateUserUri struct {
@@ -213,7 +189,7 @@ type updateUserReq struct {
 //	@Param		id	path	int				true	"User ID"
 //	@Param		req	body	updateUserReq	true	"Update user parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	User
+//	@Success	200	{object}	models.User
 //	@Router		/users/{id} [put]
 func (s *Server) UpdateUser(ctx *gin.Context) {
 	var uri updateUserUri
@@ -303,7 +279,7 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, newUser(user, updatedRoleNames))
+	ctx.JSON(http.StatusOK, models.NewUser(user, updatedRoleNames))
 }
 
 type deleteUserReq struct {
@@ -513,5 +489,5 @@ func (s *Server) GetAuthUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUser(user, authPayload.User.Roles))
+	ctx.JSON(http.StatusOK, models.NewUser(user, authPayload.User.Roles))
 }
