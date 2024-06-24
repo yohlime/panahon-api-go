@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -141,10 +141,14 @@ func TestListRolesAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET("", handler.ListRoles)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/roles", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -154,7 +158,7 @@ func TestListRolesAPI(t *testing.T) {
 			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			request.URL.RawQuery = q.Encode()
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -226,14 +230,18 @@ func TestGetRoleAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET(":id", handler.GetRole)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/roles/%d", server.config.APIBasePath, tc.roleID)
+			url := fmt.Sprintf("/%d", tc.roleID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -317,18 +325,22 @@ func TestCreateRoleAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST("", handler.CreateRole)
+
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/roles", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -402,18 +414,22 @@ func TestUpdateRoleAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.PUT(":id", handler.UpdateRole)
+
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/roles/%d", server.config.APIBasePath, tc.roleID)
+			url := fmt.Sprintf("/%d", tc.roleID)
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -462,14 +478,18 @@ func TestDeleteRoleAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.DELETE(":id", handler.DeleteRole)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/roles/%d", server.config.APIBasePath, tc.roleID)
+			url := fmt.Sprintf("/%d", tc.roleID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})

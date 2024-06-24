@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -178,14 +178,17 @@ func TestListStationObservationsAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET(":station_id/observations", handler.ListStationObservations)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/stations/%d/observations", server.config.APIBasePath, stationID)
+			url := fmt.Sprintf("/%d/observations", stationID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			// Add query parameters to request URL
 			q := request.URL.Query()
 			if tc.query.Page != 0 {
 				q.Add("page", fmt.Sprintf("%d", tc.query.Page))
@@ -201,7 +204,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			}
 			request.URL.RawQuery = q.Encode()
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -300,14 +303,18 @@ func TestGetStationObservationAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET(":station_id/observations/:id", handler.GetStationObservation)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/stations/%d/observations/%d", server.config.APIBasePath, tc.params.StationID, tc.params.ID)
+			url := fmt.Sprintf("/%d/observations/%d", tc.params.StationID, tc.params.ID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -389,18 +396,21 @@ func TestCreateStationObservationAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST(":station_id/observations", handler.CreateStationObservation)
+
 			recorder := httptest.NewRecorder()
 
-			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/stations/%d/observations", server.config.APIBasePath, stationObs.StationID)
+			url := fmt.Sprintf("/%d/observations", stationObs.StationID)
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -494,18 +504,21 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.PUT(":station_id/observations/:id", handler.UpdateStationObservation)
+
 			recorder := httptest.NewRecorder()
 
-			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/stations/%d/observations/%d", server.config.APIBasePath, tc.params.StationID, tc.params.ID)
+			url := fmt.Sprintf("/%d/observations/%d", tc.params.StationID, tc.params.ID)
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -561,14 +574,18 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.DELETE(":station_id/observations/:id", handler.DeleteStationObservation)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/stations/%d/observations/%d", server.config.APIBasePath, tc.params.StationID, tc.params.ID)
+			url := fmt.Sprintf("/%d/observations/%d", tc.params.StationID, tc.params.ID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -808,14 +825,17 @@ func TestListObservationsAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET("", handler.ListObservations)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/observations", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			// Add query parameters to request URL
 			q := request.URL.Query()
 			if tc.query.Page != 0 {
 				q.Add("page", fmt.Sprintf("%d", tc.query.Page))
@@ -834,7 +854,7 @@ func TestListObservationsAPI(t *testing.T) {
 			}
 			request.URL.RawQuery = q.Encode()
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -911,19 +931,22 @@ func TestGetNearestLatestStationObservationAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET("", handler.GetNearestLatestStationObservation)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/stations/nearest/observations/latest", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			// Add query parameters to request URL
 			q := request.URL.Query()
 			q.Add("pt", tc.query.Pt)
 			request.URL.RawQuery = q.Encode()
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -995,14 +1018,18 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET(":station_id", handler.GetLatestStationObservation)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/stations/%d/observations/latest", server.config.APIBasePath, tc.stationID)
+			url := fmt.Sprintf("/%d", tc.stationID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})

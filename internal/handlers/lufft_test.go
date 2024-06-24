@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -145,20 +146,23 @@ func TestLufftMsgLog(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET(":station_id/logs", handler.LufftMsgLog)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/lufft/%d/logs", server.config.APIBasePath, stationID)
+			url := fmt.Sprintf("/%d/logs", stationID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			// Add query parameters to request URL
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
 			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			request.URL.RawQuery = q.Encode()
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})

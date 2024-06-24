@@ -134,7 +134,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.paginatedLufftMsgLogs"
+                            "$ref": "#/definitions/handlers.paginatedLufftMsgLogs"
                         }
                     }
                 }
@@ -1445,7 +1445,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "obs": {
-                    "$ref": "#/definitions/api.latestObsRes"
+                    "$ref": "#/definitions/handlers.latestObsRes"
                 }
             }
         },
@@ -1859,7 +1859,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.latestObsRes": {
+        "handlers.latestObsRes": {
             "type": "object",
             "properties": {
                 "gust": {
@@ -1909,7 +1909,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.paginatedLufftMsgLogs": {
+        "handlers.paginatedLufftMsgLogs": {
             "type": "object"
         }
     },

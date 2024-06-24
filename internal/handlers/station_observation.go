@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"errors"
@@ -29,7 +29,7 @@ type createStationObsUri struct {
 //	@Security	BearerAuth
 //	@Success	201	{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations [post]
-func (s *Server) CreateStationObservation(ctx *gin.Context) {
+func (h *DefaultHandler) CreateStationObservation(ctx *gin.Context) {
 	var uri createStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -46,7 +46,7 @@ func (s *Server) CreateStationObservation(ctx *gin.Context) {
 
 	arg := req.Transform()
 
-	obs, err := s.store.CreateStationObservation(ctx, arg)
+	obs, err := h.store.CreateStationObservation(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -79,7 +79,7 @@ type paginatedStationObservations = util.PaginatedList[models.StationObservation
 //	@Param		req			query		listStationObsReq	false	"List station observations parameters"
 //	@Success	200			{object}	paginatedStationObservations
 //	@Router		/stations/{station_id}/observations [get]
-func (s *Server) ListStationObservations(ctx *gin.Context) {
+func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 	var uri listStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -114,7 +114,7 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 		},
 	}
 
-	observations, err := s.store.ListStationObservations(ctx, arg)
+	observations, err := h.store.ListStationObservations(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -126,7 +126,7 @@ func (s *Server) ListStationObservations(ctx *gin.Context) {
 		items[i] = models.NewStationObservation(observation)
 	}
 
-	count, err := s.store.CountStationObservations(ctx, db.CountStationObservationsParams{
+	count, err := h.store.CountStationObservations(ctx, db.CountStationObservationsParams{
 		StationID:   arg.StationID,
 		IsStartDate: arg.IsStartDate,
 		StartDate:   arg.StartDate,
@@ -158,7 +158,7 @@ type getStationObsReq struct {
 //	@Param		id			path		int	true	"Station Observation ID"
 //	@Success	200			{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [get]
-func (s *Server) GetStationObservation(ctx *gin.Context) {
+func (h *DefaultHandler) GetStationObservation(ctx *gin.Context) {
 	var req getStationObsReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -170,7 +170,7 @@ func (s *Server) GetStationObservation(ctx *gin.Context) {
 		ID:        req.ID,
 	}
 
-	obs, err := s.store.GetStationObservation(ctx, arg)
+	obs, err := h.store.GetStationObservation(ctx, arg)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
@@ -200,7 +200,7 @@ type updateStationObsUri struct {
 //	@Security	BearerAuth
 //	@Success	200	{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [put]
-func (s *Server) UpdateStationObservation(ctx *gin.Context) {
+func (h *DefaultHandler) UpdateStationObservation(ctx *gin.Context) {
 	var uri updateStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -217,7 +217,7 @@ func (s *Server) UpdateStationObservation(ctx *gin.Context) {
 
 	arg := req.Transform()
 
-	obs, err := s.store.UpdateStationObservation(ctx, arg)
+	obs, err := h.store.UpdateStationObservation(ctx, arg)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station not found")))
@@ -247,7 +247,7 @@ type deleteStationObsReq struct {
 //	@Security	BearerAuth
 //	@Success	204
 //	@Router		/stations/{station_id}/observations/{id} [delete]
-func (s *Server) DeleteStationObservation(ctx *gin.Context) {
+func (h *DefaultHandler) DeleteStationObservation(ctx *gin.Context) {
 	var req deleteStationObsReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -259,7 +259,7 @@ func (s *Server) DeleteStationObservation(ctx *gin.Context) {
 		StationID: req.StationID,
 	}
 
-	err := s.store.DeleteStationObservation(ctx, arg)
+	err := h.store.DeleteStationObservation(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -284,7 +284,7 @@ type listObservationsReq struct {
 //	@Param		req	query		listObservationsReq	false	"List observations parameters"
 //	@Success	200	{object}	paginatedStationObservations
 //	@Router		/observations [get]
-func (s *Server) ListObservations(ctx *gin.Context) {
+func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 	var req listObservationsReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -293,7 +293,7 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 
 	var stationIDs []int64
 	if len(req.StationIDs) == 0 {
-		stations, err := s.store.ListStations(ctx, db.ListStationsParams{
+		stations, err := h.store.ListStations(ctx, db.ListStationsParams{
 			Limit:  pgtype.Int4{Int32: 10, Valid: true},
 			Offset: 0,
 		})
@@ -339,7 +339,7 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 		},
 	}
 
-	obs, err := s.store.ListObservations(ctx, arg)
+	obs, err := h.store.ListObservations(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -351,7 +351,7 @@ func (s *Server) ListObservations(ctx *gin.Context) {
 		items[i] = models.NewStationObservation(observation)
 	}
 
-	count, err := s.store.CountObservations(ctx, db.CountObservationsParams{
+	count, err := h.store.CountObservations(ctx, db.CountObservationsParams{
 		StationIds:  arg.StationIds,
 		IsStartDate: arg.IsStartDate,
 		StartDate:   arg.StartDate,
@@ -461,8 +461,8 @@ func newLatestObservationResponse(data any) latestObservationRes {
 //	@Produce	json
 //	@Success	200	{array}	latestObservationRes
 //	@Router		/observations/latest [get]
-func (s *Server) ListLatestObservations(ctx *gin.Context) {
-	_obsSlice, err := s.store.ListLatestObservations(ctx)
+func (h *DefaultHandler) ListLatestObservations(ctx *gin.Context) {
+	_obsSlice, err := h.store.ListLatestObservations(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -490,14 +490,14 @@ type getLatestStationObsReq struct {
 //	@Param		station_id	path		int	true	"Station ID"
 //	@Success	200			{object}	latestObservationRes
 //	@Router		/stations/{station_id}/observations/latest [get]
-func (s *Server) GetLatestStationObservation(ctx *gin.Context) {
+func (h *DefaultHandler) GetLatestStationObservation(ctx *gin.Context) {
 	var req getLatestStationObsReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	obs, err := s.store.GetLatestStationObservation(ctx, req.StationID)
+	obs, err := h.store.GetLatestStationObservation(ctx, req.StationID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station observation not found")))
@@ -523,7 +523,7 @@ type getNearestLatestStationObsReq struct {
 //	@Param		req	query		getNearestLatestStationObsReq	false	"Get nearest latest station observation parameters"
 //	@Success	200	{object}	latestObservationRes
 //	@Router		/stations/nearest/observations/latest [get]
-func (s *Server) GetNearestLatestStationObservation(ctx *gin.Context) {
+func (h *DefaultHandler) GetNearestLatestStationObservation(ctx *gin.Context) {
 	var req getNearestLatestStationObsReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -546,7 +546,7 @@ func (s *Server) GetNearestLatestStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	obs, err := s.store.GetNearestLatestStationObservation(ctx, db.GetNearestLatestStationObservationParams{
+	obs, err := h.store.GetNearestLatestStationObservation(ctx, db.GetNearestLatestStationObservationParams{
 		Lon: float32(lon),
 		Lat: float32(lat),
 	})

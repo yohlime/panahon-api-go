@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"errors"
@@ -26,10 +26,10 @@ type pTexterStoreLufftReq struct {
 //	@Param		req	query		pTexterStoreLufftReq	true	"Promo Texter query"
 //	@Success	200	{object}	lufftRes
 //	@Router		/ptexter [post]
-func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
+func (h *DefaultHandler) PromoTexterStoreLufft(ctx *gin.Context) {
 	var req pTexterStoreLufftReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Msg("[PromoTexter] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -37,7 +37,7 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	lufft, err := sensor.NewLufftFromString(req.Msg)
 	if err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Invalid string")
@@ -48,7 +48,7 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 	mobileNumber, ok := util.ParseMobileNumber(req.Number)
 	if !ok {
 		err := fmt.Errorf("invalid mobile number: %s", req.Number)
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Invalid mobile number")
@@ -56,20 +56,20 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 		return
 	}
 
-	station, err := s.store.GetStationByMobileNumber(ctx, pgtype.Text{
+	station, err := h.store.GetStationByMobileNumber(ctx, pgtype.Text{
 		String: mobileNumber,
 		Valid:  true,
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			s.logger.Error().Err(err).
+			h.logger.Error().Err(err).
 				Str("sender", req.Number).
 				Str("msg", req.Msg).
 				Msg("[PromoTexter] No station found")
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station not found")))
 			return
 		}
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] AN error occured")
@@ -94,9 +94,9 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 		Timestamp: lufft.Obs.Timestamp,
 	}
 
-	obs, err := s.store.CreateStationObservation(ctx, obsArg)
+	obs, err := h.store.CreateStationObservation(ctx, obsArg)
 	if err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Cannot store station observation")
@@ -124,9 +124,9 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 		ErrorMsg:          lufft.Health.ErrorMsg,
 	}
 
-	health, err := s.store.CreateStationHealth(ctx, healthArg)
+	health, err := h.store.CreateStationHealth(ctx, healthArg)
 	if err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("sender", req.Number).
 			Str("msg", req.Msg).
 			Msg("[PromoTexter] Cannot store station status")
@@ -135,6 +135,6 @@ func (s *Server) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	res := newLufftResponse(station, obs, health)
 
-	s.logger.Debug().Str("sender", req.Number).Msg("[PromoTexter] Data saved successfully")
+	h.logger.Debug().Str("sender", req.Number).Msg("[PromoTexter] Data saved successfully")
 	ctx.JSON(http.StatusCreated, res)
 }

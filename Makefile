@@ -31,8 +31,8 @@ mock:
 	mockery
 
 swag:
-	swag fmt -d cmd/server/main.go,internal/api
-	swag init -o internal/docs/api -d cmd/server,internal/api,internal/models
+	swag fmt -d cmd/server/main.go,internal/handlers
+	swag init -o internal/docs/api -d cmd/server,internal/handlers,internal/models
 
 test:
 	go test -v -cover ./...

@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"

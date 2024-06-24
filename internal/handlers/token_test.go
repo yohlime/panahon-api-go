@@ -1,11 +1,10 @@
-package api
+package handlers
 
 import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
@@ -59,7 +59,7 @@ func TestRenewAccessToken(t *testing.T) {
 				require.GreaterOrEqual(t, len(cookies), 1)
 
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.NotEmpty(t, cookie.Value)
 						require.Greater(t, cookie.MaxAge, 0)
 						break
@@ -91,7 +91,7 @@ func TestRenewAccessToken(t *testing.T) {
 				require.GreaterOrEqual(t, len(cookies), 1)
 
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.NotEmpty(t, cookie.Value)
 						require.Greater(t, cookie.MaxAge, 0)
 						break
@@ -115,7 +115,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -141,7 +141,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -167,7 +167,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -193,7 +193,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -221,7 +221,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -249,7 +249,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -277,7 +277,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -305,7 +305,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -333,7 +333,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -363,7 +363,7 @@ func TestRenewAccessToken(t *testing.T) {
 
 				cookies := recorder.Result().Cookies()
 				for _, cookie := range cookies {
-					if cookie.Name == accessTokenCookieName {
+					if cookie.Name == models.AccessTokenCookieName {
 						require.Empty(t, cookie.Value)
 						require.Less(t, cookie.MaxAge, 0)
 						break
@@ -381,27 +381,31 @@ func TestRenewAccessToken(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
 			tc.buildStubs(store, tokenMaker)
 
-			server := newTestServer(t, store, tokenMaker)
+			handler := newTestHandler(store, tokenMaker)
+
+			router := gin.Default()
+			router.POST("/renew", handler.RenewAccessToken)
+
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/tokens/renew", server.config.APIBasePath)
+			url := "/renew"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
 			tc.setupToken(request)
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder, store, tokenMaker)
 		})
 	}
 }
 
 func addAccessTokenCookie(request *http.Request, token string) {
-	request.AddCookie(&http.Cookie{Name: accessTokenCookieName, Value: token})
+	request.AddCookie(&http.Cookie{Name: models.AccessTokenCookieName, Value: token})
 }
 
 func addRefreshTokenCookie(request *http.Request, token string) {
-	request.AddCookie(&http.Cookie{Name: refreshTokenCookieName, Value: token})
+	request.AddCookie(&http.Cookie{Name: models.RefreshTokenCookieName, Value: token})
 }

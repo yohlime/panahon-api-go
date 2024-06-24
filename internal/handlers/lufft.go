@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"net/http"
@@ -43,7 +43,7 @@ type paginatedLufftMsgLogs = util.PaginatedList[lufftMsgLog]
 //	@Param		req			query		lufftMsgLogReq	false	"Lufft Message log query"
 //	@Success	200			{object}	paginatedLufftMsgLogs
 //	@Router		/lufft/{station_id}/logs [get]
-func (s *Server) LufftMsgLog(ctx *gin.Context) {
+func (h *DefaultHandler) LufftMsgLog(ctx *gin.Context) {
 	var uri lufftMsgLogUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -62,7 +62,7 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 		Offset:    offset,
 	}
 
-	msgs, err := s.store.ListLufftStationMsg(ctx, arg)
+	msgs, err := h.store.ListLufftStationMsg(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -74,7 +74,7 @@ func (s *Server) LufftMsgLog(ctx *gin.Context) {
 		items[m] = newLufftMsgLoResponse(msg)
 	}
 
-	count, err := s.store.CountLufftStationMsg(ctx, uri.StationID)
+	count, err := h.store.CountLufftStationMsg(ctx, uri.StationID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

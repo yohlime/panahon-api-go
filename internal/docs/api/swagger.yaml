@@ -132,7 +132,7 @@ definitions:
       name:
         type: string
       obs:
-        $ref: '#/definitions/api.latestObsRes'
+        $ref: '#/definitions/handlers.latestObsRes'
     type: object
   LoginUserParams:
     properties:
@@ -406,7 +406,7 @@ definitions:
       username:
         type: string
     type: object
-  api.latestObsRes:
+  handlers.latestObsRes:
     properties:
       gust:
         type: number
@@ -439,7 +439,7 @@ definitions:
       wspd:
         type: number
     type: object
-  api.paginatedLufftMsgLogs:
+  handlers.paginatedLufftMsgLogs:
     type: object
 info:
   contact:
@@ -523,7 +523,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.paginatedLufftMsgLogs'
+            $ref: '#/definitions/handlers.paginatedLufftMsgLogs'
       summary: Lufft Message Logs
       tags:
       - lufft

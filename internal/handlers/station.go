@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ import (
 //	@Security	BearerAuth
 //	@Success	201	{object}	models.Station
 //	@Router		/stations [post]
-func (s *Server) CreateStation(ctx *gin.Context) {
+func (h *DefaultHandler) CreateStation(ctx *gin.Context) {
 	var req models.CreateStationReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -34,7 +34,7 @@ func (s *Server) CreateStation(ctx *gin.Context) {
 
 	arg := req.Transform()
 
-	result, err := s.store.CreateStation(ctx, arg)
+	result, err := h.store.CreateStation(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -64,7 +64,7 @@ type paginatedStations = util.PaginatedList[models.Station] //@name PaginatedSta
 //	@Security	BearerAuth
 //	@Success	200	{object}	paginatedStations
 //	@Router		/stations [get]
-func (s *Server) ListStations(ctx *gin.Context) {
+func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 	var req listStationsReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -99,7 +99,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				return
 			}
 		}
-		stations, err = s.store.ListStationsWithinRadius(
+		stations, err = h.store.ListStationsWithinRadius(
 			ctx,
 			db.ListStationsWithinRadiusParams{
 				Cx:     float32(cX),
@@ -133,7 +133,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				return
 			}
 		}
-		stations, err = s.store.ListStationsWithinBBox(
+		stations, err = h.store.ListStationsWithinBBox(
 			ctx,
 			db.ListStationsWithinBBoxParams{
 				Xmin:   float32(xMin),
@@ -150,14 +150,14 @@ func (s *Server) ListStations(ctx *gin.Context) {
 			Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 			Offset: offset,
 		}
-		stations, err = s.store.ListStations(ctx, arg)
+		stations, err = h.store.ListStations(ctx, arg)
 	}
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	key, exists := ctx.Get(authPayloadKey)
+	key, exists := ctx.Get(models.AuthPayloadKey)
 	var isSimpleResponse bool
 	if exists {
 		authPayload, ok := key.(*token.Payload)
@@ -172,7 +172,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 
 	var count int64
 	if len(req.Circle) > 0 {
-		count, err = s.store.CountStationsWithinRadius(
+		count, err = h.store.CountStationsWithinRadius(
 			ctx,
 			db.CountStationsWithinRadiusParams{
 				Cx:     float32(cX),
@@ -181,7 +181,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Status: util.ToPgText(req.Status),
 			})
 	} else if len(req.BBox) > 0 {
-		count, err = s.store.CountStationsWithinBBox(
+		count, err = h.store.CountStationsWithinBBox(
 			ctx,
 			db.CountStationsWithinBBoxParams{
 				Xmin:   float32(xMin),
@@ -191,7 +191,7 @@ func (s *Server) ListStations(ctx *gin.Context) {
 				Status: util.ToPgText(req.Status),
 			})
 	} else {
-		count, err = s.store.CountStations(ctx, util.ToPgText(req.Status))
+		count, err = h.store.CountStations(ctx, util.ToPgText(req.Status))
 	}
 
 	if err != nil {
@@ -217,14 +217,14 @@ type getStationReq struct {
 //	@Param		station_id	path		int	true	"Station ID"
 //	@Success	200			{object}	models.Station
 //	@Router		/stations/{station_id} [get]
-func (s *Server) GetStation(ctx *gin.Context) {
+func (h *DefaultHandler) GetStation(ctx *gin.Context) {
 	var req getStationReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	station, err := s.store.GetStation(ctx, req.ID)
+	station, err := h.store.GetStation(ctx, req.ID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station not found")))
@@ -234,7 +234,7 @@ func (s *Server) GetStation(ctx *gin.Context) {
 		return
 	}
 
-	key, exists := ctx.Get(authPayloadKey)
+	key, exists := ctx.Get(models.AuthPayloadKey)
 	var isSimpleResponse bool
 	if exists {
 		authPayload, ok := key.(*token.Payload)
@@ -259,7 +259,7 @@ type updateStationUri struct {
 //	@Security	BearerAuth
 //	@Success	200	{object}	models.Station
 //	@Router		/stations/{station_id} [put]
-func (s *Server) UpdateStation(ctx *gin.Context) {
+func (h *DefaultHandler) UpdateStation(ctx *gin.Context) {
 	var uri updateStationUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -275,7 +275,7 @@ func (s *Server) UpdateStation(ctx *gin.Context) {
 
 	arg := req.Transform()
 
-	station, err := s.store.UpdateStation(ctx, arg)
+	station, err := h.store.UpdateStation(ctx, arg)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("station not found")))
@@ -303,14 +303,14 @@ type deleteStationReq struct {
 //	@Security	BearerAuth
 //	@Success	204
 //	@Router		/stations/{station_id} [delete]
-func (s *Server) DeleteStation(ctx *gin.Context) {
+func (h *DefaultHandler) DeleteStation(ctx *gin.Context) {
 	var req deleteStationReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	err := s.store.DeleteStation(ctx, req.ID)
+	err := h.store.DeleteStation(ctx, req.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

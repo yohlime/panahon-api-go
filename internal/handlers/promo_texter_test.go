@@ -1,10 +1,9 @@
-package api
+package handlers
 
 import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -85,18 +84,21 @@ func TestPromoTexterStoreLufft(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST("", handler.PromoTexterStoreLufft)
+
 			recorder := httptest.NewRecorder()
 
-			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/ptexter", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})

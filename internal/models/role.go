@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -25,4 +27,27 @@ func NewRole(role db.Role) Role {
 	}
 
 	return res
+}
+
+type AdminRoleType string
+
+const (
+	AdminRole      AdminRoleType = "ADMIN"
+	SuperAdminRole AdminRoleType = "SUPERADMIN"
+)
+
+func (rt AdminRoleType) IsValid() error {
+	switch rt {
+	case AdminRole, SuperAdminRole:
+		return nil
+	}
+	return fmt.Errorf("invalid admin_role type")
+}
+
+func IsAdminRole(role string) bool {
+	rt := AdminRoleType(role)
+	if err := rt.IsValid(); err != nil {
+		return false
+	}
+	return true
 }

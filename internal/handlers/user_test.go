@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/middlewares"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
@@ -141,20 +142,23 @@ func TestListUsersAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET("/", handler.ListUsers)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/users", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			// Add query parameters to request URL
 			q := request.URL.Query()
 			q.Add("page", fmt.Sprintf("%d", tc.query.Page))
 			q.Add("per_page", fmt.Sprintf("%d", tc.query.PerPage))
 			request.URL.RawQuery = q.Encode()
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -251,14 +255,18 @@ func TestGetUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.GET(":id", handler.GetUser)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/users/%d", server.config.APIBasePath, tc.userID)
+			url := fmt.Sprintf("/%d", tc.userID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -447,18 +455,21 @@ func TestCreateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST("", handler.CreateUser)
+
 			recorder := httptest.NewRecorder()
 
-			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/users", server.config.APIBasePath)
+			url := "/"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -589,18 +600,22 @@ func TestUpdateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.PUT(":id", handler.UpdateUser)
+
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/users/%d", server.config.APIBasePath, tc.userID)
+			url := fmt.Sprintf("/%d", tc.userID)
 			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -649,14 +664,18 @@ func TestDeleteUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.DELETE(":id", handler.DeleteUser)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/users/%d", server.config.APIBasePath, tc.userID)
+			url := fmt.Sprintf("/%d", tc.userID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -801,18 +820,22 @@ func TestRegisterUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(t)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST("/register", handler.RegisterUser)
+
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/users/register", server.config.APIBasePath)
+			url := "/register"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -820,7 +843,7 @@ func TestRegisterUserAPI(t *testing.T) {
 }
 
 func TestLoginUserAPI(t *testing.T) {
-	expectedCookieNames := []string{accessTokenCookieName, refreshTokenCookieName}
+	expectedCookieNames := []string{models.AccessTokenCookieName, models.RefreshTokenCookieName}
 	user, password := randomUser(t)
 	tokenStr := util.RandomString(32)
 	tokenExpiresAt := time.Now().Add(6 * time.Hour)
@@ -996,18 +1019,22 @@ func TestLoginUserAPI(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
 			tc.buildStubs(store, tokenMaker)
 
-			server := newTestServer(t, store, tokenMaker)
+			handler := newTestHandler(store, tokenMaker)
+
+			router := gin.Default()
+			router.POST("/login", handler.LoginUser)
+
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/users/login", server.config.APIBasePath)
+			url := "/login"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			server.router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, request)
 
 			tc.checkResponse(recorder, store)
 		})
@@ -1015,7 +1042,7 @@ func TestLoginUserAPI(t *testing.T) {
 }
 
 func TestLogoutUserAPI(t *testing.T) {
-	expectedCookieNames := []string{accessTokenCookieName, refreshTokenCookieName}
+	expectedCookieNames := []string{models.AccessTokenCookieName, models.RefreshTokenCookieName}
 	tokenStr := util.RandomString(32)
 
 	testCases := []struct {
@@ -1136,15 +1163,19 @@ func TestLogoutUserAPI(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
 			tc.buildStubs(store, tokenMaker)
 
-			server := newTestServer(t, store, tokenMaker)
+			handler := newTestHandler(store, tokenMaker)
+
+			router := gin.Default()
+			router.POST("/logout", handler.LogoutUser)
+
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("%s/users/logout", server.config.APIBasePath)
+			url := "/logout"
 			request, err := http.NewRequest(http.MethodPost, url, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			tc.setupAuth(t, request, handler.tokenMaker)
+			router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder, store)
 		})
 	}
@@ -1167,7 +1198,7 @@ func TestGetAuthUserAPI(t *testing.T) {
 		{
 			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, authTypeBearer, tokenStr)
+				addAuthorization(t, request, models.AuthTypeBearer, tokenStr)
 			},
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
@@ -1182,7 +1213,7 @@ func TestGetAuthUserAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, authTypeBearer, tokenStr)
+				addAuthorization(t, request, models.AuthTypeBearer, tokenStr)
 			},
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
@@ -1204,21 +1235,23 @@ func TestGetAuthUserAPI(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
 			tc.buildStubs(store, tokenMaker)
 
-			server := newTestServer(t, store, tokenMaker)
+			handler := newTestHandler(store, tokenMaker)
 
-			url := fmt.Sprintf("%s/users/testauth", server.config.APIBasePath)
-			server.router.GET(
+			router := gin.Default()
+
+			url := "/testauth"
+			router.GET(
 				url,
-				authMiddleware(tokenMaker, false),
-				server.GetAuthUser,
+				middlewares.AuthMiddleware(tokenMaker, false),
+				handler.GetAuthUser,
 			)
 
 			recorder := httptest.NewRecorder()
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			tc.setupAuth(t, request, handler.tokenMaker)
+			router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder, store)
 		})
 	}
@@ -1276,5 +1309,19 @@ func requireBodyMatchUsers(t *testing.T, body *bytes.Buffer, users []db.User) {
 		require.Equal(t, user.Username, gotUsers.Items[i].Username)
 		require.Equal(t, user.FullName, gotUsers.Items[i].FullName)
 		require.Equal(t, user.Email, gotUsers.Items[i].Email)
+	}
+}
+
+func addAuthorization(
+	t *testing.T,
+	request *http.Request,
+	authType string,
+	token string,
+) {
+	if authType == models.AuthTypeBearer {
+		authorizationHeader := fmt.Sprintf("%s %s", authType, token)
+		request.Header.Set(models.AuthHeaderKey, authorizationHeader)
+	} else if authType == models.AuthTypeCookie {
+		addAccessTokenCookie(request, token)
 	}
 }

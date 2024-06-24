@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"errors"
@@ -32,7 +32,7 @@ type createUserReq struct {
 //	@Security	BearerAuth
 //	@Success	200	{object}	models.User
 //	@Router		/users/{id} [post]
-func (s *Server) CreateUser(ctx *gin.Context) {
+func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 	var req createUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -52,7 +52,7 @@ func (s *Server) CreateUser(ctx *gin.Context) {
 		Email:    req.Email,
 	}
 
-	user, err := s.store.CreateUser(ctx, arg)
+	user, err := h.store.CreateUser(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
@@ -71,7 +71,7 @@ func (s *Server) CreateUser(ctx *gin.Context) {
 				Username: arg.Username,
 			})
 		}
-		userRoles, _ := s.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
+		userRoles, _ := h.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
 
 		for _, userRole := range userRoles {
 			roleNames = append(roleNames, userRole.RoleName)
@@ -98,7 +98,7 @@ type paginatedUsers = util.PaginatedList[models.User] //@name PaginatedUsers
 //	@Security	BearerAuth
 //	@Success	200	{object}	paginatedUsers
 //	@Router		/users [get]
-func (s *Server) ListUsers(ctx *gin.Context) {
+func (h *DefaultHandler) ListUsers(ctx *gin.Context) {
 	var req listUsersReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -110,7 +110,7 @@ func (s *Server) ListUsers(ctx *gin.Context) {
 		Limit:  req.PerPage,
 		Offset: offset,
 	}
-	users, err := s.store.ListUsers(ctx, arg)
+	users, err := h.store.ListUsers(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -122,7 +122,7 @@ func (s *Server) ListUsers(ctx *gin.Context) {
 		items[i] = models.NewUser(user, nil)
 	}
 
-	count, err := s.store.CountUsers(ctx)
+	count, err := h.store.CountUsers(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -147,14 +147,14 @@ type getUserReq struct {
 //	@Security	BearerAuth
 //	@Success	200	{object}	models.User
 //	@Router		/users/{id} [get]
-func (s *Server) GetUser(ctx *gin.Context) {
+func (h *DefaultHandler) GetUser(ctx *gin.Context) {
 	var req getUserReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	user, err := s.store.GetUser(ctx, req.ID)
+	user, err := h.store.GetUser(ctx, req.ID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
@@ -164,7 +164,7 @@ func (s *Server) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	roleNames, _ := s.store.ListUserRoles(ctx, req.ID)
+	roleNames, _ := h.store.ListUserRoles(ctx, req.ID)
 
 	ctx.JSON(http.StatusOK, models.NewUser(user, roleNames))
 }
@@ -191,7 +191,7 @@ type updateUserReq struct {
 //	@Security	BearerAuth
 //	@Success	200	{object}	models.User
 //	@Router		/users/{id} [put]
-func (s *Server) UpdateUser(ctx *gin.Context) {
+func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 	var uri updateUserUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -232,7 +232,7 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 		},
 	}
 
-	user, err := s.store.UpdateUser(ctx, arg)
+	user, err := h.store.UpdateUser(ctx, arg)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
@@ -247,7 +247,7 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 
 	var updatedRoleNames []string
 	if len(req.Roles) > 0 {
-		roleNames, err := s.store.ListUserRoles(ctx, uri.ID)
+		roleNames, err := h.store.ListUserRoles(ctx, uri.ID)
 		if err == nil {
 			reqRoleNames := make([]string, len(req.Roles))
 			for r, roleName := range req.Roles {
@@ -263,7 +263,7 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 					Username: user.Username,
 				})
 			}
-			createdUserRoles, _ := s.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
+			createdUserRoles, _ := h.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
 			for _, userRole := range createdUserRoles {
 				updatedRoleNames = append(updatedRoleNames, userRole.RoleName)
 			}
@@ -275,7 +275,7 @@ func (s *Server) UpdateUser(ctx *gin.Context) {
 					Username: user.Username,
 				})
 			}
-			s.store.BulkDeleteUserRoles(ctx, deleteUserRolesArgs)
+			h.store.BulkDeleteUserRoles(ctx, deleteUserRolesArgs)
 		}
 	}
 
@@ -296,14 +296,14 @@ type deleteUserReq struct {
 //	@Security	BearerAuth
 //	@Success	204
 //	@Router		/users/{id} [delete]
-func (s *Server) DeleteUser(ctx *gin.Context) {
+func (h *DefaultHandler) DeleteUser(ctx *gin.Context) {
 	var req deleteUserReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	err := s.store.DeleteUser(ctx, req.ID)
+	err := h.store.DeleteUser(ctx, req.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -329,7 +329,7 @@ type registerUserReq struct {
 //	@Param		req	body	registerUserReq	true	"Register user parameters"
 //	@Success	204
 //	@Router		/users/register [post]
-func (s *Server) RegisterUser(ctx *gin.Context) {
+func (h *DefaultHandler) RegisterUser(ctx *gin.Context) {
 	var req registerUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -349,7 +349,7 @@ func (s *Server) RegisterUser(ctx *gin.Context) {
 		Email:    req.Email,
 	}
 
-	user, err := s.store.CreateUser(ctx, arg)
+	user, err := h.store.CreateUser(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
@@ -367,7 +367,7 @@ func (s *Server) RegisterUser(ctx *gin.Context) {
 		},
 	}
 
-	s.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
+	h.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
@@ -386,14 +386,14 @@ type loginUserRequest struct {
 //	@Param		req	body	loginUserRequest	true	"Login user parameters"
 //	@Success	204
 //	@Router		/users/login [post]
-func (s *Server) LoginUser(ctx *gin.Context) {
+func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 	var req loginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	user, err := s.store.GetUserByUsername(ctx, req.Username)
+	user, err := h.store.GetUserByUsername(ctx, req.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -409,26 +409,26 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	roleNames, _ := s.store.ListUserRoles(ctx, user.ID)
+	roleNames, _ := h.store.ListUserRoles(ctx, user.ID)
 
 	payloadUser := token.User{
 		Username: user.Username,
 		Roles:    roleNames,
 	}
 
-	accessToken, accessPayload, err := s.tokenMaker.CreateToken(payloadUser, s.config.AccessTokenDuration)
+	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, h.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	refreshToken, refreshPayload, err := s.tokenMaker.CreateToken(payloadUser, s.config.RefreshTokenDuration)
+	refreshToken, refreshPayload, err := h.tokenMaker.CreateToken(payloadUser, h.config.RefreshTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	_, err = s.store.CreateSession(ctx, db.CreateSessionParams{
+	_, err = h.store.CreateSession(ctx, db.CreateSessionParams{
 		ID:           refreshPayload.ID,
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
@@ -442,10 +442,10 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	cookieIsSecure := s.config.Environment == "production"
+	cookieIsSecure := h.config.Environment == "production"
 
-	ctx.SetCookie(accessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
-	ctx.SetCookie(refreshTokenCookieName, refreshToken, int(time.Until(refreshPayload.ExpiresAt).Seconds()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(models.AccessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), h.config.CookiePath, h.config.CookieDomain, cookieIsSecure, true)
+	ctx.SetCookie(models.RefreshTokenCookieName, refreshToken, int(time.Until(refreshPayload.ExpiresAt).Seconds()), h.config.CookiePath, h.config.CookieDomain, cookieIsSecure, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
@@ -458,14 +458,14 @@ func (s *Server) LoginUser(ctx *gin.Context) {
 //	@Produce	json
 //	@Success	204
 //	@Router		/users/logout [post]
-func (s *Server) LogoutUser(ctx *gin.Context) {
-	refreshToken, _ := ctx.Cookie(refreshTokenCookieName)
+func (h *DefaultHandler) LogoutUser(ctx *gin.Context) {
+	refreshToken, _ := ctx.Cookie(models.RefreshTokenCookieName)
 
-	refreshPayload, _ := s.tokenMaker.VerifyToken(refreshToken)
+	refreshPayload, _ := h.tokenMaker.VerifyToken(refreshToken)
 
-	s.store.DeleteSession(ctx, refreshPayload.ID)
-	ctx.SetCookie(accessTokenCookieName, "", -1, s.config.CookiePath, s.config.CookieDomain, true, true)
-	ctx.SetCookie(refreshTokenCookieName, "", -1, s.config.CookiePath, s.config.CookieDomain, true, true)
+	h.store.DeleteSession(ctx, refreshPayload.ID)
+	ctx.SetCookie(models.AccessTokenCookieName, "", -1, h.config.CookiePath, h.config.CookieDomain, true, true)
+	ctx.SetCookie(models.RefreshTokenCookieName, "", -1, h.config.CookiePath, h.config.CookieDomain, true, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
@@ -479,11 +479,11 @@ func (s *Server) LogoutUser(ctx *gin.Context) {
 //	@Security	BearerAuth
 //	@Success	200	{object}	User
 //	@Router		/users/auth [get]
-func (s *Server) GetAuthUser(ctx *gin.Context) {
-	payload, _ := ctx.Get(authPayloadKey)
+func (h *DefaultHandler) GetAuthUser(ctx *gin.Context) {
+	payload, _ := ctx.Get(models.AuthPayloadKey)
 	authPayload, _ := payload.(*token.Payload)
 
-	user, err := s.store.GetUserByUsername(ctx, authPayload.User.Username)
+	user, err := h.store.GetUserByUsername(ctx, authPayload.User.Username)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

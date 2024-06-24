@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -50,10 +50,10 @@ func newGLabsOptInResponse(res db.FirstOrCreateSimAccessTokenTxResult) gLabsOptI
 //	@Param		req	query		gLabsOptInReq	true	"Globe Labs Opt-in query"
 //	@Success	200	{object}	gLabsOptInRes
 //	@Router		/glabs [get]
-func (s *Server) GLabsOptIn(ctx *gin.Context) {
+func (h *DefaultHandler) GLabsOptIn(ctx *gin.Context) {
 	var req gLabsOptInReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Msg("[GLabs] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -61,10 +61,10 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 
 	// Opt-in via web form
 	if req.Code != "" {
-		s.logger.Debug().Msg("[GLabs] Opt-in via web form")
-		err := req.fetchGLabsAccessToken(s.config.GlabsAppID, s.config.GlabsAppSecret)
+		h.logger.Debug().Msg("[GLabs] Opt-in via web form")
+		err := req.fetchGLabsAccessToken(h.config.GlabsAppID, h.config.GlabsAppSecret)
 		if err != nil {
-			s.logger.Error().Err(err).
+			h.logger.Error().Err(err).
 				Msg("[GLabs] Cannot retrieve access token")
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
@@ -73,12 +73,12 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 
 	// Opt-in via SMS
 	if req.SubscriberNumber != "" && req.AccessToken != "" {
-		s.logger.Debug().Msg("[GLabs] Opt-in via SMS")
+		h.logger.Debug().Msg("[GLabs] Opt-in via SMS")
 
 		mobileNumber, ok := util.ParseMobileNumber(req.SubscriberNumber)
 		if !ok {
 			err := fmt.Errorf("invalid mobile number: %s", req.SubscriberNumber)
-			s.logger.Error().Err(err).
+			h.logger.Error().Err(err).
 				Str("mobile_number", req.SubscriberNumber).
 				Msg("[GLabs] Cannot create access token")
 			ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -95,16 +95,16 @@ func (s *Server) GLabsOptIn(ctx *gin.Context) {
 			},
 		}
 
-		simAccessToken, err := s.store.FirstOrCreateSimAccessTokenTx(ctx, arg)
+		simAccessToken, err := h.store.FirstOrCreateSimAccessTokenTx(ctx, arg)
 		if err != nil {
-			s.logger.Error().Err(err).
+			h.logger.Error().Err(err).
 				Str("mobile_number", req.SubscriberNumber).
 				Msg("[GLabs] Cannot retrieve or create access token")
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
 
-		s.logger.Debug().
+		h.logger.Debug().
 			Str("mobile_number", req.SubscriberNumber).
 			Msg("[GLabs] Mobile number registered successfully")
 		ctx.JSON(http.StatusCreated, newGLabsOptInResponse(simAccessToken))
@@ -131,10 +131,10 @@ type gLabsUnsubscribeReq struct {
 //	@Param		req	query	gLabsUnsubscribeReq	true	"Globe Labs unsubscribe params"
 //	@Success	204
 //	@Router		/glabs [post]
-func (s *Server) GLabsUnsubscribe(ctx *gin.Context) {
+func (h *DefaultHandler) GLabsUnsubscribe(ctx *gin.Context) {
 	var req gLabsUnsubscribeReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Msg("[GLabs] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -143,7 +143,7 @@ func (s *Server) GLabsUnsubscribe(ctx *gin.Context) {
 	mobileNumber, ok := util.ParseMobileNumber(req.Unsubscribed.SubscriberNumber)
 	if !ok {
 		err := fmt.Errorf("invalid mobile number: %s", req.Unsubscribed.SubscriberNumber)
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("mobile_number", req.Unsubscribed.SubscriberNumber).
 			Str("access_token_type", GLabsAccessTokenType).
 			Msg("[GLabs] Cannot remove access token")
@@ -151,9 +151,9 @@ func (s *Server) GLabsUnsubscribe(ctx *gin.Context) {
 		return
 	}
 
-	err := s.store.DeleteSimAccessToken(ctx, req.Unsubscribed.AccessToken)
+	err := h.store.DeleteSimAccessToken(ctx, req.Unsubscribed.AccessToken)
 	if err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("mobile_number", mobileNumber).
 			Str("access_token_type", GLabsAccessTokenType).
 			Msg("[GLabs] Cannot remove access token")
@@ -161,7 +161,7 @@ func (s *Server) GLabsUnsubscribe(ctx *gin.Context) {
 		return
 	}
 
-	s.logger.Debug().
+	h.logger.Debug().
 		Str("mobile_number", mobileNumber).
 		Str("access_token_type", GLabsAccessTokenType).
 		Msg("[GLabs] Mobile number unregistered successfully")
@@ -214,16 +214,16 @@ func newGLabsLoadResponse(g db.GlabsLoad) gLabsLoadRes {
 //	@Param		req	query		gLabsLoadReq	true	"Globe Labs Load query"
 //	@Success	200	{object}	gLabsLoadRes
 //	@Router		/glabs/load [post]
-func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
+func (h *DefaultHandler) CreateGLabsLoad(ctx *gin.Context) {
 	var req gLabsLoadReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Msg("[GLabsLoad] Bad request")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	s.logger.Debug().
+	h.logger.Debug().
 		Str("subscriber", req.OutboundRewardRequest.Address).
 		Str("promo", req.OutboundRewardRequest.Promo).
 		Str("status", req.OutboundRewardRequest.Status).
@@ -232,14 +232,14 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 	mobileNumber, ok := util.ParseMobileNumber(req.OutboundRewardRequest.Address)
 	if !ok {
 		err := fmt.Errorf("invalid mobile number: %s", req.OutboundRewardRequest.Address)
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("mobile_number", req.OutboundRewardRequest.Address).
 			Msg("[GLabsLoad] Invalid number")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	_, err := s.store.GetStationByMobileNumber(ctx,
+	_, err := h.store.GetStationByMobileNumber(ctx,
 		pgtype.Text{
 			String: mobileNumber,
 			Valid:  true,
@@ -247,7 +247,7 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 	)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			s.logger.Warn().Err(err).
+			h.logger.Warn().Err(err).
 				Str("subscriber", mobileNumber).
 				Str("promo", req.OutboundRewardRequest.Promo).
 				Str("status", req.OutboundRewardRequest.Status).
@@ -255,7 +255,7 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 		}
 	}
 
-	gLabsLoad, err := s.store.CreateGLabsLoad(ctx, db.CreateGLabsLoadParams{
+	gLabsLoad, err := h.store.CreateGLabsLoad(ctx, db.CreateGLabsLoadParams{
 		Promo: pgtype.Text{
 			String: req.OutboundRewardRequest.Promo,
 			Valid:  true,
@@ -271,7 +271,7 @@ func (s *Server) CreateGLabsLoad(ctx *gin.Context) {
 		MobileNumber: mobileNumber,
 	})
 	if err != nil {
-		s.logger.Error().Err(err).
+		h.logger.Error().Err(err).
 			Str("sender", mobileNumber).
 			Str("promo", req.OutboundRewardRequest.Promo).
 			Str("status", req.OutboundRewardRequest.Status).

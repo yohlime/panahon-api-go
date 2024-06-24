@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/emiliogozo/panahon-api-go/internal/api"
+	"github.com/emiliogozo/panahon-api-go/internal"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
 	"github.com/emiliogozo/panahon-api-go/internal/service"
@@ -67,7 +67,7 @@ func main() {
 }
 
 func runGinServer(config util.Config, store db.Store, tokenMaker token.Maker, logger *zerolog.Logger) {
-	server, err := api.NewServer(config, store, tokenMaker, logger)
+	server, err := internal.NewServer(config, store, tokenMaker, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("cannot create server")
 	}

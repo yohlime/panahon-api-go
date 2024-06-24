@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -24,8 +25,8 @@ type renewAccessTokenRequest struct {
 //	@Param		req	body	renewAccessTokenRequest	true	"Renew access token parameters"
 //	@Success	204
 //	@Router		/tokens/renew [post]
-func (s *Server) RenewAccessToken(ctx *gin.Context) {
-	refreshToken, err := ctx.Cookie(refreshTokenCookieName)
+func (h *DefaultHandler) RenewAccessToken(ctx *gin.Context) {
+	refreshToken, err := ctx.Cookie(models.RefreshTokenCookieName)
 	if err != nil {
 		var req renewAccessTokenRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -35,13 +36,13 @@ func (s *Server) RenewAccessToken(ctx *gin.Context) {
 		refreshToken = req.RefreshToken
 	}
 
-	refreshPayload, err := s.tokenMaker.VerifyToken(refreshToken)
+	refreshPayload, err := h.tokenMaker.VerifyToken(refreshToken)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
-	session, err := s.store.GetSession(ctx, refreshPayload.ID)
+	session, err := h.store.GetSession(ctx, refreshPayload.ID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -57,7 +58,7 @@ func (s *Server) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	user, err := s.store.GetUser(ctx, session.UserID)
+	user, err := h.store.GetUser(ctx, session.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
@@ -85,14 +86,14 @@ func (s *Server) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := s.tokenMaker.CreateToken(refreshPayload.User, s.config.AccessTokenDuration)
+	accessToken, accessPayload, err := h.tokenMaker.CreateToken(refreshPayload.User, h.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	cookieIsSecure := s.config.Environment == "production"
-	ctx.SetCookie(accessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), s.config.CookiePath, s.config.CookieDomain, cookieIsSecure, true)
+	cookieIsSecure := h.config.Environment == "production"
+	ctx.SetCookie(models.AccessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), h.config.CookiePath, h.config.CookieDomain, cookieIsSecure, true)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }

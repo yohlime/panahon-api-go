@@ -126,7 +126,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.paginatedLufftMsgLogs"
+                            "$ref": "#/definitions/handlers.paginatedLufftMsgLogs"
                         }
                     }
                 }
@@ -1437,7 +1437,7 @@
                     "type": "string"
                 },
                 "obs": {
-                    "$ref": "#/definitions/api.latestObsRes"
+                    "$ref": "#/definitions/handlers.latestObsRes"
                 }
             }
         },
@@ -1851,7 +1851,7 @@
                 }
             }
         },
-        "api.latestObsRes": {
+        "handlers.latestObsRes": {
             "type": "object",
             "properties": {
                 "gust": {
@@ -1901,7 +1901,7 @@
                 }
             }
         },
-        "api.paginatedLufftMsgLogs": {
+        "handlers.paginatedLufftMsgLogs": {
             "type": "object"
         }
     },
