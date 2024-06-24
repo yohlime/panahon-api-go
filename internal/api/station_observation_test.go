@@ -24,9 +24,16 @@ import (
 func TestListStationObservationsAPI(t *testing.T) {
 	n := 5
 	stationID := util.RandomInt(1, 100)
-	stationObsSlice := make([]db.ObservationsObservation, n)
+	stationObsSlice := make([]models.StationObservation, n)
+	res := make([]db.ObservationsObservation, n)
 	for i := range stationObsSlice {
-		stationObsSlice[i] = randomStationObservation(stationID)
+		stationObsSlice[i] = models.RandomStationObservation(stationID)
+		res[i] = db.ObservationsObservation{
+			ID:        stationObsSlice[i].ID,
+			StationID: stationObsSlice[i].StationID,
+			Pres:      util.ToFloat4(stationObsSlice[i].Pres),
+			Temp:      util.ToFloat4(stationObsSlice[i].Temp),
+		}
 	}
 
 	testCases := []struct {
@@ -44,7 +51,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
 						return !args.IsStartDate && !args.IsEndDate
 					})).
-					Return(stationObsSlice, nil)
+					Return(res, nil)
 				store.EXPECT().CountStationObservations(
 					mock.AnythingOfType("*gin.Context"),
 					mock.MatchedBy(func(args db.CountStationObservationsParams) bool {
@@ -55,7 +62,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+				requireBodyMatchStationObservations(t, recorder.Body, res)
 			},
 		},
 		{
@@ -70,7 +77,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
 						return args.IsStartDate && args.IsEndDate
 					})).
-					Return(stationObsSlice, nil)
+					Return(res, nil)
 				store.EXPECT().CountStationObservations(
 					mock.AnythingOfType("*gin.Context"),
 					mock.MatchedBy(func(args db.CountStationObservationsParams) bool {
@@ -81,7 +88,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+				requireBodyMatchStationObservations(t, recorder.Body, res)
 			},
 		},
 		{
@@ -203,7 +210,13 @@ func TestListStationObservationsAPI(t *testing.T) {
 
 func TestGetStationObservationAPI(t *testing.T) {
 	stationID := util.RandomInt(1, 100)
-	stationObs := randomStationObservation(stationID)
+	stationObs := models.RandomStationObservation(stationID)
+	res := db.ObservationsObservation{
+		ID:        stationObs.ID,
+		StationID: stationObs.StationID,
+		Pres:      util.ToFloat4(stationObs.Pres),
+		Temp:      util.ToFloat4(stationObs.Temp),
+	}
 
 	testCases := []struct {
 		name          string
@@ -223,12 +236,12 @@ func TestGetStationObservationAPI(t *testing.T) {
 					StationID: stationObs.StationID,
 				}
 				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(stationObs, nil)
+					Return(res, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservation(t, recorder.Body, stationObs)
+				requireBodyMatchStationObservation(t, recorder.Body, res)
 			},
 		},
 		{
@@ -303,7 +316,13 @@ func TestGetStationObservationAPI(t *testing.T) {
 
 func TestCreateStationObservationAPI(t *testing.T) {
 	stationID := util.RandomInt(1, 100)
-	stationObs := randomStationObservation(stationID)
+	stationObs := models.RandomStationObservation(stationID)
+	res := db.ObservationsObservation{
+		ID:        stationObs.ID,
+		StationID: stationObs.StationID,
+		Pres:      util.ToFloat4(stationObs.Pres),
+		Temp:      util.ToFloat4(stationObs.Temp),
+	}
 
 	testCases := []struct {
 		name          string
@@ -320,18 +339,30 @@ func TestCreateStationObservationAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateStationObservationParams{
-					StationID: stationObs.StationID,
-					Pres:      stationObs.Pres,
-					Temp:      stationObs.Temp,
+					StationID: res.StationID,
+					Pres:      res.Pres,
+					Temp:      res.Temp,
 				}
 
 				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(stationObs, nil)
+					Return(res, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
-				requireBodyMatchStationObservation(t, recorder.Body, stationObs)
+				requireBodyMatchStationObservation(t, recorder.Body, res)
+			},
+		},
+		{
+			name: "InvalidParam",
+			body: gin.H{
+				"station_id": stationObs.StationID,
+				"pres":       stationObs.Pres,
+				"temp":       "32.7",
+			},
+			buildStubs: func(store *mockdb.MockStore) {},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -378,7 +409,13 @@ func TestCreateStationObservationAPI(t *testing.T) {
 
 func TestUpdateStationObservationAPI(t *testing.T) {
 	stationID := util.RandomInt(1, 100)
-	stationObs := randomStationObservation(stationID)
+	stationObs := models.RandomStationObservation(stationID)
+	res := db.ObservationsObservation{
+		ID:        stationObs.ID,
+		StationID: stationObs.StationID,
+		Pres:      util.ToFloat4(stationObs.Pres),
+		Temp:      util.ToFloat4(stationObs.Temp),
+	}
 
 	testCases := []struct {
 		name          string
@@ -401,19 +438,19 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.UpdateStationObservationParams{
-					ID:        stationObs.ID,
-					StationID: stationObs.StationID,
-					Pres:      stationObs.Pres,
-					Temp:      stationObs.Temp,
+					ID:        res.ID,
+					StationID: res.StationID,
+					Pres:      res.Pres,
+					Temp:      res.Temp,
 				}
 
 				store.EXPECT().UpdateStationObservation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(stationObs, nil)
+					Return(res, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservation(t, recorder.Body, stationObs)
+				requireBodyMatchStationObservation(t, recorder.Body, res)
 			},
 		},
 		{
@@ -477,17 +514,17 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 
 func TestDeleteStationObservationObservationAPI(t *testing.T) {
 	stationID := util.RandomInt(1, 100)
-	stationObs := randomStationObservation(stationID)
+	stationObs := models.RandomStationObservation(stationID)
 
 	testCases := []struct {
 		name          string
-		params        db.UpdateStationObservationParams
+		params        db.DeleteStationObservationParams
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
 			name: "OK",
-			params: db.UpdateStationObservationParams{
+			params: db.DeleteStationObservationParams{
 				ID:        stationObs.ID,
 				StationID: stationObs.StationID,
 			},
@@ -502,7 +539,7 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 		},
 		{
 			name: "InternalError",
-			params: db.UpdateStationObservationParams{
+			params: db.DeleteStationObservationParams{
 				ID:        stationObs.ID,
 				StationID: stationObs.StationID,
 			},
@@ -541,18 +578,34 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 func TestListObservationsAPI(t *testing.T) {
 	n := 10
 	stations := make([]db.ObservationsStation, n)
-	stationObsSlice := make([]db.ObservationsObservation, 5)
+	stationObsSlice := make([]models.StationObservation, 5)
+	res := make([]db.ObservationsObservation, 5)
 	var selectedStns []db.ObservationsStation
 	var selectedStnIDs []string
 	i := 0
 	for s := range stations {
-		stations[s] = randomStation()
+		station := models.RandomStation()
+		stations[i] = db.ObservationsStation{
+			ID:            station.ID,
+			Name:          station.Name,
+			Lat:           util.ToFloat4(station.Lat),
+			Lon:           util.ToFloat4(station.Lon),
+			DateInstalled: util.ToPgDate(station.DateInstalled),
+			Province:      util.ToPgText(station.Province),
+			Region:        util.ToPgText(station.Region),
+		}
 		if (s % 2) == 0 {
 			selectedStns = append(selectedStns, stations[s])
 			idStr := fmt.Sprintf("%d", stations[s].ID)
 			selectedStnIDs = append(selectedStnIDs, idStr)
 			if i < 5 {
-				stationObsSlice[i] = randomStationObservation[int64](stations[s].ID)
+				stationObsSlice[i] = models.RandomStationObservation(stations[s].ID)
+				res[i] = db.ObservationsObservation{
+					ID:        stationObsSlice[i].ID,
+					StationID: stationObsSlice[i].StationID,
+					Pres:      util.ToFloat4(stationObsSlice[i].Pres),
+					Temp:      util.ToFloat4(stationObsSlice[i].Temp),
+				}
 				i++
 			}
 		}
@@ -581,7 +634,7 @@ func TestListObservationsAPI(t *testing.T) {
 						return (arg.Limit.Int32 == 5) && (arg.Offset == 0) && (len(arg.StationIds) == 10)
 					}),
 				).
-					Return(stationObsSlice, nil)
+					Return(res, nil)
 
 				store.EXPECT().CountObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CountObservationsParams")).
 					Return(100, nil)
@@ -589,7 +642,7 @@ func TestListObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+				requireBodyMatchStationObservations(t, recorder.Body, res)
 			},
 		},
 		{
@@ -604,7 +657,7 @@ func TestListObservationsAPI(t *testing.T) {
 						return (arg.Limit.Int32 == 5) && (arg.Offset == 0) && (len(arg.StationIds) == nSelected)
 					}),
 				).
-					Return(stationObsSlice, nil)
+					Return(res, nil)
 
 				store.EXPECT().CountObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CountObservationsParams")).
 					Return(50, nil)
@@ -612,7 +665,7 @@ func TestListObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+				requireBodyMatchStationObservations(t, recorder.Body, res)
 			},
 		},
 		{
@@ -634,7 +687,7 @@ func TestListObservationsAPI(t *testing.T) {
 						return arg.IsStartDate && arg.IsEndDate && (len(arg.StationIds) == 10)
 					}),
 				).
-					Return(stationObsSlice, nil)
+					Return(res, nil)
 
 				store.EXPECT().CountObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CountObservationsParams")).
 					Return(30, nil)
@@ -642,7 +695,7 @@ func TestListObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, stationObsSlice)
+				requireBodyMatchStationObservations(t, recorder.Body, res)
 			},
 		},
 		{
@@ -879,7 +932,7 @@ func TestGetNearestLatestStationObservationAPI(t *testing.T) {
 
 func TestGetLatestStationObservationAPI(t *testing.T) {
 	stationID := util.RandomInt(1, 100)
-	stationObs := randomStationObservation(stationID)
+	stationObs := models.RandomStationObservation(stationID)
 
 	testCases := []struct {
 		name          string
@@ -953,15 +1006,6 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 
 			tc.checkResponse(recorder, store)
 		})
-	}
-}
-
-func randomStationObservation[T int | int32 | int64](stationID T) db.ObservationsObservation {
-	return db.ObservationsObservation{
-		ID:        util.RandomInt[int64](1, 1000),
-		StationID: int64(stationID),
-		Pres:      pgtype.Float4{Float32: util.RandomFloat[float32](900.0, 1000.0), Valid: true},
-		Temp:      pgtype.Float4{Float32: util.RandomFloat[float32](25.0, 35.0), Valid: true},
 	}
 }
 

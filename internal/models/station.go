@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -74,6 +76,22 @@ func NewStation(station db.ObservationsStation, simple bool) Station {
 	}
 
 	return res
+}
+
+func RandomStation() Station {
+	lat := util.RandomFloat[float32](-90.0, 90.0)
+	lon := util.RandomFloat[float32](0.0, 360.0)
+	return Station{
+		ID:   util.RandomInt[int64](1, 1000),
+		Name: fmt.Sprintf("%s %s", util.RandomString(12), util.RandomString(8)),
+		BaseStation: BaseStation{
+			DateInstalled: fmt.Sprintf("%d-%02d-%02d", util.RandomInt(2000, 2023), util.RandomInt(1, 12), util.RandomInt(1, 25)),
+			Lat:           &lat,
+			Lon:           &lon,
+			Province:      util.RandomString(16),
+			Region:        util.RandomString(16),
+		},
+	}
 }
 
 type CreateStationReq struct {

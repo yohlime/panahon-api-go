@@ -80,6 +80,19 @@ func NewStationObservation(obs db.ObservationsObservation) StationObservation {
 	return res
 }
 
+func RandomStationObservation[T int | int32 | int64](stationID T) StationObservation {
+	pres := util.RandomFloat[float32](900.0, 1000.0)
+	temp := util.RandomFloat[float32](25.0, 35.0)
+	return StationObservation{
+		ID:        util.RandomInt[int64](1, 1000),
+		StationID: int64(stationID),
+		BaseStationObs: BaseStationObs{
+			Pres: &pres,
+			Temp: &temp,
+		},
+	}
+}
+
 type CreateStationObsReq struct {
 	StationID int64 `json:"station_id"`
 	QcLevel   int32 `json:"qc_level"`
