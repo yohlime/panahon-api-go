@@ -43,7 +43,8 @@ func NewServer(config util.Config, store db.Store, tokenMaker token.Maker, logge
 
 func (s *Server) setupRouter() {
 	gin.SetMode(s.config.GinMode)
-	r := gin.Default()
+	r := gin.New()
+	r.Use(mw.Zerologger(s.logger), gin.Recovery())
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
