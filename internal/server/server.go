@@ -1,6 +1,9 @@
-package internal
+package server
 
 import (
+	"context"
+	"net/http"
+
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/handlers"
 	mw "github.com/emiliogozo/panahon-api-go/internal/middlewares"
@@ -12,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"golang.org/x/sync/errgroup"
 )
 
 type Server struct {
@@ -140,8 +144,27 @@ func (s *Server) setupRouter() {
 	s.router = r
 }
 
-func (s *Server) Start(address string) error {
-	return s.router.Run(address)
+func (s *Server) Start(ctx context.Context, g *errgroup.Group) {
+	srv := &http.Server{
+		Addr:    s.config.HTTPServerAddress,
+		Handler: s.router,
+	}
+
+	g.Go(func() error {
+		s.logger.Info().Msgf("starting gin server: %s", srv.Addr)
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			s.logger.Error().Err(err).Msg("failed to run gin server")
+			return err
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		<-ctx.Done()
+		s.logger.Info().Msg("shutting down gin server")
+		return srv.Shutdown(context.Background())
+	})
 }
 
 func addMiddleware(r *gin.RouterGroup, m ...gin.HandlerFunc) gin.IRoutes {

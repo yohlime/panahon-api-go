@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/emiliogozo/panahon-api-go/internal"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
+	"github.com/emiliogozo/panahon-api-go/internal/server"
 	"github.com/emiliogozo/panahon-api-go/internal/service"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
@@ -15,7 +18,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 )
+
+var interruptSignals = []os.Signal{
+	os.Interrupt,
+	syscall.SIGTERM,
+	syscall.SIGINT,
+}
 
 // PanahonAPI
 //
@@ -38,7 +48,8 @@ func main() {
 
 	docs.SwaggerInfo.BasePath = config.SwagAPIBasePath
 
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
+	defer stop()
 
 	connPool, err := pgxpool.New(ctx, config.DBSource)
 	if err != nil {
@@ -63,17 +74,20 @@ func main() {
 		logger.Fatal().Err(err).Msg("cannot create token maker")
 	}
 
-	runGinServer(config, store, tokenMaker, logger)
+	g, ctx := errgroup.WithContext(ctx)
+	runGinServer(ctx, g, config, store, tokenMaker, logger)
+
+	err = g.Wait()
+	if err != nil {
+		log.Fatal().Err(err).Msg("error from wait group")
+	}
 }
 
-func runGinServer(config util.Config, store db.Store, tokenMaker token.Maker, logger *zerolog.Logger) {
-	server, err := internal.NewServer(config, store, tokenMaker, logger)
+func runGinServer(ctx context.Context, g *errgroup.Group, config util.Config, store db.Store, tokenMaker token.Maker, logger *zerolog.Logger) {
+	server, err := server.NewServer(config, store, tokenMaker, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("cannot create server")
 	}
 
-	err = server.Start(config.HTTPServerAddress)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("cannot start server")
-	}
+	server.Start(ctx, g)
 }
