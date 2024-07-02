@@ -2,6 +2,7 @@
 
 createdb:
 	docker exec -it pg12 createdb --username=${POSTGRES_ADMIN_USER} --owner=${POSTGRES_DB_USER} ${POSTGRES_DB}
+	docker exec -it pg12 psql ${POSTGRES_DB} -U ${POSTGRES_ADMIN_USER} -c "CREATE EXTENSION postgis;"
 
 dropdb:
 	docker exec -it pg12 dropdb --username=${POSTGRES_ADMIN_USER} ${POSTGRES_DB}
