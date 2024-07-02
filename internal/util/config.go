@@ -26,6 +26,7 @@ type Config struct {
 	GlabsAppSecret       string        `mapstructure:"GLABS_APP_SECRET"`
 	EnableConsoleLogging bool          `mapstructure:"ENABLE_CONSOLE_LOGGING"`
 	EnableFileLogging    bool          `mapstructure:"ENABLE_FILE_LOGGING"`
+	LogLevel             string        `mapstructure:"LOG_LEVEL"`
 	LogDirectory         string        `mapstructure:"LOG_DIRECTORY"`
 	LogFilename          string        `mapstructure:"LOG_FILENAME"`
 	LogMaxSize           int           `mapstructure:"LOG_MAX_SIZE"`
@@ -56,5 +57,6 @@ func LoadConfig(path string) (config Config, err error) {
 	}
 
 	err = viper.Unmarshal(&config)
+
 	return
 }

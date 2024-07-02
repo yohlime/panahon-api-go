@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -9,6 +10,16 @@ import (
 	"github.com/rs/zerolog/log"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+var logLevelMap = map[string]zerolog.Level{
+	"trace": zerolog.TraceLevel,
+	"debug": zerolog.DebugLevel,
+	"info":  zerolog.InfoLevel,
+	"warn":  zerolog.WarnLevel,
+	"error": zerolog.ErrorLevel,
+	"fatal": zerolog.FatalLevel,
+	"panic": zerolog.PanicLevel,
+}
 
 func NewLogger(config Config) *zerolog.Logger {
 	var writers []io.Writer
@@ -21,7 +32,7 @@ func NewLogger(config Config) *zerolog.Logger {
 	}
 	mw := io.MultiWriter(writers...)
 
-	// zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(validateLogLevel(config.LogLevel))
 	logger := zerolog.New(mw).With().Timestamp().Logger()
 
 	logger.Info().
@@ -48,4 +59,12 @@ func newRollingFile(config Config) io.Writer {
 		MaxSize:    config.LogMaxSize,    // megabytes
 		MaxAge:     config.LogMaxAge,     // days
 	}
+}
+
+func validateLogLevel(level string) zerolog.Level {
+	if logLevel, exists := logLevelMap[level]; exists {
+		return logLevel
+	}
+	fmt.Printf("Invalid log level: %s. Defaulting to info level.\n", level)
+	return zerolog.InfoLevel
 }
