@@ -1,26 +1,30 @@
 -include app.env
 
 createdb:
-	docker exec -it pg12 createdb --username=${POSTGRES_ADMIN_USER} --owner=${POSTGRES_DB_USER} ${POSTGRES_DB}
-	docker exec -it pg12 psql ${POSTGRES_DB} -U ${POSTGRES_ADMIN_USER} -c "CREATE EXTENSION postgis;"
+	${DOCKER_PG} createdb --username=${PG_ADMIN_USER} --owner=${PG_DB_USER} ${PG_DB_NAME}
+	${DOCKER_PG} psql ${PG_DB_NAME} -U ${PG_ADMIN_USER} -c "CREATE EXTENSION postgis;"
 
 dropdb:
-	docker exec -it pg12 dropdb --username=${POSTGRES_ADMIN_USER} ${POSTGRES_DB}
+	${DOCKER_PG} dropdb --username=${PG_ADMIN_USER} ${PG_DB_NAME}
+
+MIGRATE_CMD = migrate -path ${MIGRATION_PATH} -database "${DB_SOURCE}" -verbose
+
+migrate-cmd:
+	@read -p "Enter the number of migrations to $(NAME) (leave empty for all): " count; \
+	if [ -z "$$count" ]; then \
+		${MIGRATE_CMD} $(ACTION); \
+	else \
+		${MIGRATE_CMD} $(ACTION) $$count; \
+	fi
 
 migrateup:
-	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose up
-
-migrateup1:
-	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose up 1
+	$(MAKE) migrate-cmd NAME="apply" ACTION=up 
 
 migratedown:
-	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose down
+	$(MAKE) migrate-cmd NAME="roll back" ACTION=down
 
-migratedown1:
-	migrate -path internal/db/migration -database "${DB_SOURCE}" -verbose down 1
-
-new_migration:
-	migrate create -ext sql -dir internal/db/migration -seq $(name)
+migratenew:
+	migrate create -ext sql -dir ${MIGRATION_PATH} -seq $(name)
 
 sqlc:
 	sqlc generate
@@ -45,4 +49,4 @@ build:
 	go build -o main main.go
 
 
-.PHONY: createdb dropdb migrateup migrateup1 migratedown migratedown1 new_migration sqlc server mock swag test short_test build
+.PHONY: createdb dropdb migrateup migratedown migratenew sqlc server mock swag test short_test build
