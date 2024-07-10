@@ -227,16 +227,13 @@ const docTemplate = `{
                 "summary": "Store Lufft observation and health",
                 "parameters": [
                     {
-                        "type": "string",
-                        "name": "msg",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "name": "number",
-                        "in": "query",
-                        "required": true
+                        "description": "Promo Texter parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LufftSMSParams"
+                        }
                     }
                 ],
                 "responses": {
@@ -1476,6 +1473,21 @@ const docTemplate = `{
                 },
                 "station": {
                     "$ref": "#/definitions/Station"
+                }
+            }
+        },
+        "LufftSMSParams": {
+            "type": "object",
+            "required": [
+                "msg",
+                "number"
+            ],
+            "properties": {
+                "msg": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "string"
                 }
             }
         },

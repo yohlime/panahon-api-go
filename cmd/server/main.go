@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
-	docs "github.com/emiliogozo/panahon-api-go/internal/docs"
+	apiDocs "github.com/emiliogozo/panahon-api-go/internal/docs/api"
 	"github.com/emiliogozo/panahon-api-go/internal/server"
 	"github.com/emiliogozo/panahon-api-go/internal/service"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
@@ -46,7 +46,7 @@ func main() {
 
 	logger := util.NewLogger(config)
 
-	docs.SwaggerInfo.BasePath = config.SwagAPIBasePath
+	apiDocs.SwaggerInfo.BasePath = config.SwagAPIBasePath
 
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
 	defer stop()

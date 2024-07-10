@@ -154,6 +154,16 @@ definitions:
       station:
         $ref: '#/definitions/Station'
     type: object
+  LufftSMSParams:
+    properties:
+      msg:
+        type: string
+      number:
+        type: string
+    required:
+    - msg
+    - number
+    type: object
   PaginatedRoles:
     type: object
   PaginatedStationObservations:
@@ -579,14 +589,12 @@ paths:
       consumes:
       - application/json
       parameters:
-      - in: query
-        name: msg
+      - description: Promo Texter parameters
+        in: body
+        name: req
         required: true
-        type: string
-      - in: query
-        name: number
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/LufftSMSParams'
       produces:
       - application/json
       responses:
