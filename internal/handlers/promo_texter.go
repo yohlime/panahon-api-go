@@ -23,7 +23,7 @@ type pTexterStoreLufftReq struct {
 //	@Tags		promotexter
 //	@Accept		json
 //	@Produce	json
-//	@Param		req	query		pTexterStoreLufftReq	true	"Promo Texter query"
+//	@Param		req	body		pTexterStoreLufftReq	true	"Promo Texter parameters"
 //	@Success	200	{object}	lufftRes
 //	@Router		/ptexter [post]
 func (h *DefaultHandler) PromoTexterStoreLufft(ctx *gin.Context) {
