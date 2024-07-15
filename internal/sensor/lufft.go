@@ -6,9 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/emiliogozo/panahon-api-go/internal/util"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const (
@@ -23,61 +20,61 @@ type Lufft struct {
 }
 
 type StationObservation struct {
-	Pres      pgtype.Float4      `json:"pres"`
-	Rr        pgtype.Float4      `json:"rr"`
-	Rh        pgtype.Float4      `json:"rh"`
-	Temp      pgtype.Float4      `json:"temp"`
-	Td        pgtype.Float4      `json:"td"`
-	Wdir      pgtype.Float4      `json:"wdir"`
-	Wspd      pgtype.Float4      `json:"wspd"`
-	Wspdx     pgtype.Float4      `json:"wspdx"`
-	Srad      pgtype.Float4      `json:"srad"`
-	Mslp      pgtype.Float4      `json:"mslp"`
-	Hi        pgtype.Float4      `json:"hi"`
-	Wchill    pgtype.Float4      `json:"wchill"`
-	Timestamp pgtype.Timestamptz `json:"timestamp"`
+	Pres      *float32  `json:"pres" fake:"{float32range:990,1100}"`
+	Rr        *float32  `json:"rr" fake:"{float32range:0,100}"`
+	Rh        *float32  `json:"rh" fake:"{float32range:0,100}"`
+	Temp      *float32  `json:"temp" fake:"{float32range:20,37}"`
+	Td        *float32  `json:"td" fake:"{float32range:15,40}"`
+	Wdir      *float32  `json:"wdir" fake:"{float32range:0,359}"`
+	Wspd      *float32  `json:"wspd" fake:"{float32range:20,35}"`
+	Wspdx     *float32  `json:"wspdx" fake:"{float32range:35,50}"`
+	Srad      *float32  `json:"srad" fake:"{float32range:0,1000}"`
+	Mslp      *float32  `json:"mslp" fake:"-"`
+	Hi        *float32  `json:"hi" fake:"-"`
+	Wchill    *float32  `json:"wchill" fake:"{float32range:20,35}"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type StationHealth struct {
-	Vb1               pgtype.Float4      `json:"vb1"`
-	Vb2               pgtype.Float4      `json:"vb2"`
-	Curr              pgtype.Float4      `json:"curr"`
-	Bp1               pgtype.Float4      `json:"bp1"`
-	Bp2               pgtype.Float4      `json:"bp2"`
-	Cm                pgtype.Text        `json:"cm"`
-	Ss                pgtype.Int4        `json:"ss"`
-	TempArq           pgtype.Float4      `json:"temp_arq"`
-	RhArq             pgtype.Float4      `json:"rh_arq"`
-	Fpm               pgtype.Text        `json:"fpm"`
-	ErrorMsg          pgtype.Text        `json:"error_msg"`
-	Message           pgtype.Text        `json:"message"`
-	DataCount         pgtype.Int4        `json:"data_count"`
-	DataStatus        pgtype.Text        `json:"data_status"`
-	Timestamp         pgtype.Timestamptz `json:"timestamp"`
-	MinutesDifference pgtype.Int4        `json:"minutes_difference"`
+	Vb1               *float32  `json:"vb1" fake:"{float32range:0,20}"`
+	Vb2               *float32  `json:"vb2" fake:"{float32range:0,20}"`
+	Curr              *float32  `json:"curr" fake:"{float32range:0,1}"`
+	Bp1               *float32  `json:"bp1" fake:"{float32range:0,30}"`
+	Bp2               *float32  `json:"bp2" fake:"{float32range:0,30}"`
+	Cm                string    `json:"cm" fake:"{lettern:6}"`
+	Ss                *int32    `json:"ss" fake:"{number:0,100}"`
+	TempArq           *float32  `json:"temp_arq" fake:"{float32range:20,35}"`
+	RhArq             *float32  `json:"rh_arq" fake:"{float32range:0,100}"`
+	Fpm               string    `json:"fpm" fake:"{lettern:6}"`
+	ErrorMsg          string    `json:"error_msg"`
+	Message           string    `json:"message" fake:"-"`
+	DataCount         int32     `json:"data_count" fake:"-"`
+	DataStatus        string    `json:"data_status" fake:"-"`
+	Timestamp         time.Time `json:"timestamp"`
+	MinutesDifference int32     `json:"minutes_difference" fake:"-"`
 }
 
 func (l Lufft) String(nVal int) string {
-	var wspd, wspdx pgtype.Float4
-	var rr pgtype.Int4
-	if l.Obs.Wspd.Valid {
-		wspd.Float32 = l.Obs.Wspd.Float32 * 3.6
-		wspd.Valid = true
+	var wspd, wspdx *float32
+	var rr *int32
+	if l.Obs.Wspd != nil {
+		v := *l.Obs.Wspd * 3.6
+		wspd = &v
 	}
-	if l.Obs.Wspdx.Valid {
-		wspdx.Float32 = l.Obs.Wspdx.Float32 * 3.6
-		wspdx.Valid = true
+	if l.Obs.Wspdx != nil {
+		v := *l.Obs.Wspdx * 3.6
+		wspdx = &v
 	}
-	if l.Obs.Rr.Valid {
-		rr.Int32 = int32(l.Obs.Rr.Float32 / (0.2 * 6.0))
-		rr.Valid = true
+	if l.Obs.Rr != nil {
+		v := int32(*l.Obs.Rr / (0.2 * 6.0))
+		rr = &v
 	}
 
 	// obsStr := ""
 	var obsStrSlice []string
-	for _, f := range []pgtype.Float4{l.Obs.Temp, l.Obs.Rh, l.Obs.Pres, wspd, wspdx} {
-		if f.Valid {
-			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+	for _, f := range []*float32{l.Obs.Temp, l.Obs.Rh, l.Obs.Pres, wspd, wspdx} {
+		if f != nil {
+			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
 		} else {
 			obsStrSlice = append(obsStrSlice, "")
 		}
@@ -85,15 +82,15 @@ func (l Lufft) String(nVal int) string {
 	if nVal == 20 || nVal == 24 {
 		obsStrSlice = append(obsStrSlice, "0")
 	}
-	for _, f := range []pgtype.Float4{l.Obs.Wdir, l.Obs.Srad, l.Obs.Td, l.Obs.Wchill} {
-		if f.Valid {
-			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+	for _, f := range []*float32{l.Obs.Wdir, l.Obs.Srad, l.Obs.Td, l.Obs.Wchill} {
+		if f != nil {
+			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
 		} else {
 			obsStrSlice = append(obsStrSlice, "")
 		}
 	}
-	if rr.Valid {
-		obsStrSlice = append(obsStrSlice, fmt.Sprintf("%d", rr.Int32))
+	if rr != nil {
+		obsStrSlice = append(obsStrSlice, fmt.Sprintf("%d", *rr))
 	} else {
 		obsStrSlice = append(obsStrSlice, "")
 	}
@@ -101,90 +98,74 @@ func (l Lufft) String(nVal int) string {
 
 	var hStrSlice []string
 	if nVal == 23 || nVal == 24 {
-		for _, f := range []pgtype.Float4{l.Health.Vb1, l.Health.Vb2, l.Health.Curr, l.Health.Bp1, l.Health.Bp2} {
-			if f.Valid {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+		for _, f := range []*float32{l.Health.Vb1, l.Health.Vb2, l.Health.Curr, l.Health.Bp1, l.Health.Bp2} {
+			if f != nil {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
 			} else {
 				hStrSlice = append(hStrSlice, "")
 			}
 		}
-		if l.Health.Cm.Valid {
-			hStrSlice = append(hStrSlice, l.Health.Cm.String)
+		hStrSlice = append(hStrSlice, l.Health.Cm)
+		if l.Health.Ss != nil {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", *l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Ss.Valid {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss.Int32))
-		} else {
-			hStrSlice = append(hStrSlice, "")
-		}
-		for _, f := range []pgtype.Float4{l.Health.TempArq, l.Health.RhArq} {
-			if f.Valid {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+		for _, f := range []*float32{l.Health.TempArq, l.Health.RhArq} {
+			if f != nil {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
 			} else {
 				hStrSlice = append(hStrSlice, "")
 			}
 		}
-		if l.Health.Fpm.Valid {
-			hStrSlice = append(hStrSlice, l.Health.Fpm.String)
-		} else {
-			hStrSlice = append(hStrSlice, "")
-		}
+		hStrSlice = append(hStrSlice, l.Health.Fpm)
 	} else if nVal == 19 {
-		for _, f := range []pgtype.Float4{l.Health.TempArq, l.Health.RhArq} {
-			if f.Valid {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+		for _, f := range []*float32{l.Health.TempArq, l.Health.RhArq} {
+			if f != nil {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
 			} else {
 				hStrSlice = append(hStrSlice, "")
 			}
 		}
-		if l.Health.Ss.Valid {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss.Int32))
+		if l.Health.Ss != nil {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Vb1.Valid {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(l.Health.Vb1.Float32)*100)/100))
+		if l.Health.Vb1 != nil {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(*l.Health.Vb1)*100)/100))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Bp1.Valid {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(l.Health.Bp1.Float32)*100)/100))
+		if l.Health.Bp1 != nil {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*l.Health.Bp1)*100)/100))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Fpm.Valid {
-			hStrSlice = append(hStrSlice, l.Health.Fpm.String)
-		} else {
-			hStrSlice = append(hStrSlice, "")
-		}
+		hStrSlice = append(hStrSlice, l.Health.Fpm)
 	} else if nVal == 20 {
-		if l.Health.Ss.Valid {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss.Int32))
+		if l.Health.Ss != nil {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Vb1.Valid {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(l.Health.Vb1.Float32)*100)/100))
+		if l.Health.Vb1 != nil {
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(*l.Health.Vb1)*100)/100))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		for _, f := range []pgtype.Float4{l.Health.Bp1, l.Health.TempArq, l.Health.RhArq} {
-			if f.Valid {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(f.Float32)*100)/100))
+		for _, f := range []*float32{l.Health.Bp1, l.Health.TempArq, l.Health.RhArq} {
+			if f != nil {
+				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
 			} else {
 				hStrSlice = append(hStrSlice, "")
 			}
 		}
-		if l.Health.Fpm.Valid {
-			hStrSlice = append(hStrSlice, l.Health.Fpm.String)
-		} else {
-			hStrSlice = append(hStrSlice, "")
-		}
+		hStrSlice = append(hStrSlice, l.Health.Fpm)
 	}
 	hStr := strings.Join(hStrSlice, "+")
 
-	timestampStr := l.Obs.Timestamp.Time.Format(time.RFC3339)
+	timestampStr := l.Obs.Timestamp.Format(time.RFC3339)
 	if nVal == 23 || nVal == 24 {
 		tStr := fmt.Sprintf("%s%s%s/%s%s%s",
 			timestampStr[0:4], timestampStr[5:7], timestampStr[8:10],
@@ -218,18 +199,18 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 	}
 
 	timeNow := time.Now()
-	timestamp := parseTimestampTz(valStrs[nVal-2])
+	timestamp := parseTimestampTz(valStrs[nVal-2], "Asia/Manila")
 	errMsg := ""
 	minutesDiff := 0.0
 
-	if timestamp.Valid {
-		minutesDiff = timeNow.Sub(timestamp.Time).Minutes()
+	if !timestamp.IsZero() {
+		minutesDiff = timeNow.Sub(timestamp).Minutes()
 		if minutesDiff < minMinutesThresh {
 			errMsg = fmt.Sprintf("timestamp is %f minutes behind", math.Abs(minutesDiff))
-			timestamp.Time = timeNow
+			timestamp = timeNow
 		} else if minutesDiff > maxMinutesThresh {
 			errMsg = fmt.Sprintf("timestamp is %f minutes ahead", minutesDiff)
-			timestamp.Time = timeNow
+			timestamp = timeNow
 		}
 	}
 
@@ -258,22 +239,16 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 	var health StationHealth
 	if nVal == 23 || nVal == 24 {
 		health = StationHealth{
-			Vb1:  parseFloat(valStrs[11], false),
-			Vb2:  parseFloat(valStrs[12], false),
-			Curr: parseFloat(valStrs[13], false),
-			Bp1:  parseFloat(valStrs[14], false),
-			Bp2:  parseFloat(valStrs[15], false),
-			Cm: pgtype.Text{
-				String: valStrs[16],
-				Valid:  true,
-			},
+			Vb1:     parseFloat(valStrs[11], false),
+			Vb2:     parseFloat(valStrs[12], false),
+			Curr:    parseFloat(valStrs[13], false),
+			Bp1:     parseFloat(valStrs[14], false),
+			Bp2:     parseFloat(valStrs[15], false),
+			Cm:      valStrs[16],
 			Ss:      parseInt(valStrs[17]),
 			TempArq: parseFloat(valStrs[18], false),
 			RhArq:   parseFloat(valStrs[19], false),
-			Fpm: pgtype.Text{
-				String: valStrs[20],
-				Valid:  true,
-			},
+			Fpm:     valStrs[20],
 		}
 	} else if nVal == 19 {
 		health = StationHealth{
@@ -282,10 +257,7 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 			Ss:      parseInt(valStrs[13]),
 			Vb1:     parseFloat(strings.Split(valStrs[14], "#")[0], false),
 			Bp1:     parseFloat(valStrs[15], false),
-			Fpm: pgtype.Text{
-				String: valStrs[16],
-				Valid:  true,
-			},
+			Fpm:     valStrs[16],
 		}
 	} else if nVal == 20 {
 		health = StationHealth{
@@ -294,209 +266,92 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 			Bp1:     parseFloat(valStrs[13], false),
 			TempArq: parseFloat(valStrs[14], false),
 			RhArq:   parseFloat(valStrs[15], false),
-			Fpm: pgtype.Text{String: valStrs[16],
-				Valid: true},
+			Fpm:     valStrs[16],
 		}
 	}
 
 	dataCount := 0
 	dataStatus := ""
-	for _, v := range []bool{l.Obs.Temp.Valid, l.Obs.Rh.Valid, l.Obs.Pres.Valid, l.Obs.Wspd.Valid, l.Obs.Wspdx.Valid,
-		l.Obs.Wdir.Valid, l.Obs.Srad.Valid, l.Obs.Td.Valid, l.Obs.Wchill.Valid, l.Obs.Rr.Valid,
+	for _, v := range []*float32{
+		l.Obs.Temp, l.Obs.Rh, l.Obs.Pres, l.Obs.Wspd, l.Obs.Wspdx,
+		l.Obs.Wdir, l.Obs.Srad, l.Obs.Td, l.Obs.Wchill, l.Obs.Rr,
 	} {
-		var b2i = map[bool]int8{false: 0, true: 1}
-		if v {
+		b := 0
+		if v != nil {
 			dataCount++
+			b = 1
 		}
-		dataStatus += fmt.Sprintf("%d", b2i[v])
+
+		dataStatus += fmt.Sprintf("%d", b)
 	}
 
 	l.Health = health
 	l.Health.Timestamp = timestamp
-	l.Health.Message = pgtype.Text{String: valStr,
-		Valid: true,
-	}
+	l.Health.Message = valStr
 
-	l.Health.MinutesDifference = pgtype.Int4{
-		Int32: int32(minutesDiff),
-		Valid: true,
-	}
-	l.Health.ErrorMsg = pgtype.Text{String: errMsg,
-		Valid: true,
-	}
-	l.Health.DataCount = pgtype.Int4{
-		Int32: int32(dataCount),
-		Valid: true,
-	}
-	l.Health.DataStatus = pgtype.Text{String: dataStatus,
-		Valid: true,
-	}
+	l.Health.MinutesDifference = int32(minutesDiff)
+	l.Health.ErrorMsg = errMsg
+	l.Health.DataCount = int32(dataCount)
+	l.Health.DataStatus = dataStatus
 
 	return l, nil
 }
 
-func RandomLufft() Lufft {
-	timestamp := pgtype.Timestamptz{
-		Time:  time.Now(),
-		Valid: true,
-	}
-	return Lufft{
-		Obs: StationObservation{
-			Temp: pgtype.Float4{
-				Float32: util.RandomFloat[float32](20, 35),
-				Valid:   true,
-			},
-			Rh: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 100),
-				Valid:   true,
-			},
-			Pres: pgtype.Float4{
-				Float32: util.RandomFloat[float32](990, 1100),
-				Valid:   true,
-			},
-			Wspd: pgtype.Float4{
-				Float32: util.RandomFloat[float32](20, 35),
-				Valid:   true,
-			},
-			Wspdx: pgtype.Float4{
-				Float32: util.RandomFloat[float32](35, 50),
-				Valid:   true,
-			},
-			Wdir: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 359),
-				Valid:   true,
-			},
-			Srad: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 1000),
-				Valid:   true,
-			},
-			Td: pgtype.Float4{
-				Float32: util.RandomFloat[float32](20, 35),
-				Valid:   true,
-			},
-			Wchill: pgtype.Float4{
-				Float32: util.RandomFloat[float32](20, 35),
-				Valid:   true,
-			},
-			Rr: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 100),
-				Valid:   true,
-			},
-			Timestamp: timestamp,
-		},
-		Health: StationHealth{
-			Vb1: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 20),
-				Valid:   true,
-			},
-			Vb2: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 20),
-				Valid:   true,
-			},
-			Curr: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 1),
-				Valid:   true,
-			},
-			Bp1: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 30),
-				Valid:   true,
-			},
-			Bp2: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 30),
-				Valid:   true,
-			},
-			Cm: pgtype.Text{
-				String: util.RandomString(6),
-				Valid:  true,
-			},
-			Ss: pgtype.Int4{
-				Int32: util.RandomInt[int32](0, 100),
-				Valid: true,
-			},
-			TempArq: pgtype.Float4{
-				Float32: util.RandomFloat[float32](20, 35),
-				Valid:   true,
-			},
-			RhArq: pgtype.Float4{
-				Float32: util.RandomFloat[float32](0, 100),
-				Valid:   true,
-			},
-			Fpm: pgtype.Text{
-				String: util.RandomString(6),
-				Valid:  true,
-			},
-			Timestamp: timestamp,
-		},
-	}
-}
-
-func parseFloat(s string, skipValidation bool) pgtype.Float4 {
-	ret := pgtype.Float4{
-		Float32: 0.0,
-		Valid:   false,
-	}
-
+func parseFloat(s string, skipValidation bool) *float32 {
 	val, err := strconv.ParseFloat(s, 32)
 	if err != nil || (!skipValidation && val == missingValue) {
-		return ret
+		return nil
 	}
 
-	ret.Float32 = float32(math.Round(val*100) / 100)
-	ret.Valid = true
-
-	return ret
+	f := float32(math.Round(val*100) / 100)
+	return &f
 }
 
-func parseFloatWithCF(s string, skipValidation bool, cf float32) pgtype.Float4 {
+func parseFloatWithCF(s string, skipValidation bool, cf float32) *float32 {
 	ret := parseFloat(s, skipValidation)
 
-	if ret.Valid {
-		ret.Float32 = float32(math.Round(float64(ret.Float32*cf)*100) / 100)
+	if ret != nil {
+		v := float32(math.Round(float64(*ret*cf)*100) / 100)
+		return &v
 	}
 
-	return ret
+	return nil
 }
 
-func parseInt(s string) pgtype.Int4 {
-	ret := pgtype.Int4{
-		Int32: 0,
-		Valid: false,
-	}
-
+func parseInt(s string) *int32 {
 	val, err := strconv.ParseInt(s, 10, 0)
 	if err != nil {
-		return ret
+		return nil
 	}
 
-	ret.Int32 = int32(val)
-	ret.Valid = true
-
-	return ret
+	v := int32(val)
+	return &v
 }
 
-func parseTimestampTz(s string) pgtype.Timestamptz {
-	var _s string
-
-	ret := pgtype.Timestamptz{
-		Valid: false,
+func parseTimestampTz(dateStr string, tz string) time.Time {
+	formats := []string{
+		"06:01:02:15:04:05",   // YY:MM:DD:HH:MM:SS
+		"2006:01:02:15:04:05", // YYYY:MM:DD:HH:MM:SS
+		"060102/150405",       // YYMMDD/HHMMSS
+		"20060102/150405",     // YYYYMMDD/HHMMSS
 	}
 
-	if !strings.Contains(s, "/") {
-		_s = fmt.Sprintf("%s-%s-%sT%s:%s:%sZ08:00", s[0:4], s[5:7], s[8:10], s[11:13], s[14:16], s[17:19])
-	} else {
-		if len(s) == 13 {
-			_s = fmt.Sprintf("20%s-%s-%sT%s:%s:%sZ08:00", s[0:2], s[2:4], s[4:6], s[7:9], s[9:11], s[11:13])
-		} else {
-			_s = fmt.Sprintf("%s-%s-%sT%s:%s:%sZ08:00", s[0:4], s[4:6], s[6:8], s[9:11], s[11:13], s[13:15])
+	if tz == "" {
+		tz = "Asia/Manila"
+	}
+
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.Time{}
+	}
+
+	var t time.Time
+	for _, format := range formats {
+		t, err = time.ParseInLocation(format, dateStr, loc)
+		if err == nil {
+			return t
 		}
 	}
 
-	timestamp, err := time.Parse(time.RFC3339, _s)
-	if err != nil {
-		return ret
-	}
-
-	ret.Time = timestamp
-
-	return ret
+	return time.Time{}
 }

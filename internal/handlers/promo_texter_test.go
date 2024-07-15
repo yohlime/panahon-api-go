@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/sensor"
@@ -19,7 +20,8 @@ import (
 
 func TestPromoTexterStoreLufft(t *testing.T) {
 	mobileNum := util.RandomMobileNumber()
-	lufft := sensor.RandomLufft()
+	var lufft sensor.Lufft
+	gofakeit.Struct(&lufft)
 	testCases := []struct {
 		name          string
 		body          gin.H

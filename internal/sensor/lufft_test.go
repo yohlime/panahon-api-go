@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,7 +13,8 @@ func TestLufft(t *testing.T) {
 		t.Skip()
 	}
 
-	lufft := RandomLufft()
+	var lufft Lufft
+	gofakeit.Struct(&lufft)
 
 	testCases := []struct {
 		name        string
@@ -31,11 +33,11 @@ func TestLufft(t *testing.T) {
 				require.NoError(t, err)
 				requireLufftEqual(t, lufft, *lufft2)
 
-				require.Equal(t, lufft2.Health.Message.String, valStr)
-				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
-				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
+				require.Equal(t, lufft2.Health.Message, valStr)
+				require.Equal(t, lufft2.Health.MinutesDifference, int32(0))
+				require.Equal(t, lufft2.Health.ErrorMsg, "")
+				require.Equal(t, lufft2.Health.DataCount, int32(10))
+				require.Equal(t, lufft2.Health.DataStatus, "1111111111")
 			},
 		},
 		{
@@ -50,16 +52,16 @@ func TestLufft(t *testing.T) {
 				require.NoError(t, err)
 				requireLufftEqual(t, lufft, *lufft2)
 
-				require.False(t, lufft2.Health.Vb2.Valid)
-				require.False(t, lufft2.Health.Curr.Valid)
-				require.False(t, lufft2.Health.Bp2.Valid)
-				require.False(t, lufft2.Health.Cm.Valid)
+				require.Nil(t, lufft2.Health.Vb2)
+				require.Nil(t, lufft2.Health.Curr)
+				require.Nil(t, lufft2.Health.Bp2)
+				require.Nil(t, lufft2.Health.Cm)
 
-				require.Equal(t, lufft2.Health.Message.String, valStr)
-				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
-				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
+				require.Equal(t, lufft2.Health.Message, valStr)
+				require.Equal(t, lufft2.Health.MinutesDifference, int32(0))
+				require.Equal(t, lufft2.Health.ErrorMsg, "")
+				require.Equal(t, lufft2.Health.DataCount, int32(10))
+				require.Equal(t, lufft2.Health.DataStatus, "1111111111")
 			},
 		},
 		{
@@ -74,11 +76,11 @@ func TestLufft(t *testing.T) {
 				require.NoError(t, err)
 				requireLufftEqual(t, lufft, *lufft2)
 
-				require.Equal(t, lufft2.Health.Message.String, valStr)
-				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
-				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
+				require.Equal(t, lufft2.Health.Message, valStr)
+				require.Equal(t, lufft2.Health.MinutesDifference, int32(0))
+				require.Equal(t, lufft2.Health.ErrorMsg, "")
+				require.Equal(t, lufft2.Health.DataCount, int32(10))
+				require.Equal(t, lufft2.Health.DataStatus, "1111111111")
 			},
 		},
 		{
@@ -93,16 +95,16 @@ func TestLufft(t *testing.T) {
 				require.NoError(t, err)
 				requireLufftEqual(t, lufft, *lufft2)
 
-				require.False(t, lufft2.Health.Vb2.Valid)
-				require.False(t, lufft2.Health.Curr.Valid)
-				require.False(t, lufft2.Health.Bp2.Valid)
-				require.False(t, lufft2.Health.Cm.Valid)
+				require.Nil(t, lufft2.Health.Vb2)
+				require.Nil(t, lufft2.Health.Curr)
+				require.Nil(t, lufft2.Health.Bp2)
+				require.Nil(t, lufft2.Health.Cm)
 
-				require.Equal(t, lufft2.Health.Message.String, valStr)
-				require.Equal(t, lufft2.Health.MinutesDifference.Int32, int32(0))
-				require.Equal(t, lufft2.Health.ErrorMsg.String, "")
-				require.Equal(t, lufft2.Health.DataCount.Int32, int32(10))
-				require.Equal(t, lufft2.Health.DataStatus.String, "1111111111")
+				require.Equal(t, lufft2.Health.Message, valStr)
+				require.Equal(t, lufft2.Health.MinutesDifference, int32(0))
+				require.Equal(t, lufft2.Health.ErrorMsg, "")
+				require.Equal(t, lufft2.Health.DataCount, int32(10))
+				require.Equal(t, lufft2.Health.DataStatus, "1111111111")
 			},
 		},
 		{
@@ -144,33 +146,33 @@ func TestLufft(t *testing.T) {
 }
 
 func requireLufftEqual(t *testing.T, l, l2 Lufft) {
-	require.InDelta(t, l.Obs.Temp.Float32, l2.Obs.Temp.Float32, 0.01)
-	require.InDelta(t, l.Obs.Rh.Float32, l2.Obs.Rh.Float32, 0.01)
-	require.InDelta(t, l.Obs.Pres.Float32, l2.Obs.Pres.Float32, 0.01)
-	require.InDelta(t, l.Obs.Wspd.Float32, l2.Obs.Wspd.Float32, 0.01)
-	require.InDelta(t, l.Obs.Wspdx.Float32, l2.Obs.Wspdx.Float32, 0.01)
-	require.InDelta(t, l.Obs.Wdir.Float32, l2.Obs.Wdir.Float32, 0.01)
-	require.InDelta(t, l.Obs.Srad.Float32, l2.Obs.Srad.Float32, 0.01)
-	require.InDelta(t, l.Obs.Td.Float32, l2.Obs.Td.Float32, 0.01)
-	require.InDelta(t, l.Obs.Wchill.Float32, l2.Obs.Wchill.Float32, 0.01)
-	require.InDelta(t, l.Obs.Rr.Float32, l2.Obs.Rr.Float32, 1)
-	require.InDelta(t, l.Health.Vb1.Float32, l2.Health.Vb1.Float32, 0.01)
-	require.InDelta(t, l.Health.Bp1.Float32, l2.Health.Bp1.Float32, 0.01)
+	require.InDelta(t, l.Obs.Temp, l2.Obs.Temp, 0.01)
+	require.InDelta(t, l.Obs.Rh, l2.Obs.Rh, 0.01)
+	require.InDelta(t, l.Obs.Pres, l2.Obs.Pres, 0.01)
+	require.InDelta(t, l.Obs.Wspd, l2.Obs.Wspd, 0.01)
+	require.InDelta(t, l.Obs.Wspdx, l2.Obs.Wspdx, 0.01)
+	require.InDelta(t, l.Obs.Wdir, l2.Obs.Wdir, 0.01)
+	require.InDelta(t, l.Obs.Srad, l2.Obs.Srad, 0.01)
+	require.InDelta(t, l.Obs.Td, l2.Obs.Td, 0.01)
+	require.InDelta(t, l.Obs.Wchill, l2.Obs.Wchill, 0.01)
+	require.InDelta(t, l.Obs.Rr, l2.Obs.Rr, 1)
+	require.InDelta(t, l.Health.Vb1, l2.Health.Vb1, 0.01)
+	require.InDelta(t, l.Health.Bp1, l2.Health.Bp1, 0.01)
 	require.Equal(t, l.Health.Ss, l2.Health.Ss)
-	require.InDelta(t, l.Health.TempArq.Float32, l2.Health.TempArq.Float32, 0.01)
-	require.InDelta(t, l.Health.RhArq.Float32, l2.Health.RhArq.Float32, 0.01)
+	require.InDelta(t, l.Health.TempArq, l2.Health.TempArq, 0.01)
+	require.InDelta(t, l.Health.RhArq, l2.Health.RhArq, 0.01)
 	require.Equal(t, l.Health.Fpm, l2.Health.Fpm)
 
-	if l2.Health.Vb2.Valid {
-		require.InDelta(t, l.Health.Vb2.Float32, l2.Health.Vb2.Float32, 0.01)
+	if l2.Health.Vb2 != nil {
+		require.InDelta(t, l.Health.Vb2, l2.Health.Vb2, 0.01)
 	}
-	if l2.Health.Curr.Valid {
-		require.InDelta(t, l.Health.Curr.Float32, l2.Health.Curr.Float32, 0.01)
+	if l2.Health.Curr != nil {
+		require.InDelta(t, l.Health.Curr, l2.Health.Curr, 0.01)
 	}
-	if l2.Health.Bp2.Valid {
-		require.InDelta(t, l.Health.Bp2.Float32, l2.Health.Bp2.Float32, 0.01)
+	if l2.Health.Bp2 != nil {
+		require.InDelta(t, l.Health.Bp2, l2.Health.Bp2, 0.01)
 	}
-	if l2.Health.Cm.Valid {
+	if l2.Health.Cm != "" {
 		require.Equal(t, l.Health.Cm, l2.Health.Cm)
 	}
 }
