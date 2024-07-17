@@ -1,31 +1,29 @@
 package models
 
 import (
-	"fmt"
-
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type BaseStation struct {
-	Lat           *float32 `json:"lat"`
-	Lon           *float32 `json:"lon"`
-	Elevation     *float32 `json:"elevation"`
-	DateInstalled string   `json:"date_installed,omitempty"`
-	MobileNumber  string   `json:"mobile_number,omitempty"`
-	StationType   string   `json:"station_type,omitempty"`
-	StationType2  string   `json:"station_type2,omitempty"`
-	StationUrl    string   `json:"station_url,omitempty"`
-	Status        string   `json:"status,omitempty"`
-	Province      string   `json:"province"`
-	Region        string   `json:"region"`
-	Address       string   `json:"address"`
+	Lat           *float32      `json:"lat" fake:"{latitude}"`
+	Lon           *float32      `json:"lon" fake:"{longitude}"`
+	Elevation     *float32      `json:"elevation" fake:"{float32range:0,30}"`
+	DateInstalled util.Date     `json:"date_installed,omitempty"`
+	MobileNumber  string        `json:"mobile_number,omitempty"`
+	StationType   string        `json:"station_type,omitempty"`
+	StationType2  string        `json:"station_type2,omitempty"`
+	StationUrl    string        `json:"station_url,omitempty"`
+	Status        string        `json:"status,omitempty"`
+	Province      util.Province `json:"province"`
+	Region        util.Region   `json:"region"`
+	Address       string        `json:"address"`
 }
 
 type Station struct {
 	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	Name string `json:"name" fake:"{lettern:12}"`
 	BaseStation
 } //@name Station
 
@@ -62,14 +60,14 @@ func NewStation(station db.ObservationsStation, simple bool) Station {
 			res.Status = station.Status.String
 		}
 		if station.Status.Valid {
-			res.DateInstalled = station.DateInstalled.Time.Format("2006-01-02")
+			res.DateInstalled = util.Date{Time: station.DateInstalled.Time}
 		}
 	}
 	if station.Province.Valid {
-		res.Province = station.Province.String
+		res.Province = util.Province(station.Province.String)
 	}
 	if station.Region.Valid {
-		res.Region = station.Region.String
+		res.Region = util.Region(station.Region.String)
 	}
 	if station.Address.Valid {
 		res.Address = station.Address.String
@@ -78,24 +76,8 @@ func NewStation(station db.ObservationsStation, simple bool) Station {
 	return res
 }
 
-func RandomStation() Station {
-	lat := util.RandomFloat[float32](-90.0, 90.0)
-	lon := util.RandomFloat[float32](0.0, 360.0)
-	return Station{
-		ID:   util.RandomInt[int64](1, 1000),
-		Name: fmt.Sprintf("%s %s", util.RandomString(12), util.RandomString(8)),
-		BaseStation: BaseStation{
-			DateInstalled: fmt.Sprintf("%d-%02d-%02d", util.RandomInt(2000, 2023), util.RandomInt(1, 12), util.RandomInt(1, 25)),
-			Lat:           &lat,
-			Lon:           &lon,
-			Province:      util.RandomString(16),
-			Region:        util.RandomString(16),
-		},
-	}
-}
-
 type CreateStationReq struct {
-	Name string `json:"name" binding:"required,alphanumspace"`
+	Name string `json:"name" binding:"required"`
 	BaseStation
 } //@name CreateStationReq
 
@@ -105,7 +87,7 @@ func (r CreateStationReq) Transform() db.CreateStationParams {
 
 type UpdateStationReq struct {
 	ID   int64
-	Name string `json:"name" binding:"omitempty,alphanumspace"`
+	Name string `json:"name" binding:"omitempty"`
 	BaseStation
 } //@name UpdateStationReq
 
@@ -124,18 +106,21 @@ type StationParams interface {
 
 func transformStation[T StationParams](req BaseStation, extraParams T) T {
 	arg := db.CreateStationParams{
-		Lat:           util.ToFloat4(req.Lat),
-		Lon:           util.ToFloat4(req.Lon),
-		Elevation:     util.ToFloat4(req.Elevation),
-		DateInstalled: util.ToPgDate(req.DateInstalled),
-		MobileNumber:  util.ToPgText(req.MobileNumber),
-		StationType:   util.ToPgText(req.StationType),
-		StationType2:  util.ToPgText(req.StationType2),
-		StationUrl:    util.ToPgText(req.StationUrl),
-		Status:        util.ToPgText(req.Status),
-		Province:      util.ToPgText(req.Province),
-		Region:        util.ToPgText(req.Region),
-		Address:       util.ToPgText(req.Address),
+		Lat:       util.ToFloat4(req.Lat),
+		Lon:       util.ToFloat4(req.Lon),
+		Elevation: util.ToFloat4(req.Elevation),
+		DateInstalled: pgtype.Date{
+			Time:  req.DateInstalled.Time,
+			Valid: !req.DateInstalled.IsZero(),
+		},
+		MobileNumber: util.ToPgText(req.MobileNumber),
+		StationType:  util.ToPgText(req.StationType),
+		StationType2: util.ToPgText(req.StationType2),
+		StationUrl:   util.ToPgText(req.StationUrl),
+		Status:       util.ToPgText(req.Status),
+		Province:     util.ToPgText(string(req.Province)),
+		Region:       util.ToPgText(string(req.Region)),
+		Address:      util.ToPgText(req.Address),
 	}
 
 	switch v := any(extraParams).(type) {

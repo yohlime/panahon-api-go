@@ -12,16 +12,16 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/sensor"
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPromoTexterStoreLufft(t *testing.T) {
-	mobileNum := util.RandomMobileNumber()
+	mobileNum := gofakeit.Regex("639[0-9]{9}")
 	var lufft sensor.Lufft
 	gofakeit.Struct(&lufft)
+
 	testCases := []struct {
 		name          string
 		body          gin.H

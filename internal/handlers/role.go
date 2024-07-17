@@ -13,7 +13,7 @@ import (
 
 type createRoleReq struct {
 	Name        string `json:"name" binding:"required,alphanum"`
-	Description string `json:"description" binding:"alphanumspace"`
+	Description string `json:"description" binding:"sentence"`
 } //@name CreateRoleParams
 
 // CreateRole
@@ -143,7 +143,7 @@ type updateRoleUri struct {
 
 type updateRoleReq struct {
 	Name        string `json:"name" binding:"omitempty,alphanum"`
-	Description string `json:"description" binding:"omitempty,alphanumspace"`
+	Description string `json:"description" binding:"omitempty,sentence"`
 } //@name UpdateRoleParams
 
 // UpdateRole

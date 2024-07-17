@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jarcoal/httpmock"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestGLabsOptInApi(t *testing.T) {
-	glabsOptInRes := randomGlabsOptInRes()
+	glabsOptInRes := randomGlabsOptInRes(t)
 	simAccessToken := db.SimAccessToken{
 		AccessToken:  glabsOptInRes.AccessToken,
 		MobileNumber: fmt.Sprintf("63%s", glabsOptInRes.SubscriberNumber),
@@ -195,7 +195,7 @@ func TestGLabsOptInApi(t *testing.T) {
 }
 
 func TestGLabsUnsubscribeApi(t *testing.T) {
-	glabsOptInRes := randomGlabsOptInRes()
+	glabsOptInRes := randomGlabsOptInRes(t)
 	simAccessToken := db.SimAccessToken{
 		AccessToken:  glabsOptInRes.AccessToken,
 		MobileNumber: fmt.Sprintf("63%s", glabsOptInRes.SubscriberNumber),
@@ -395,13 +395,11 @@ func TestCreateGLabsLoadApi(t *testing.T) {
 	}
 }
 
-func randomGlabsOptInRes() gLabsOptInReq {
-	subNumber := util.RandomMobileNumber()
-	return gLabsOptInReq{
-		AccessToken:      util.RandomString(32),
-		Code:             util.RandomString(8),
-		SubscriberNumber: subNumber[2:],
-	}
+func randomGlabsOptInRes(t *testing.T) gLabsOptInReq {
+	var g gLabsOptInReq
+	err := gofakeit.Struct(&g)
+	require.NoError(t, err)
+	return g
 }
 
 func requireBodyMatchGlabsAccessToken(t *testing.T, body *bytes.Buffer, accessToken db.SimAccessToken) {
@@ -419,20 +417,20 @@ func requireBodyMatchGlabsAccessToken(t *testing.T, body *bytes.Buffer, accessTo
 
 func randomGLabsLoad() db.GlabsLoad {
 	return db.GlabsLoad{
-		ID: util.RandomInt[int64](0, 100),
+		ID: int64(gofakeit.Number(1, 100)),
 		TransactionID: pgtype.Int4{
-			Int32: util.RandomInt[int32](1000000, 9999999),
+			Int32: int32(gofakeit.Number(1000000, 9999999)),
 			Valid: true,
 		},
 		Promo: pgtype.Text{
-			String: util.RandomString(8),
+			String: gofakeit.Regex("[A-M]{4,6}[0-9]{2}[05]"),
 			Valid:  true,
 		},
 		Status: pgtype.Text{
-			String: util.RandomString(8),
+			String: gofakeit.RandomString([]string{"SUCCESS", "ERROR"}),
 			Valid:  true,
 		},
-		MobileNumber: util.RandomMobileNumber(),
+		MobileNumber: gofakeit.Regex("639[0-9]{9}"),
 	}
 }
 

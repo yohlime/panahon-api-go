@@ -20,7 +20,8 @@ type DefaultHandler struct {
 func NewDefaultHandler(config util.Config, store db.Store, tokenMaker token.Maker, logger *zerolog.Logger) *DefaultHandler {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("mobile_number", validMobileNumber)
-		v.RegisterValidation("alphanumspace", validAlphaNumSpace)
+		v.RegisterValidation("fullname", validFullName)
+		v.RegisterValidation("sentence", validSentence)
 		v.RegisterValidation("date_time", validDateTimeStr)
 	}
 

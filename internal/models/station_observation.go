@@ -1,30 +1,32 @@
 package models
 
 import (
+	"time"
+
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type BaseStationObs struct {
-	Pres      *float32           `json:"pres"`
-	Rr        *float32           `json:"rr"`
-	Rh        *float32           `json:"rh"`
-	Temp      *float32           `json:"temp"`
-	Td        *float32           `json:"td"`
-	Wdir      *float32           `json:"wdir"`
-	Wspd      *float32           `json:"wspd"`
-	Wspdx     *float32           `json:"wspdx"`
-	Srad      *float32           `json:"srad"`
-	Mslp      *float32           `json:"mslp"`
-	Hi        *float32           `json:"hi"`
-	Wchill    *float32           `json:"wchill"`
-	Timestamp pgtype.Timestamptz `json:"timestamp"`
+	Pres      *float32  `json:"pres" fake:"{float32range:990,1100}"`
+	Rr        *float32  `json:"rr"`
+	Rh        *float32  `json:"rh"`
+	Temp      *float32  `json:"temp" fake:"{float32range:25,35}"`
+	Td        *float32  `json:"td"`
+	Wdir      *float32  `json:"wdir"`
+	Wspd      *float32  `json:"wspd"`
+	Wspdx     *float32  `json:"wspdx"`
+	Srad      *float32  `json:"srad"`
+	Mslp      *float32  `json:"mslp"`
+	Hi        *float32  `json:"hi"`
+	Wchill    *float32  `json:"wchill"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type StationObservation struct {
-	ID        int64 `json:"id"`
-	StationID int64 `json:"station_id"`
+	ID        int64 `json:"id" fake:"{number:1,1000}"`
+	StationID int64 `json:"station_id" fake:"{number:1,250}"`
 	QcLevel   int32 `json:"qc_level"`
 	BaseStationObs
 } //@name StationObservation
@@ -35,9 +37,6 @@ func NewStationObservation(obs db.ObservationsObservation) StationObservation {
 		ID:        obs.ID,
 		StationID: obs.StationID,
 		QcLevel:   obs.QcLevel,
-		BaseStationObs: BaseStationObs{
-			Timestamp: obs.Timestamp,
-		},
 	}
 
 	if obs.Pres.Valid {
@@ -77,20 +76,11 @@ func NewStationObservation(obs db.ObservationsObservation) StationObservation {
 		res.Wchill = &obs.Wchill.Float32
 	}
 
-	return res
-}
-
-func RandomStationObservation[T int | int32 | int64](stationID T) StationObservation {
-	pres := util.RandomFloat[float32](900.0, 1000.0)
-	temp := util.RandomFloat[float32](25.0, 35.0)
-	return StationObservation{
-		ID:        util.RandomInt[int64](1, 1000),
-		StationID: int64(stationID),
-		BaseStationObs: BaseStationObs{
-			Pres: &pres,
-			Temp: &temp,
-		},
+	if obs.Timestamp.Valid {
+		res.Timestamp = obs.Timestamp.Time
 	}
+
+	return res
 }
 
 type CreateStationObsReq struct {
@@ -131,19 +121,22 @@ type StationObsParams interface {
 
 func transformStationObs[T StationObsParams](req BaseStationObs, extraParams T) T {
 	arg := db.CreateStationObservationParams{
-		Pres:      util.ToFloat4(req.Pres),
-		Rr:        util.ToFloat4(req.Rr),
-		Rh:        util.ToFloat4(req.Rh),
-		Temp:      util.ToFloat4(req.Temp),
-		Td:        util.ToFloat4(req.Td),
-		Wdir:      util.ToFloat4(req.Wdir),
-		Wspd:      util.ToFloat4(req.Wspd),
-		Wspdx:     util.ToFloat4(req.Wspdx),
-		Srad:      util.ToFloat4(req.Srad),
-		Mslp:      util.ToFloat4(req.Mslp),
-		Hi:        util.ToFloat4(req.Hi),
-		Wchill:    util.ToFloat4(req.Wchill),
-		Timestamp: req.Timestamp,
+		Pres:   util.ToFloat4(req.Pres),
+		Rr:     util.ToFloat4(req.Rr),
+		Rh:     util.ToFloat4(req.Rh),
+		Temp:   util.ToFloat4(req.Temp),
+		Td:     util.ToFloat4(req.Td),
+		Wdir:   util.ToFloat4(req.Wdir),
+		Wspd:   util.ToFloat4(req.Wspd),
+		Wspdx:  util.ToFloat4(req.Wspdx),
+		Srad:   util.ToFloat4(req.Srad),
+		Mslp:   util.ToFloat4(req.Mslp),
+		Hi:     util.ToFloat4(req.Hi),
+		Wchill: util.ToFloat4(req.Wchill),
+		Timestamp: pgtype.Timestamptz{
+			Time:  req.Timestamp,
+			Valid: !req.Timestamp.IsZero(),
+		},
 	}
 
 	switch v := any(extraParams).(type) {
@@ -167,7 +160,7 @@ func transformStationObs[T StationObsParams](req BaseStationObs, extraParams T) 
 			Mslp:      arg.Mslp,
 			Hi:        arg.Hi,
 			Wchill:    arg.Wchill,
-			Timestamp: req.Timestamp,
+			Timestamp: arg.Timestamp,
 			QcLevel:   v.QcLevel,
 		}).(T)
 	default:

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/middlewares"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
@@ -28,7 +29,7 @@ func TestListUsersAPI(t *testing.T) {
 	n := 10
 	users := make([]db.User, n)
 	for i := 0; i < n; i++ {
-		users[i], _ = randomUser(t)
+		users[i], _, _ = randomUser(t)
 	}
 
 	type Query struct {
@@ -166,15 +167,7 @@ func TestListUsersAPI(t *testing.T) {
 }
 
 func TestGetUserAPI(t *testing.T) {
-	user, _ := randomUser(t)
-
-	n := 5
-	roles := make([]db.Role, n)
-	roleNames := make([]string, n)
-	for i := 0; i < n; i++ {
-		roles[i] = randomRole(t)
-		roleNames[i] = roles[i].Name
-	}
+	user, _, roleNames := randomUser(t)
 
 	testCases := []struct {
 		name          string
@@ -274,31 +267,14 @@ func TestGetUserAPI(t *testing.T) {
 }
 
 func TestCreateUserAPI(t *testing.T) {
-	user, password := randomUser(t)
+	user, password, roleNames := randomUser(t)
 
-	n := 5
-	roles := make([]db.Role, n)
-	roleNames := make([]string, n)
-	withInvalidRoleNames := make([]string, n)
-	userRoles := make([]db.UserRolesParams, n)
-	var withInvalidRoleNamesRet []string
-	var withInvalidRolesRet []db.UserRolesParams
-	for i := 0; i < n; i++ {
-		roles[i] = randomRole(t)
-		roleName := roles[i].Name
-		roleNames[i] = roleName
-		userRoles[i] = db.UserRolesParams{
+	var userRoleParams []db.UserRolesParams
+	for _, r := range roleNames {
+		userRoleParams = append(userRoleParams, db.UserRolesParams{
 			Username: user.Username,
-			RoleName: roleName,
-		}
-		withInvalidRoleNames[i] = roleName
-		if i == 1 {
-			withInvalidRoleNames[i] = "INVALID"
-		}
-		if i != 1 && i != 3 {
-			withInvalidRolesRet = append(withInvalidRolesRet, userRoles[i])
-			withInvalidRoleNamesRet = append(withInvalidRoleNamesRet, roleName)
-		}
+			RoleName: r,
+		})
 	}
 
 	testCases := []struct {
@@ -338,7 +314,7 @@ func TestCreateUserAPI(t *testing.T) {
 				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(user, nil)
 				store.EXPECT().BulkCreateUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(userRoles, nil)
+					Return(userRoleParams, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -353,18 +329,18 @@ func TestCreateUserAPI(t *testing.T) {
 				"password":  password,
 				"full_name": user.FullName,
 				"email":     user.Email,
-				"roles":     withInvalidRoleNames,
+				"roles":     roleNames,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(user, nil)
 				store.EXPECT().BulkCreateUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(withInvalidRolesRet, []error{db.ErrRecordNotFound})
+					Return([]db.UserRolesParams{}, []error{db.ErrRecordNotFound})
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, withInvalidRoleNamesRet))
+				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, []string{}))
 			},
 		},
 		{
@@ -477,27 +453,15 @@ func TestCreateUserAPI(t *testing.T) {
 }
 
 func TestUpdateUserAPI(t *testing.T) {
-	user, _ := randomUser(t)
+	user, _, _ := randomUser(t)
+	newRoleNames := []string{"ADMIN", "SUPERADMIN"}
 
-	n := 5
-	roles := make([]db.Role, n)
-	roleNames := make([]string, n)
-	for i := 0; i < n; i++ {
-		roles[i] = randomRole(t)
-		roleNames[i] = roles[i].Name
-	}
-
-	toAttachRolesNames := roleNames[0:3]
-	attachedRolesNames := roleNames[2:4]
-	addedUserRoles := []db.UserRolesParams{
-		{
+	var addedUserRoles []db.UserRolesParams
+	for _, r := range newRoleNames {
+		addedUserRoles = append(addedUserRoles, db.UserRolesParams{
 			Username: user.Username,
-			RoleName: roleNames[0],
-		},
-		{
-			Username: user.Username,
-			RoleName: roleNames[1],
-		},
+			RoleName: r,
+		})
 	}
 
 	testCases := []struct {
@@ -539,7 +503,7 @@ func TestUpdateUserAPI(t *testing.T) {
 				"id":        user.ID,
 				"username":  user.Username,
 				"full_name": user.FullName,
-				"roles":     toAttachRolesNames,
+				"roles":     newRoleNames,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.UpdateUserParams{
@@ -553,7 +517,7 @@ func TestUpdateUserAPI(t *testing.T) {
 				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), arg).
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
-					Return(attachedRolesNames, nil)
+					Return([]string{}, nil)
 				store.EXPECT().BulkCreateUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(addedUserRoles, nil)
 				store.EXPECT().BulkDeleteUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -562,7 +526,7 @@ func TestUpdateUserAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, toAttachRolesNames))
+				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, newRoleNames))
 			},
 		},
 		{
@@ -623,7 +587,7 @@ func TestUpdateUserAPI(t *testing.T) {
 }
 
 func TestDeleteUserAPI(t *testing.T) {
-	user, _ := randomUser(t)
+	user, _, _ := randomUser(t)
 
 	testCases := []struct {
 		name          string
@@ -683,7 +647,7 @@ func TestDeleteUserAPI(t *testing.T) {
 }
 
 func TestRegisterUserAPI(t *testing.T) {
-	user, password := randomUser(t)
+	user, password, _ := randomUser(t)
 
 	testCases := []struct {
 		name          string
@@ -844,8 +808,8 @@ func TestRegisterUserAPI(t *testing.T) {
 
 func TestLoginUserAPI(t *testing.T) {
 	expectedCookieNames := []string{models.AccessTokenCookieName, models.RefreshTokenCookieName}
-	user, password := randomUser(t)
-	tokenStr := util.RandomString(32)
+	user, password, _ := randomUser(t)
+	tokenStr := gofakeit.LetterN(32)
 	tokenExpiresAt := time.Now().Add(6 * time.Hour)
 
 	testCases := []struct {
@@ -1043,7 +1007,7 @@ func TestLoginUserAPI(t *testing.T) {
 
 func TestLogoutUserAPI(t *testing.T) {
 	expectedCookieNames := []string{models.AccessTokenCookieName, models.RefreshTokenCookieName}
-	tokenStr := util.RandomString(32)
+	tokenStr := gofakeit.LetterN(32)
 
 	testCases := []struct {
 		name          string
@@ -1182,8 +1146,8 @@ func TestLogoutUserAPI(t *testing.T) {
 }
 
 func TestGetAuthUserAPI(t *testing.T) {
-	user, _ := randomUser(t)
-	tokenStr := util.RandomString(32)
+	user, _, _ := randomUser(t)
+	tokenStr := gofakeit.LetterN(32)
 
 	authUser := token.User{
 		Username: user.Username,
@@ -1257,18 +1221,23 @@ func TestGetAuthUserAPI(t *testing.T) {
 	}
 }
 
-func randomUser(t *testing.T) (user db.User, password string) {
-	password = util.RandomString(6)
+func randomUser(t *testing.T) (user db.User, password string, roleNames []string) {
+	password = gofakeit.Password(true, true, false, false, false, 12)
 	hashedPassword, err := util.HashPassword(password)
 	require.NoError(t, err)
 
+	var u models.User
+	err = gofakeit.Struct(&u)
+	require.NoError(t, err)
+
 	user = db.User{
-		ID:       util.RandomInt[int64](1, 1000),
-		Username: util.RandomString(12),
+		ID:       int64(gofakeit.Number(1, 1000)),
+		Username: u.Username,
 		Password: hashedPassword,
-		FullName: util.RandomString(24),
-		Email:    util.RandomEmail(),
+		FullName: u.FullName,
+		Email:    u.Email,
 	}
+	roleNames = u.Roles
 	return
 }
 

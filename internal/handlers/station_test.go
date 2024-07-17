@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
@@ -22,16 +23,7 @@ import (
 )
 
 func TestCreateStationAPI(t *testing.T) {
-	station := models.RandomStation()
-	res := db.ObservationsStation{
-		ID:            station.ID,
-		Name:          station.Name,
-		Lat:           util.ToFloat4(station.Lat),
-		Lon:           util.ToFloat4(station.Lon),
-		DateInstalled: util.ToPgDate(station.DateInstalled),
-		Province:      util.ToPgText(station.Province),
-		Region:        util.ToPgText(station.Region),
-	}
+	station := randomStation(t)
 
 	testCases := []struct {
 		name          string
@@ -50,22 +42,13 @@ func TestCreateStationAPI(t *testing.T) {
 				"region":         station.Region,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.CreateStationParams{
-					Name:          station.Name,
-					Lat:           res.Lat,
-					Lon:           res.Lon,
-					DateInstalled: res.DateInstalled,
-					Province:      res.Province,
-					Region:        res.Region,
-				}
-
-				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(res, nil)
+				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CreateStationParams")).
+					Return(station, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
-				requireBodyMatchStation(t, recorder.Body, res)
+				requireBodyMatchStation(t, recorder.Body, station)
 			},
 		},
 		{
@@ -91,20 +74,13 @@ func TestCreateStationAPI(t *testing.T) {
 				"region":   station.Region,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.CreateStationParams{
-					Name:     res.Name,
-					Lat:      res.Lat,
-					Province: res.Province,
-					Region:   res.Region,
-				}
-
-				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(res, nil)
+				store.EXPECT().CreateStation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CreateStationParams")).
+					Return(station, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
-				requireBodyMatchStation(t, recorder.Body, res)
+				requireBodyMatchStation(t, recorder.Body, station)
 			},
 		},
 	}
@@ -139,19 +115,9 @@ func TestCreateStationAPI(t *testing.T) {
 
 func TestListStationsAPI(t *testing.T) {
 	n := 10
-	stations := make([]models.Station, n)
-	res := make([]db.ObservationsStation, n)
+	stations := make([]db.ObservationsStation, n)
 	for i := 0; i < n; i++ {
-		stations[i] = models.RandomStation()
-		res[i] = db.ObservationsStation{
-			ID:            stations[i].ID,
-			Name:          stations[i].Name,
-			Lat:           util.ToFloat4(stations[i].Lat),
-			Lon:           util.ToFloat4(stations[i].Lon),
-			DateInstalled: util.ToPgDate(stations[i].DateInstalled),
-			Province:      util.ToPgText(stations[i].Province),
-			Region:        util.ToPgText(stations[i].Region),
-		}
+		stations[i] = randomStation(t)
 	}
 
 	testCases := []struct {
@@ -165,13 +131,13 @@ func TestListStationsAPI(t *testing.T) {
 			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.ListStationsParams")).
-					Return(res, nil)
+					Return(stations, nil)
 				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStations(t, recorder.Body, res)
+				requireBodyMatchStations(t, recorder.Body, stations)
 			},
 		},
 		{
@@ -183,7 +149,7 @@ func TestListStationsAPI(t *testing.T) {
 				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsParams) bool {
 					return arg.Status.Valid && len(arg.Status.String) > 0
 				})).
-					Return(res, nil)
+					Return(stations, nil)
 				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg pgtype.Text) bool {
 					return arg.Valid && len(arg.String) > 0
 				})).Return(int64(n), nil)
@@ -191,7 +157,7 @@ func TestListStationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStations(t, recorder.Body, res)
+				requireBodyMatchStations(t, recorder.Body, stations)
 			},
 		},
 		{
@@ -203,7 +169,7 @@ func TestListStationsAPI(t *testing.T) {
 				store.EXPECT().ListStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsWithinRadiusParams) bool {
 					return assert.InDelta(t, arg.Cx, 121.0, 0.001) && assert.InDelta(t, arg.Cy, 5.5, 0.001) && assert.InDelta(t, arg.R, 1.0, 0.001)
 				})).
-					Return(res, nil)
+					Return(stations, nil)
 				store.EXPECT().CountStationsWithinRadius(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CountStationsWithinRadiusParams) bool {
 					return assert.InDelta(t, arg.Cx, 121.0, 0.001) && assert.InDelta(t, arg.Cy, 5.5, 0.001) && assert.InDelta(t, arg.R, 1.0, 0.001)
 				})).Return(int64(n), nil)
@@ -211,7 +177,7 @@ func TestListStationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStations(t, recorder.Body, res)
+				requireBodyMatchStations(t, recorder.Body, stations)
 			},
 		},
 		{
@@ -235,7 +201,7 @@ func TestListStationsAPI(t *testing.T) {
 				store.EXPECT().ListStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsWithinBBoxParams) bool {
 					return assert.InDelta(t, arg.Xmin, 121.0, 0.001) && assert.InDelta(t, arg.Ymin, 5.5, 0.001) && assert.InDelta(t, arg.Xmax, 122.5, 0.001) && assert.InDelta(t, arg.Ymax, 7.6, 0.001)
 				})).
-					Return(res, nil)
+					Return(stations, nil)
 				store.EXPECT().CountStationsWithinBBox(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CountStationsWithinBBoxParams) bool {
 					return assert.InDelta(t, arg.Xmin, 121.0, 0.001) && assert.InDelta(t, arg.Ymin, 5.5, 0.001) && assert.InDelta(t, arg.Xmax, 122.5, 0.001) && assert.InDelta(t, arg.Ymax, 7.6, 0.001)
 				})).Return(int64(n), nil)
@@ -243,7 +209,7 @@ func TestListStationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStations(t, recorder.Body, res)
+				requireBodyMatchStations(t, recorder.Body, stations)
 			},
 		},
 		{
@@ -363,16 +329,7 @@ func TestListStationsAPI(t *testing.T) {
 }
 
 func TestGetStationAPI(t *testing.T) {
-	station := models.RandomStation()
-	res := db.ObservationsStation{
-		ID:            station.ID,
-		Name:          station.Name,
-		Lat:           util.ToFloat4(station.Lat),
-		Lon:           util.ToFloat4(station.Lon),
-		DateInstalled: util.ToPgDate(station.DateInstalled),
-		Province:      util.ToPgText(station.Province),
-		Region:        util.ToPgText(station.Region),
-	}
+	station := randomStation(t)
 
 	testCases := []struct {
 		name          string
@@ -385,12 +342,12 @@ func TestGetStationAPI(t *testing.T) {
 			stationID: station.ID,
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetStation(mock.AnythingOfType("*gin.Context"), station.ID).
-					Return(res, nil)
+					Return(station, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStation(t, recorder.Body, res)
+				requireBodyMatchStation(t, recorder.Body, station)
 			},
 		},
 		{
@@ -455,16 +412,7 @@ func TestGetStationAPI(t *testing.T) {
 }
 
 func TestUpdateStationAPI(t *testing.T) {
-	station := models.RandomStation()
-	res := db.ObservationsStation{
-		ID:            station.ID,
-		Name:          station.Name,
-		Lat:           util.ToFloat4(station.Lat),
-		Lon:           util.ToFloat4(station.Lon),
-		DateInstalled: util.ToPgDate(station.DateInstalled),
-		Province:      util.ToPgText(station.Province),
-		Region:        util.ToPgText(station.Region),
-	}
+	station := randomStation(t)
 
 	testCases := []struct {
 		name          string
@@ -485,22 +433,13 @@ func TestUpdateStationAPI(t *testing.T) {
 				"region":   station.Region,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.UpdateStationParams{
-					ID:       station.ID,
-					Name:     util.ToPgText(station.Name),
-					Lat:      util.ToFloat4(station.Lat),
-					Lon:      util.ToFloat4(station.Lon),
-					Province: util.ToPgText(station.Province),
-					Region:   util.ToPgText(station.Region),
-				}
-
-				store.EXPECT().UpdateStation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(res, nil)
+				store.EXPECT().UpdateStation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.UpdateStationParams")).
+					Return(station, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStation(t, recorder.Body, res)
+				requireBodyMatchStation(t, recorder.Body, station)
 			},
 		},
 		{
@@ -560,7 +499,7 @@ func TestUpdateStationAPI(t *testing.T) {
 }
 
 func TestDeleteStationAPI(t *testing.T) {
-	station := models.RandomStation()
+	station := randomStation(t)
 
 	testCases := []struct {
 		name          string
@@ -584,7 +523,7 @@ func TestDeleteStationAPI(t *testing.T) {
 			name:      "InternalError",
 			stationID: station.ID,
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().DeleteStation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+				store.EXPECT().DeleteStation(mock.AnythingOfType("*gin.Context"), station.ID).
 					Return(sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -616,6 +555,25 @@ func TestDeleteStationAPI(t *testing.T) {
 
 			tc.checkResponse(recorder, store)
 		})
+	}
+}
+
+func randomStation(t *testing.T) db.ObservationsStation {
+	var station models.Station
+	err := gofakeit.Struct(&station)
+	require.NoError(t, err)
+
+	return db.ObservationsStation{
+		ID:   station.ID,
+		Name: station.Name,
+		Lat:  util.ToFloat4(station.Lat),
+		Lon:  util.ToFloat4(station.Lon),
+		DateInstalled: pgtype.Date{
+			Time:  station.DateInstalled.Time,
+			Valid: !station.DateInstalled.IsZero(),
+		},
+		Province: util.ToPgText(string(station.Province)),
+		Region:   util.ToPgText(string(station.Region)),
 	}
 }
 

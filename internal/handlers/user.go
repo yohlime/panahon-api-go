@@ -17,7 +17,7 @@ import (
 type createUserReq struct {
 	Username string   `json:"username" binding:"required,alphanum"`
 	Password string   `json:"password" binding:"required,min=6"`
-	FullName string   `json:"full_name" binding:"required,alphanumspace"`
+	FullName string   `json:"full_name" binding:"required,fullname"`
 	Email    string   `json:"email" binding:"required,email"`
 	Roles    []string `json:"roles"`
 } //@name CreateUserParams
@@ -175,7 +175,7 @@ type updateUserUri struct {
 
 type updateUserReq struct {
 	Password string   `json:"password" binding:"omitempty,min=6"`
-	FullName string   `json:"full_name" binding:"omitempty,alphanumspace"`
+	FullName string   `json:"full_name" binding:"omitempty,fullname"`
 	Email    string   `json:"email" binding:"omitempty,email"`
 	Roles    []string `json:"roles"`
 } //@name UpdateUserParams

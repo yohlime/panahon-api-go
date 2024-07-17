@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/mock"
@@ -22,10 +22,10 @@ import (
 
 func TestLufftMsgLog(t *testing.T) {
 	n := 10
-	stationID := util.RandomInt[int64](1, 100)
+	stationID := int64(gofakeit.Number(1, 100))
 	lufftStationMsgs := make([]db.ListLufftStationMsgRow, n)
 	for i := 0; i < n; i++ {
-		msgSlice := randomLufftMsgLog(stationID)
+		msgSlice := randomLufftMsgLog()
 		lufftStationMsgs[i] = db.ListLufftStationMsgRow{
 			Message:   msgSlice.Message,
 			Timestamp: msgSlice.Timestamp,
@@ -169,16 +169,16 @@ func TestLufftMsgLog(t *testing.T) {
 	}
 }
 
-func randomLufftMsgLog(stationID int64) db.ObservationsStationhealth {
+func randomLufftMsgLog() db.ObservationsStationhealth {
 	return db.ObservationsStationhealth{
-		ID:        util.RandomInt[int64](1, 1000),
-		StationID: stationID,
+		ID:        int64(gofakeit.Number(1, 1000)),
+		StationID: int64(gofakeit.Number(1, 100)),
 		Message: pgtype.Text{
-			String: util.RandomString(120),
+			String: gofakeit.LetterN(120),
 			Valid:  true,
 		},
 		Timestamp: pgtype.Timestamptz{
-			Time:  time.Now(),
+			Time:  gofakeit.Date(),
 			Valid: true,
 		},
 	}

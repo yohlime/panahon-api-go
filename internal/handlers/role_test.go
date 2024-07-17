@@ -8,11 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -497,12 +498,21 @@ func TestDeleteRoleAPI(t *testing.T) {
 }
 
 func randomRole(t *testing.T) db.Role {
+	var r models.Role
+	err := gofakeit.Struct(&r)
+	require.NoError(t, err)
+
 	return db.Role{
-		ID:   util.RandomInt[int64](1, 1000),
-		Name: strings.ToUpper(util.RandomString(12)),
-		Description: pgtype.Text{
-			String: util.RandomString(24),
-			Valid:  true,
+		ID:          int64(gofakeit.Number(1, 1000)),
+		Name:        r.Name,
+		Description: util.ToPgText(r.Description),
+		CreatedAt: pgtype.Timestamptz{
+			Time:  r.CreatedAt,
+			Valid: !r.CreatedAt.IsZero(),
+		},
+		UpdatedAt: pgtype.Timestamptz{
+			Time:  r.UpdatedAt,
+			Valid: r.UpdatedAt.Sub(r.CreatedAt) >= 0,
 		},
 	}
 }

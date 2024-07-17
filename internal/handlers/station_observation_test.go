@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
@@ -21,19 +22,96 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCreateStationObservationAPI(t *testing.T) {
+	stnObs := randomObservation(t)
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"station_id": stnObs.StationID,
+				"pres":       stnObs.Pres,
+				"temp":       stnObs.Temp,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CreateStationObservationParams")).
+					Return(stnObs, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				requireBodyMatchStationObservation(t, recorder.Body, stnObs)
+			},
+		},
+		{
+			name: "InvalidParam",
+			body: gin.H{
+				"station_id": stnObs.StationID,
+				"pres":       stnObs.Pres,
+				"temp":       "32.7",
+			},
+			buildStubs: func(store *mockdb.MockStore) {},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"station_id": stnObs.StationID,
+				"pres":       stnObs.Pres,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.ObservationsObservation{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST(":station_id/observations", handler.CreateStationObservation)
+
+			recorder := httptest.NewRecorder()
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("/%d/observations", stnObs.StationID)
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(recorder, store)
+		})
+	}
+}
+
 func TestListStationObservationsAPI(t *testing.T) {
 	n := 5
-	stationID := util.RandomInt(1, 100)
-	stationObsSlice := make([]models.StationObservation, n)
-	res := make([]db.ObservationsObservation, n)
-	for i := range stationObsSlice {
-		stationObsSlice[i] = models.RandomStationObservation(stationID)
-		res[i] = db.ObservationsObservation{
-			ID:        stationObsSlice[i].ID,
-			StationID: stationObsSlice[i].StationID,
-			Pres:      util.ToFloat4(stationObsSlice[i].Pres),
-			Temp:      util.ToFloat4(stationObsSlice[i].Temp),
-		}
+	stationID := gofakeit.Number(1, 100)
+	stnObsSlice := make([]db.ObservationsObservation, n)
+	for i := range stnObsSlice {
+		stnObsSlice[i] = randomObservation(t)
+		stnObsSlice[i].StationID = int64(stationID)
 	}
 
 	testCases := []struct {
@@ -51,7 +129,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
 						return !args.IsStartDate && !args.IsEndDate
 					})).
-					Return(res, nil)
+					Return(stnObsSlice, nil)
 				store.EXPECT().CountStationObservations(
 					mock.AnythingOfType("*gin.Context"),
 					mock.MatchedBy(func(args db.CountStationObservationsParams) bool {
@@ -62,7 +140,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, res)
+				requireBodyMatchStationObservations(t, recorder.Body, stnObsSlice)
 			},
 		},
 		{
@@ -77,7 +155,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 					mock.MatchedBy(func(args db.ListStationObservationsParams) bool {
 						return args.IsStartDate && args.IsEndDate
 					})).
-					Return(res, nil)
+					Return(stnObsSlice, nil)
 				store.EXPECT().CountStationObservations(
 					mock.AnythingOfType("*gin.Context"),
 					mock.MatchedBy(func(args db.CountStationObservationsParams) bool {
@@ -88,7 +166,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, res)
+				requireBodyMatchStationObservations(t, recorder.Body, stnObsSlice)
 			},
 		},
 		{
@@ -212,14 +290,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 }
 
 func TestGetStationObservationAPI(t *testing.T) {
-	stationID := util.RandomInt(1, 100)
-	stationObs := models.RandomStationObservation(stationID)
-	res := db.ObservationsObservation{
-		ID:        stationObs.ID,
-		StationID: stationObs.StationID,
-		Pres:      util.ToFloat4(stationObs.Pres),
-		Temp:      util.ToFloat4(stationObs.Temp),
-	}
+	stnObs := randomObservation(t)
 
 	testCases := []struct {
 		name          string
@@ -230,35 +301,27 @@ func TestGetStationObservationAPI(t *testing.T) {
 		{
 			name: "OK",
 			params: db.GetStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.GetStationObservationParams{
-					ID:        stationObs.ID,
-					StationID: stationObs.StationID,
-				}
-				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(res, nil)
+				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.GetStationObservationParams")).
+					Return(stnObs, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservation(t, recorder.Body, res)
+				requireBodyMatchStationObservation(t, recorder.Body, stnObs)
 			},
 		},
 		{
 			name: "NotFound",
 			params: db.GetStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.GetStationObservationParams{
-					ID:        stationObs.ID,
-					StationID: stationObs.StationID,
-				}
-				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), arg).
+				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.GetStationObservationParams")).
 					Return(db.ObservationsObservation{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -269,8 +332,8 @@ func TestGetStationObservationAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			params: db.GetStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -285,7 +348,7 @@ func TestGetStationObservationAPI(t *testing.T) {
 			name: "InvalidID",
 			params: db.GetStationObservationParams{
 				ID:        0,
-				StationID: stationObs.StationID,
+				StationID: stnObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -321,111 +384,8 @@ func TestGetStationObservationAPI(t *testing.T) {
 	}
 }
 
-func TestCreateStationObservationAPI(t *testing.T) {
-	stationID := util.RandomInt(1, 100)
-	stationObs := models.RandomStationObservation(stationID)
-	res := db.ObservationsObservation{
-		ID:        stationObs.ID,
-		StationID: stationObs.StationID,
-		Pres:      util.ToFloat4(stationObs.Pres),
-		Temp:      util.ToFloat4(stationObs.Temp),
-	}
-
-	testCases := []struct {
-		name          string
-		body          gin.H
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
-	}{
-		{
-			name: "OK",
-			body: gin.H{
-				"station_id": stationObs.StationID,
-				"pres":       stationObs.Pres,
-				"temp":       stationObs.Temp,
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.CreateStationObservationParams{
-					StationID: res.StationID,
-					Pres:      res.Pres,
-					Temp:      res.Temp,
-				}
-
-				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(res, nil)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertExpectations(t)
-				require.Equal(t, http.StatusCreated, recorder.Code)
-				requireBodyMatchStationObservation(t, recorder.Body, res)
-			},
-		},
-		{
-			name: "InvalidParam",
-			body: gin.H{
-				"station_id": stationObs.StationID,
-				"pres":       stationObs.Pres,
-				"temp":       "32.7",
-			},
-			buildStubs: func(store *mockdb.MockStore) {},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-		{
-			name: "InternalError",
-			body: gin.H{
-				"station_id": stationObs.StationID,
-				"pres":       stationObs.Pres,
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().CreateStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(db.ObservationsObservation{}, sql.ErrConnDone)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertExpectations(t)
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			store := mockdb.NewMockStore(t)
-			tc.buildStubs(store)
-
-			handler := newTestHandler(store, nil)
-
-			router := gin.Default()
-			router.POST(":station_id/observations", handler.CreateStationObservation)
-
-			recorder := httptest.NewRecorder()
-
-			data, err := json.Marshal(tc.body)
-			require.NoError(t, err)
-
-			url := fmt.Sprintf("/%d/observations", stationObs.StationID)
-			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-			require.NoError(t, err)
-
-			router.ServeHTTP(recorder, request)
-
-			tc.checkResponse(recorder, store)
-		})
-	}
-}
-
 func TestUpdateStationObservationAPI(t *testing.T) {
-	stationID := util.RandomInt(1, 100)
-	stationObs := models.RandomStationObservation(stationID)
-	res := db.ObservationsObservation{
-		ID:        stationObs.ID,
-		StationID: stationObs.StationID,
-		Pres:      util.ToFloat4(stationObs.Pres),
-		Temp:      util.ToFloat4(stationObs.Temp),
-	}
+	stnObs := randomObservation(t)
 
 	testCases := []struct {
 		name          string
@@ -437,37 +397,30 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 		{
 			name: "OK",
 			params: db.UpdateStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			body: gin.H{
-				"id":         stationObs.ID,
-				"station_id": stationObs.StationID,
-				"pres":       stationObs.Pres,
-				"temp":       stationObs.Temp,
+				"id":         stnObs.ID,
+				"station_id": stnObs.StationID,
+				"pres":       stnObs.Pres,
+				"temp":       stnObs.Temp,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.UpdateStationObservationParams{
-					ID:        res.ID,
-					StationID: res.StationID,
-					Pres:      res.Pres,
-					Temp:      res.Temp,
-				}
-
-				store.EXPECT().UpdateStationObservation(mock.AnythingOfType("*gin.Context"), arg).
-					Return(res, nil)
+				store.EXPECT().UpdateStationObservation(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.UpdateStationObservationParams")).
+					Return(stnObs, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservation(t, recorder.Body, res)
+				requireBodyMatchStationObservation(t, recorder.Body, stnObs)
 			},
 		},
 		{
 			name: "InternalError",
 			params: db.UpdateStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			body: gin.H{},
 			buildStubs: func(store *mockdb.MockStore) {
@@ -482,8 +435,8 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 		{
 			name: "NotFound",
 			params: db.UpdateStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			body: gin.H{},
 			buildStubs: func(store *mockdb.MockStore) {
@@ -526,8 +479,7 @@ func TestUpdateStationObservationAPI(t *testing.T) {
 }
 
 func TestDeleteStationObservationObservationAPI(t *testing.T) {
-	stationID := util.RandomInt(1, 100)
-	stationObs := models.RandomStationObservation(stationID)
+	stnObs := randomObservation(t)
 
 	testCases := []struct {
 		name          string
@@ -538,8 +490,8 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 		{
 			name: "OK",
 			params: db.DeleteStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().DeleteStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -553,8 +505,8 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			params: db.DeleteStationObservationParams{
-				ID:        stationObs.ID,
-				StationID: stationObs.StationID,
+				ID:        stnObs.ID,
+				StationID: stnObs.StationID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().DeleteStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
@@ -595,34 +547,19 @@ func TestDeleteStationObservationObservationAPI(t *testing.T) {
 func TestListObservationsAPI(t *testing.T) {
 	n := 10
 	stations := make([]db.ObservationsStation, n)
-	stationObsSlice := make([]models.StationObservation, 5)
-	res := make([]db.ObservationsObservation, 5)
+	stnObsSlice := make([]db.ObservationsObservation, 5)
 	var selectedStns []db.ObservationsStation
 	var selectedStnIDs []string
 	i := 0
 	for s := range stations {
-		station := models.RandomStation()
-		stations[i] = db.ObservationsStation{
-			ID:            station.ID,
-			Name:          station.Name,
-			Lat:           util.ToFloat4(station.Lat),
-			Lon:           util.ToFloat4(station.Lon),
-			DateInstalled: util.ToPgDate(station.DateInstalled),
-			Province:      util.ToPgText(station.Province),
-			Region:        util.ToPgText(station.Region),
-		}
+		stations[s] = randomStation(t)
 		if (s % 2) == 0 {
 			selectedStns = append(selectedStns, stations[s])
 			idStr := fmt.Sprintf("%d", stations[s].ID)
 			selectedStnIDs = append(selectedStnIDs, idStr)
 			if i < 5 {
-				stationObsSlice[i] = models.RandomStationObservation(stations[s].ID)
-				res[i] = db.ObservationsObservation{
-					ID:        stationObsSlice[i].ID,
-					StationID: stationObsSlice[i].StationID,
-					Pres:      util.ToFloat4(stationObsSlice[i].Pres),
-					Temp:      util.ToFloat4(stationObsSlice[i].Temp),
-				}
+				stnObsSlice[i] = randomObservation(t)
+				stnObsSlice[i].StationID = stations[s].ID
 				i++
 			}
 		}
@@ -651,7 +588,7 @@ func TestListObservationsAPI(t *testing.T) {
 						return (arg.Limit.Int32 == 5) && (arg.Offset == 0) && (len(arg.StationIds) == 10)
 					}),
 				).
-					Return(res, nil)
+					Return(stnObsSlice, nil)
 
 				store.EXPECT().CountObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CountObservationsParams")).
 					Return(100, nil)
@@ -659,7 +596,7 @@ func TestListObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, res)
+				requireBodyMatchStationObservations(t, recorder.Body, stnObsSlice)
 			},
 		},
 		{
@@ -674,7 +611,7 @@ func TestListObservationsAPI(t *testing.T) {
 						return (arg.Limit.Int32 == 5) && (arg.Offset == 0) && (len(arg.StationIds) == nSelected)
 					}),
 				).
-					Return(res, nil)
+					Return(stnObsSlice, nil)
 
 				store.EXPECT().CountObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CountObservationsParams")).
 					Return(50, nil)
@@ -682,7 +619,7 @@ func TestListObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, res)
+				requireBodyMatchStationObservations(t, recorder.Body, stnObsSlice)
 			},
 		},
 		{
@@ -704,7 +641,7 @@ func TestListObservationsAPI(t *testing.T) {
 						return arg.IsStartDate && arg.IsEndDate && (len(arg.StationIds) == 10)
 					}),
 				).
-					Return(res, nil)
+					Return(stnObsSlice, nil)
 
 				store.EXPECT().CountObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CountObservationsParams")).
 					Return(30, nil)
@@ -712,7 +649,7 @@ func TestListObservationsAPI(t *testing.T) {
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchStationObservations(t, recorder.Body, res)
+				requireBodyMatchStationObservations(t, recorder.Body, stnObsSlice)
 			},
 		},
 		{
@@ -954,8 +891,7 @@ func TestGetNearestLatestStationObservationAPI(t *testing.T) {
 }
 
 func TestGetLatestStationObservationAPI(t *testing.T) {
-	stationID := util.RandomInt(1, 100)
-	stationObs := models.RandomStationObservation(stationID)
+	stnObs := randomObservation(t)
 
 	testCases := []struct {
 		name          string
@@ -965,7 +901,7 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 	}{
 		{
 			name:      "OK",
-			stationID: stationObs.StationID,
+			stationID: stnObs.StationID,
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.GetLatestStationObservationRow{}, nil)
@@ -977,7 +913,7 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 		},
 		{
 			name:      "NotFound",
-			stationID: stationObs.StationID,
+			stationID: stnObs.StationID,
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.GetLatestStationObservationRow{}, db.ErrRecordNotFound)
@@ -989,7 +925,7 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 		},
 		{
 			name:      "InternalError",
-			stationID: stationObs.StationID,
+			stationID: stnObs.StationID,
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetLatestStationObservation(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.GetLatestStationObservationRow{}, sql.ErrConnDone)
@@ -1033,6 +969,19 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 
 			tc.checkResponse(recorder, store)
 		})
+	}
+}
+
+func randomObservation(t *testing.T) db.ObservationsObservation {
+	var o models.StationObservation
+	err := gofakeit.Struct(&o)
+	require.NoError(t, err)
+
+	return db.ObservationsObservation{
+		ID:        o.ID,
+		StationID: o.StationID,
+		Pres:      util.ToFloat4(o.Pres),
+		Temp:      util.ToFloat4(o.Temp),
 	}
 }
 

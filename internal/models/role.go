@@ -2,28 +2,33 @@ package models
 
 import (
 	"fmt"
+	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Role struct {
-	Name        string             `json:"name"`
-	Description string             `json:"description"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Name        string    `json:"name" fake:"{regex:[A-Z]{6,12}}"`
+	Description string    `json:"description" fake:"{sentence:10}"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	CreatedAt   time.Time `json:"created_at"`
 } //@name Role
 
 // NewRole creates new Role from db.Role
 func NewRole(role db.Role) Role {
 	res := Role{
-		Name:      role.Name,
-		UpdatedAt: role.UpdatedAt,
-		CreatedAt: role.CreatedAt,
+		Name: role.Name,
 	}
 
 	if role.Description.Valid {
 		res.Description = role.Description.String
+	}
+
+	if role.CreatedAt.Valid {
+		res.CreatedAt = role.CreatedAt.Time
+	}
+	if role.UpdatedAt.Valid {
+		res.UpdatedAt = role.UpdatedAt.Time
 	}
 
 	return res

@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -24,9 +24,9 @@ import (
 )
 
 func TestRenewAccessToken(t *testing.T) {
-	tokenStr := util.RandomString(24)
+	tokenStr := gofakeit.LetterN(24)
 	tokenExpiresAt := time.Now().Add(6 * time.Hour)
-	user, _ := randomUser(t)
+	user, _, _ := randomUser(t)
 	refreshPayload := token.Payload{User: token.User{Username: user.Username}}
 	testCases := []struct {
 		name          string

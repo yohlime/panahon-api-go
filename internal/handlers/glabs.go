@@ -20,9 +20,9 @@ const (
 )
 
 type gLabsOptInReq struct {
-	AccessToken      string `form:"access_token" json:"access_token" binding:"required_with=SubscriberNumber"`
-	SubscriberNumber string `form:"subscriber_number" json:"subscriber_number" binding:"required_with=AccessToken,omitempty"`
-	Code             string `form:"code" json:"code"`
+	AccessToken      string `form:"access_token" json:"access_token" binding:"required_with=SubscriberNumber" fake:"{lettern:32}"`
+	SubscriberNumber string `form:"subscriber_number" json:"subscriber_number" binding:"required_with=AccessToken,omitempty" fake:"{regex:9[0-9]{9}}"`
+	Code             string `form:"code" json:"code" fake:"{lettern:8}"`
 } //@name GlobeLabsOptInParams
 
 type gLabsOptInRes struct {

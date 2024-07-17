@@ -14,9 +14,16 @@ var validMobileNumber validator.Func = func(fieldLevel validator.FieldLevel) boo
 	return false
 }
 
-var validAlphaNumSpace validator.Func = func(fieldLevel validator.FieldLevel) bool {
+var validFullName validator.Func = func(fieldLevel validator.FieldLevel) bool {
 	if name, ok := fieldLevel.Field().Interface().(string); ok {
-		return regexp.MustCompile("^[a-zA-Z0-9 ]+$").MatchString(name)
+		return regexp.MustCompile(`^[A-Z][a-zA-Z'’-]+(?: [A-Z][a-zA-Z'’-]+)*$`).MatchString(name)
+	}
+	return false
+}
+
+var validSentence validator.Func = func(fieldLevel validator.FieldLevel) bool {
+	if s, ok := fieldLevel.Field().Interface().(string); ok {
+		return regexp.MustCompile(`^[A-Z][a-zA-Z0-9 ,;:'"()!?-]*[.!?]$`).MatchString(s)
 	}
 	return false
 }
