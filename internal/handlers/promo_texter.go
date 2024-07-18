@@ -141,6 +141,9 @@ func (h *DefaultHandler) PromoTexterStoreLufft(ctx *gin.Context) {
 
 	res := newLufftResponse(station, obs, health)
 
-	h.logger.Debug().Str("sender", req.Number).Msg("[PromoTexter] Data saved successfully")
+	h.logger.Debug().
+		Str("sender", req.Number).
+		Str("msg", req.Msg).
+		Msg("[PromoTexter] Data saved successfully")
 	ctx.JSON(http.StatusCreated, res)
 }
