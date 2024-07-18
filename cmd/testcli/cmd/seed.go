@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
@@ -42,8 +43,8 @@ func seedStations() []db.ObservationsStation {
 	stations := make(chan db.ObservationsStation, 5)
 
 	logger.Info().Msgf("adding %d stations...\n", nStations)
-	go createRandomSimCard(store, ctx, nStations, simCards)
-	go createRandomStation(store, ctx, simCards, stations)
+	go storeRandomSimCard(store, ctx, nStations, simCards)
+	go storeRandomStation(store, ctx, simCards, stations)
 
 	var stns []db.ObservationsStation
 	bar := progressbar.Default(int64(nStations), "creating stations")
@@ -63,39 +64,64 @@ func seedStations() []db.ObservationsStation {
 	return stns
 }
 
-func createRandomSimCard(store db.Store, ctx context.Context, nItems int, simCards chan<- db.SimCard) {
+func generateRandomSimCard(store db.Store, ctx context.Context, mobileNumber string) *db.SimCard {
+	if mobileNumber == "" {
+		mobileNumber = gofakeit.Regex("639[0-9]{9}")
+	}
+	arg := db.CreateSimCardParams{
+		MobileNumber: mobileNumber,
+		Type: pgtype.Text{
+			String: gofakeit.RandomString([]string{"globe", "smart"}),
+			Valid:  true,
+		},
+	}
+
+	res, err := store.CreateSimCard(ctx, arg)
+	if err != nil {
+		return nil
+	}
+
+	return &res
+}
+
+func storeRandomSimCard(store db.Store, ctx context.Context, nItems int, simCards chan<- db.SimCard) {
 	defer close(simCards)
 	for i := 0; i < nItems; i++ {
-		arg := db.CreateSimCardParams{
-			MobileNumber: util.RandomMobileNumber(),
-			Type: pgtype.Text{
-				String: util.RandomString(6),
-				Valid:  true,
-			},
-		}
-
-		res, err := store.CreateSimCard(ctx, arg)
-		if err == nil {
-			simCards <- res
+		simCard := generateRandomSimCard(store, ctx, "")
+		if simCard != nil {
+			simCards <- *simCard
 		}
 	}
 }
 
-func createRandomStation(store db.Store, ctx context.Context, simCards <-chan db.SimCard, stations chan<- db.ObservationsStation) {
+func generateRandomStation(store db.Store, ctx context.Context, simCard db.SimCard) *db.ObservationsStation {
+	var s models.Station
+	gofakeit.Struct(&s)
+
+	stn, err := store.CreateStation(ctx, db.CreateStationParams{
+		Name:         s.Name,
+		Lat:          util.ToFloat4(s.Lat),
+		Lon:          util.ToFloat4(s.Lon),
+		MobileNumber: util.ToPgText(simCard.MobileNumber),
+		DateInstalled: pgtype.Date{
+			Time:  s.DateInstalled.Time,
+			Valid: !s.DateInstalled.IsZero(),
+		},
+		Province: util.ToPgText(string(s.Province)),
+		Region:   util.ToPgText(string(s.Region)),
+	})
+	if err != nil {
+		return nil
+	}
+	return &stn
+}
+
+func storeRandomStation(store db.Store, ctx context.Context, simCards <-chan db.SimCard, stations chan<- db.ObservationsStation) {
 	defer close(stations)
 	for simCard := range simCards {
-		stn := models.RandomStation()
-		res, err := store.CreateStation(ctx, db.CreateStationParams{
-			Name:          stn.Name,
-			Lat:           util.ToFloat4(stn.Lat),
-			Lon:           util.ToFloat4(stn.Lon),
-			MobileNumber:  util.ToPgText(simCard.MobileNumber),
-			DateInstalled: util.ToPgDate(stn.DateInstalled),
-			Province:      util.ToPgText(stn.Province),
-			Region:        util.ToPgText(stn.Region),
-		})
-		if err == nil {
-			stations <- res
+		stn := generateRandomStation(store, ctx, simCard)
+		if stn != nil {
+			stations <- *stn
 		}
 	}
 }
