@@ -77,9 +77,9 @@ func NewDavis(url string, sleep time.Duration) *Davis {
 func newDavisObservation(rawObs davisRawResponse) *DavisCurrentObservation {
 	obs := new(DavisCurrentObservation)
 	f, err := rawObs.Obs.RRInPerHr.Float64()
-	obs.Rain = pgtype.Float4{Float32: float32(f) * 0.2, Valid: err == nil}
+	obs.Rain = pgtype.Float4{Float32: float32(f) * 25.4, Valid: err == nil}
 	f, err = rawObs.Obs.RainDayIn.Float64()
-	obs.RainAccum = pgtype.Float4{Float32: float32(f) * 0.2, Valid: err == nil}
+	obs.RainAccum = pgtype.Float4{Float32: float32(f) * 25.4, Valid: err == nil}
 	f, err = rawObs.TempC.Float64()
 	obs.Temp = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
 	f, err = rawObs.Rh.Float64()
