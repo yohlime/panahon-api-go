@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v7"
 )
 
 const (
@@ -20,38 +22,38 @@ type Lufft struct {
 }
 
 type StationObservation struct {
-	Pres      *float32  `json:"pres" fake:"{float32range:990,1100}"`
-	Rr        *float32  `json:"rr" fake:"{float32range:0,100}"`
-	Rh        *float32  `json:"rh" fake:"{float32range:0,100}"`
-	Temp      *float32  `json:"temp" fake:"{float32range:20,37}"`
-	Td        *float32  `json:"td" fake:"{float32range:15,40}"`
-	Wdir      *float32  `json:"wdir" fake:"{float32range:0,359}"`
-	Wspd      *float32  `json:"wspd" fake:"{float32range:20,35}"`
-	Wspdx     *float32  `json:"wspdx" fake:"{float32range:35,50}"`
-	Srad      *float32  `json:"srad" fake:"{float32range:0,1000}"`
-	Mslp      *float32  `json:"mslp" fake:"-"`
-	Hi        *float32  `json:"hi" fake:"-"`
-	Wchill    *float32  `json:"wchill" fake:"{float32range:20,35}"`
+	Pres      *float32  `json:"pres"`
+	Rr        *float32  `json:"rr"`
+	Rh        *float32  `json:"rh"`
+	Temp      *float32  `json:"temp"`
+	Td        *float32  `json:"td"`
+	Wdir      *float32  `json:"wdir"`
+	Wspd      *float32  `json:"wspd"`
+	Wspdx     *float32  `json:"wspdx"`
+	Srad      *float32  `json:"srad"`
+	Mslp      *float32  `json:"mslp"`
+	Hi        *float32  `json:"hi"`
+	Wchill    *float32  `json:"wchill"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 type StationHealth struct {
-	Vb1               *float32  `json:"vb1" fake:"{float32range:0,20}"`
-	Vb2               *float32  `json:"vb2" fake:"{float32range:0,20}"`
-	Curr              *float32  `json:"curr" fake:"{float32range:0,1}"`
-	Bp1               *float32  `json:"bp1" fake:"{float32range:0,30}"`
-	Bp2               *float32  `json:"bp2" fake:"{float32range:0,30}"`
-	Cm                string    `json:"cm" fake:"{lettern:6}"`
-	Ss                *int32    `json:"ss" fake:"{number:0,100}"`
-	TempArq           *float32  `json:"temp_arq" fake:"{float32range:20,35}"`
-	RhArq             *float32  `json:"rh_arq" fake:"{float32range:0,100}"`
-	Fpm               string    `json:"fpm" fake:"{lettern:6}"`
+	Vb1               *float32  `json:"vb1"`
+	Vb2               *float32  `json:"vb2"`
+	Curr              *float32  `json:"curr"`
+	Bp1               *float32  `json:"bp1"`
+	Bp2               *float32  `json:"bp2"`
+	Cm                string    `json:"cm"`
+	Ss                *int32    `json:"ss"`
+	TempArq           *float32  `json:"temp_arq"`
+	RhArq             *float32  `json:"rh_arq"`
+	Fpm               string    `json:"fpm"`
 	ErrorMsg          string    `json:"error_msg"`
-	Message           string    `json:"message" fake:"-"`
-	DataCount         int32     `json:"data_count" fake:"-"`
-	DataStatus        string    `json:"data_status" fake:"-"`
+	Message           string    `json:"message"`
+	DataCount         int32     `json:"data_count"`
+	DataStatus        string    `json:"data_status"`
 	Timestamp         time.Time `json:"timestamp"`
-	MinutesDifference int32     `json:"minutes_difference" fake:"-"`
+	MinutesDifference int32     `json:"minutes_difference"`
 }
 
 func (l Lufft) String(nVal int) string {
@@ -128,7 +130,7 @@ func (l Lufft) String(nVal int) string {
 			}
 		}
 		if l.Health.Ss != nil {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss))
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", *l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
@@ -145,7 +147,7 @@ func (l Lufft) String(nVal int) string {
 		hStrSlice = append(hStrSlice, l.Health.Fpm)
 	} else if nVal == 20 {
 		if l.Health.Ss != nil {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", l.Health.Ss))
+			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", *l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
@@ -295,6 +297,48 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 	l.Health.DataStatus = dataStatus
 
 	return l, nil
+}
+
+func RandomLufft(timestamp time.Time) Lufft {
+	obs := StationObservation{
+		Pres:      generateFloat32Pointer(990, 1100),
+		Rr:        generateFloat32Pointer(0, 100),
+		Rh:        generateFloat32Pointer(0, 100),
+		Temp:      generateFloat32Pointer(20, 37),
+		Td:        generateFloat32Pointer(15, 40),
+		Wdir:      generateFloat32Pointer(0, 359),
+		Wspd:      generateFloat32Pointer(20, 35),
+		Wspdx:     generateFloat32Pointer(35, 50),
+		Srad:      generateFloat32Pointer(0, 1000),
+		Wchill:    generateFloat32Pointer(20, 35),
+		Timestamp: timestamp,
+	}
+	health := StationHealth{
+		Vb1:       generateFloat32Pointer(0, 20),
+		Vb2:       generateFloat32Pointer(0, 20),
+		Curr:      generateFloat32Pointer(0, 1),
+		Bp1:       generateFloat32Pointer(0, 30),
+		Bp2:       generateFloat32Pointer(0, 30),
+		Cm:        gofakeit.LetterN(6),
+		Ss:        generateInt32Pointer(0, 100),
+		TempArq:   generateFloat32Pointer(20, 35),
+		RhArq:     generateFloat32Pointer(0, 100),
+		Fpm:       gofakeit.LetterN(6),
+		Timestamp: timestamp,
+	}
+	return Lufft{Obs: obs, Health: health}
+}
+
+// Helper function to generate a *int32
+func generateInt32Pointer(min, max int) *int32 {
+	value := int32(gofakeit.Number(min, max))
+	return &value
+}
+
+// Helper function to generate a *float32
+func generateFloat32Pointer(min, max float64) *float32 {
+	value := float32(gofakeit.Float64Range(min, max))
+	return &value
 }
 
 func parseFloat(s string, skipValidation bool) *float32 {
