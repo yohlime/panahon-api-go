@@ -17,9 +17,13 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	db := util.NewDockerPostgres()
+	config, err := util.LoadConfig("../../..")
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot load config")
+	}
 
-	var err error
+	db := util.NewDockerPostgres(config)
+
 	migrationPath := "../../db/migration"
 	testMigration, err = migrate.New("file://"+migrationPath, db.Source)
 	if err != nil {

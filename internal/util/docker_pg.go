@@ -22,10 +22,11 @@ type DockerPostgres struct {
 	Source    string
 	Conn      *pgxpool.Pool
 	container *dockertest.Resource
+	config    Config
 }
 
-func NewDockerPostgres() *DockerPostgres {
-	pg := &DockerPostgres{}
+func NewDockerPostgres(config Config) *DockerPostgres {
+	pg := &DockerPostgres{config: config}
 	pg.createDBConn()
 	return pg
 }
@@ -33,7 +34,7 @@ func NewDockerPostgres() *DockerPostgres {
 func (pg *DockerPostgres) createDBConn() {
 	dockerPool := initDocker()
 
-	container, err := createPGInstance(dockerPool)
+	container, err := createPGInstance(pg.config, dockerPool)
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not create postgres container")
 		return
@@ -79,10 +80,10 @@ func initDocker() *dockertest.Pool {
 	return pool
 }
 
-func createPGInstance(dockerPool *dockertest.Pool) (*dockertest.Resource, error) {
+func createPGInstance(config Config, dockerPool *dockertest.Pool) (*dockertest.Resource, error) {
 	container, err := dockerPool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "postgis/postgis",
-		Tag:        "12-3.4",
+		Repository: config.DockerTestPGRepo,
+		Tag:        config.DockerTestPGTag,
 		Env: []string{
 			"POSTGRES_PASSWORD=" + dbPasswd,
 			"POSTGRES_USER=postgres",
