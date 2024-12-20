@@ -30,7 +30,7 @@ sqlc:
 	sqlc generate
 
 server:
-	go run cmd/api/main.go
+	go run cmd/server/main.go
 
 mock:
 	mockery
