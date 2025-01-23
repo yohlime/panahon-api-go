@@ -8,7 +8,10 @@ in {
   # https://devenv.sh/packages/
   packages = with pkgs-unstable; [ 
     git
+    go-migrate
+    go-mockery
     postgresql_14
+    sqlc
   ];
 
   languages.go.enable = true;
