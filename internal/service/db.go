@@ -37,7 +37,7 @@ func InsertCurrentObservations(ctx context.Context, store db.Store, logger *zero
 	return nil
 }
 
-func InsertCurrentDavisObservations(ctx context.Context, store db.Store, logger *zerolog.Logger) error {
+func InsertCurrentDavisObservations(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger) error {
 	serviceName := "InsertCurrentDavisObservations"
 	stations, err := store.ListStations(ctx, db.ListStationsParams{})
 	if err != nil {
@@ -53,8 +53,8 @@ func InsertCurrentDavisObservations(ctx context.Context, store db.Store, logger 
 			}
 
 			stnUrl := strings.Replace(stn.StationUrl.String, ".xml", ".json", 1)
-			sleepDuration := time.Duration(util.RandomInt[int](1, 5)) * time.Second
-			davis := sensor.NewDavis(stnUrl, sleepDuration)
+			sleepDuration := time.Duration(util.RandomInt(1, 5)) * time.Second
+			davis := davisFactory(stnUrl, sleepDuration)
 			davisObs, err := davis.FetchLatest()
 			if err != nil {
 				logger.Error().Err(err).Str("service", serviceName).Msg("api error")
@@ -89,6 +89,7 @@ func InsertCurrentDavisObservations(ctx context.Context, store db.Store, logger 
 			if time.Since(davisObs.Timestamp.Time) < time.Hour {
 				statusStr = "ONLINE"
 			}
+
 			_, err = store.UpdateStation(ctx, db.UpdateStationParams{
 				ID:     stn.ID,
 				Status: pgtype.Text{String: statusStr, Valid: true},

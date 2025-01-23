@@ -12,6 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type DavisSensor interface {
+    FetchLatest() (*DavisCurrentObservation, error)
+}
+
+type DavisFactory func(url string, sleepDuration time.Duration) DavisSensor
+
 type Davis struct {
 	Url    string
 	client Fetcher
@@ -219,3 +225,4 @@ func randomTimeString() string {
 
 	return fmt.Sprintf("%d:%02d%s", h, m, x)
 }
+
