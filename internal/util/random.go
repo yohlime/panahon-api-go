@@ -22,7 +22,13 @@ func RandomInt[T constraints.Integer](min, max T) T {
 
 // RandomFloat generates a random float between min and max
 func RandomFloat[T constraints.Float](min, max T) T {
-	return min + T(rand.Float32())*(max-min)
+	return min + T(rand.Float64())*(max-min)
+}
+
+// RandomFloatPtr generates a random float and returns a pointer to it
+func RandomFloatPtr[T constraints.Float](min, max T) *T {
+	value := min + T(rand.Float64())*(max-min)
+	return &value
 }
 
 // RandomString generates a random string of length n

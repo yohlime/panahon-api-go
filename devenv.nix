@@ -1,12 +1,17 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
 let
   pkgs-unstable = import inputs.nixpkgs-unstable { system = pkgs.stdenv.system; };
-in {
-  # https://devenv.sh/basics/
-  env.GREET = "devenv";
-
+in
+{
   # https://devenv.sh/packages/
-  packages = with pkgs-unstable; [ 
+  packages = with pkgs-unstable; [
+    air
     git
     go-migrate
     go-mockery
@@ -19,13 +24,7 @@ in {
   # https://devenv.sh/services/
   # services.postgres.enable = true;
 
-  # https://devenv.sh/scripts/
-  scripts.hello.exec = ''
-    echo hello from $GREET
-  '';
-
   enterShell = ''
-    hello
     git --version
   '';
 

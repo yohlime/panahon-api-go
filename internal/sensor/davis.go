@@ -3,38 +3,54 @@ package sensor
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const (
+	DavisAPIV1URL     = "https://api.weatherlink.com/v1/NoaaExt.json"
+	DavisAPIV2URL     = "https://api.weatherlink.com/v2"
+	DavisDashboardURL = "https://www.weatherlink.com/embeddablePage/summaryData"
+	HTTPUserAgent     = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
+)
+
 type DavisSensor interface {
-    FetchLatest() (*DavisCurrentObservation, error)
+	FetchLatest() ([]DavisCurrentObservation, error)
 }
 
-type DavisFactory func(url string, sleepDuration time.Duration) DavisSensor
+type DavisFactory func(cred DavisAPICredentials, sleepDuration time.Duration) DavisSensor
+
+type DavisAPICredentials struct {
+	User     string
+	Pass     string
+	APIToken string
+
+	APIKey    string
+	APISecret string
+
+	StnUUID string
+}
 
 type Davis struct {
-	Url    string
+	api    DavisAPICredentials
 	client Fetcher
 	sleep  time.Duration
 }
 
 type DavisCurrentObservation struct {
-	Rain          pgtype.Float4      `json:"rain"`
+	Rr            pgtype.Float4      `json:"rain"`
 	Temp          pgtype.Float4      `json:"temp"`
 	Rh            pgtype.Float4      `json:"rh"`
 	Wdir          pgtype.Float4      `json:"wdir"`
 	Wspd          pgtype.Float4      `json:"wspd"`
+	Wspdx         pgtype.Float4      `json:"gust"`
 	Srad          pgtype.Float4      `json:"srad"`
-	Mslp          pgtype.Float4      `json:"mslp"`
+	Pres          pgtype.Float4      `json:"mslp"`
 	Tn            pgtype.Float4      `json:"tn"`
 	Tx            pgtype.Float4      `json:"tx"`
-	Gust          pgtype.Float4      `json:"gust"`
 	Hi            pgtype.Float4      `json:"hi"`
 	RainAccum     pgtype.Float4      `json:"rain_accum"`
 	TnTimestamp   pgtype.Timestamptz `json:"tn_timestamp"`
@@ -43,117 +59,67 @@ type DavisCurrentObservation struct {
 	Timestamp     pgtype.Timestamptz `json:"timestamp"`
 }
 
-type davisRawResponse struct {
-	Location   string                     `json:"location"`
-	Lat        json.Number                `json:"latitude"`
-	Lon        json.Number                `json:"longitude"`
-	Time       string                     `json:"observation_time_rfc822"`
-	PressureMb json.Number                `json:"pressure_mb"`
-	Rh         json.Number                `json:"relative_humidity"`
-	TempC      json.Number                `json:"temp_c"`
-	TdC        json.Number                `json:"dewpoint_c"`
-	WindDeg    json.Number                `json:"wind_degrees"`
-	WindMPH    json.Number                `json:"wind_mph"`
-	HeatIndexC json.Number                `json:"heat_index_c"`
-	Obs        davisRawCurrentObservation `json:"davis_current_observation"`
+type davisRawCurrentResponse interface {
+	ToDavisCurrentObservation() *DavisCurrentObservation
 }
 
-type davisRawCurrentObservation struct {
-	RRInPerHr       json.Number `json:"rain_rate_in_per_hr"`
-	RainDayIn       json.Number `json:"rain_day_in"`
-	Srad            json.Number `json:"solar_radiation"`
-	UVIndex         json.Number `json:"uv_index"`
-	TempDayHighF    json.Number `json:"temp_day_high_f"`
-	TempDayLowF     json.Number `json:"temp_day_low_f"`
-	WindDayHighMPH  json.Number `json:"wind_day_high_mph"`
-	TempDayHighTime string      `json:"temp_day_high_time"`
-	TempDayLowTime  string      `json:"temp_day_low_time"`
-	WindDayHighTime string      `json:"wind_day_high_time"`
-}
-
-func NewDavis(url string, sleep time.Duration) *Davis {
+func NewDavis(apiCredentials DavisAPICredentials, sleep time.Duration) *Davis {
 	client := &http.Client{Timeout: 10 * time.Second}
 	return &Davis{
-		Url:    url,
+		api:    apiCredentials,
 		client: client,
 		sleep:  sleep,
 	}
 }
 
-func newDavisObservation(rawObs davisRawResponse) *DavisCurrentObservation {
-	obs := new(DavisCurrentObservation)
-	f, err := rawObs.Obs.RRInPerHr.Float64()
-	obs.Rain = pgtype.Float4{Float32: float32(f) * 25.4, Valid: err == nil}
-	f, err = rawObs.Obs.RainDayIn.Float64()
-	obs.RainAccum = pgtype.Float4{Float32: float32(f) * 25.4, Valid: err == nil}
-	f, err = rawObs.TempC.Float64()
-	obs.Temp = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	f, err = rawObs.Rh.Float64()
-	obs.Rh = pgtype.Float4{Float32: float32(f), Valid: err == nil && f >= 0 && f <= 100}
-	f, err = rawObs.WindDeg.Float64()
-	obs.Wdir = pgtype.Float4{Float32: float32(f), Valid: err == nil && f >= 0.0 && f <= 360.0}
-	f, err = rawObs.WindMPH.Float64()
-	obs.Wspd = pgtype.Float4{Float32: float32(f) * 0.44704, Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	f, err = rawObs.Obs.Srad.Float64()
-	obs.Srad = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	f, err = rawObs.PressureMb.Float64()
-	obs.Mslp = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	f, err = rawObs.Obs.TempDayHighF.Float64()
-	obs.Tx = pgtype.Float4{Float32: (float32(f) - 32.0) * (5.0 / 9.0), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	obs.TxTimestamp = pgtype.Timestamptz{Valid: true}
-	if dt, err := parseTimeStrToDateTime(rawObs.Obs.TempDayHighTime); err == nil {
-		obs.TxTimestamp.Time = dt
-	}
-	f, err = rawObs.Obs.TempDayLowF.Float64()
-	obs.Tn = pgtype.Float4{Float32: (float32(f) - 32.0) * (5.0 / 9.0), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	obs.TnTimestamp = pgtype.Timestamptz{Valid: true}
-	if dt, err := parseTimeStrToDateTime(rawObs.Obs.TempDayLowTime); err == nil {
-		obs.TnTimestamp.Time = dt
-	}
-	f, err = rawObs.Obs.WindDayHighMPH.Float64()
-	obs.Gust = pgtype.Float4{Float32: float32(f) * 0.44704, Valid: err == nil && math.Abs(-999.0-f) > 0.001}
-	obs.GustTimestamp = pgtype.Timestamptz{Valid: true}
-	if dt, err := parseTimeStrToDateTime(rawObs.Obs.WindDayHighTime); err == nil {
-		obs.GustTimestamp.Time = dt
-	}
-	f, err = rawObs.HeatIndexC.Float64()
-	obs.Hi = pgtype.Float4{Float32: float32(f), Valid: err == nil && math.Abs(-999.0-f) > 0.001}
+func (d Davis) FetchLatest() ([]DavisCurrentObservation, error) {
+	isV1 := d.api.User != "" && d.api.Pass != "" && d.api.APIToken != ""
+	isV2 := d.api.APIKey != "" && d.api.APISecret != ""
+	isDashboard := d.api.StnUUID != ""
 
-	layout := "Mon, 02 Jan 2006 15:04:05 -0700"
-	if dt, err := time.Parse(layout, rawObs.Time); err == nil {
-		obs.Timestamp = pgtype.Timestamptz{Time: dt, Valid: true}
+	if !isV1 && !isV2 && !isDashboard {
+		return nil, fmt.Errorf("API credentials are invalid")
 	}
 
-	return obs
-}
+	var (
+		apiURL  string
+		qParams url.Values
+	)
 
-func (d Davis) FetchLatest() (*DavisCurrentObservation, error) {
-	parsedURL, err := url.Parse(d.Url)
+	if isV2 {
+		apiURL = DavisAPIV2URL + "/stations"
+		qParams = url.Values{
+			"api-key": {d.api.APIKey},
+		}
+	} else if isV1 {
+		apiURL = DavisAPIV1URL
+		qParams = url.Values{
+			"user":     {d.api.User},
+			"pass":     {d.api.Pass},
+			"apiToken": {d.api.APIToken},
+		}
+	} else {
+		apiURL = fmt.Sprintf("%s/%s", DavisDashboardURL, d.api.StnUUID)
+		qParams = url.Values{}
+	}
+
+	baseURL, err := url.Parse(apiURL)
 	if err != nil {
 		return nil, err
-	} else if parsedURL.Scheme == "" && parsedURL.Host == "" {
-		return nil, fmt.Errorf("not a valid URL")
 	}
-
-	for _, q := range []string{"user", "pass"} {
-		if !parsedURL.Query().Has(q) {
-			return nil, fmt.Errorf("missing param: '%s'", q)
-		}
-	}
-
-	parsedURL.RawQuery = url.Values{
-		"user":     {parsedURL.Query().Get("user")},
-		"pass":     {parsedURL.Query().Get("pass")},
-		"apiToken": {parsedURL.Query().Get("apiToken")},
-	}.Encode()
-	encodedURL := parsedURL.String()
+	baseURL.RawQuery = qParams.Encode()
+	encodedURL := baseURL.String()
 
 	req, err := http.NewRequest("GET", encodedURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", HTTPUserAgent)
+
+	if isV2 {
+		req.Header.Set("X-Api-Secret", d.api.APISecret)
+	}
 
 	time.Sleep(d.sleep)
 
@@ -163,14 +129,73 @@ func (d Davis) FetchLatest() (*DavisCurrentObservation, error) {
 	}
 	defer res.Body.Close()
 
-	var rawObs davisRawResponse
+	if isV2 {
+		var rawStations davisRawStationsResponseV2
+		err = json.NewDecoder(res.Body).Decode(&rawStations)
+		if err != nil {
+			return nil, err
+		}
+
+		obsSlice := make([]DavisCurrentObservation, 0)
+		for _, rawStn := range rawStations.Stations {
+			apiURL = fmt.Sprintf("%s/current/%d", DavisAPIV2URL, rawStn.StationID)
+			qParams = url.Values{
+				"api-key": {d.api.APIKey},
+			}
+
+			baseURL, err := url.Parse(apiURL)
+			if err != nil {
+				return nil, err
+			}
+			baseURL.RawQuery = qParams.Encode()
+			encodedURL := baseURL.String()
+
+			req, err := http.NewRequest("GET", encodedURL, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("User-Agent", HTTPUserAgent)
+			req.Header.Set("X-Api-Secret", d.api.APISecret)
+
+			time.Sleep(d.sleep)
+
+			res, err := d.client.Do(req)
+			if err != nil {
+				return nil, err
+			}
+			defer res.Body.Close()
+
+			var rawObs davisRawCurrentResponseV2
+			err = json.NewDecoder(res.Body).Decode(&rawObs)
+			if err != nil {
+				return nil, err
+			}
+
+			obs := rawObs.ToDavisCurrentObservation()
+			if obs != nil {
+				obsSlice = append(obsSlice, *obs)
+			}
+		}
+		return obsSlice, nil
+	} else if isV1 {
+		var rawObs davisRawCurrentResponseV1
+		err = json.NewDecoder(res.Body).Decode(&rawObs)
+		if err != nil {
+			return nil, err
+		}
+
+		obs := rawObs.ToDavisCurrentObservation()
+		return []DavisCurrentObservation{*obs}, nil
+	}
+	var rawObs davisRawWeatherDataResponseDashboard
 	err = json.NewDecoder(res.Body).Decode(&rawObs)
 	if err != nil {
 		return nil, err
 	}
 
-	obs := newDavisObservation(rawObs)
-	return obs, nil
+	obs := rawObs.ToDavisCurrentObservation()
+	return []DavisCurrentObservation{*obs}, nil
 }
 
 func parseTimeStrToDateTime(timeStr string) (time.Time, error) {
@@ -185,44 +210,3 @@ func parseTimeStrToDateTime(timeStr string) (time.Time, error) {
 	newDateTime := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), t.Hour(), t.Minute(), 0, 0, currentDate.Location())
 	return newDateTime, nil
 }
-
-func RandomDavisRawResponse() davisRawResponse {
-	return davisRawResponse{
-		Location:   util.RandomString(24),
-		Lat:        json.Number(fmt.Sprintf("%.2f", util.RandomFloat(4.0, 22.0))),
-		Lon:        json.Number(fmt.Sprintf("%.2f", util.RandomFloat(114.0, 121.0))),
-		PressureMb: json.Number(fmt.Sprintf("%.2f", util.RandomFloat(990.0, 1100.))),
-		Rh:         json.Number(fmt.Sprintf("%.2f", util.RandomFloat(0.0, 100.0))),
-		TempC:      json.Number(fmt.Sprintf("%.2f", util.RandomFloat(25.0, 33.0))),
-		TdC:        json.Number(fmt.Sprintf("%.2f", util.RandomFloat(25.0, 33.0))),
-		WindDeg:    json.Number(fmt.Sprintf("%d", int32(util.RandomInt(0, 360)))),
-		WindMPH:    json.Number(fmt.Sprintf("%.2f", util.RandomFloat(0.0, 10.0))),
-		HeatIndexC: json.Number(fmt.Sprintf("%.2f", util.RandomFloat(30.0, 50.0))),
-		Obs: davisRawCurrentObservation{
-			RRInPerHr:       json.Number(fmt.Sprintf("%.2f", util.RandomFloat(0.0, 5.0))),
-			RainDayIn:       json.Number(fmt.Sprintf("%.2f", util.RandomFloat(0.0, 100.0))),
-			Srad:            json.Number(fmt.Sprintf("%d", int32(util.RandomInt(0, 400)))),
-			UVIndex:         json.Number(fmt.Sprintf("%.2f", util.RandomFloat(0.0, 1.0))),
-			TempDayHighF:    json.Number(fmt.Sprintf("%.2f", util.RandomFloat(77.0, 104.0))),
-			TempDayLowF:     json.Number(fmt.Sprintf("%.2f", util.RandomFloat(60.0, 104.0))),
-			WindDayHighMPH:  json.Number(fmt.Sprintf("%.2f", util.RandomFloat(0.0, 20.0))),
-			TempDayHighTime: randomTimeString(),
-			TempDayLowTime:  randomTimeString(),
-			WindDayHighTime: randomTimeString(),
-		},
-		Time: time.Now().Format("Mon, 02 Jan 2006 15:04:05 -0700"),
-	}
-}
-
-func randomTimeString() string {
-	h := util.RandomInt(1, 12)
-	m := util.RandomInt(0, 59)
-	i := util.RandomInt(0, 100)
-	x := "am"
-	if i%2 == 0 {
-		x = "pm"
-	}
-
-	return fmt.Sprintf("%d:%02d%s", h, m, x)
-}
-

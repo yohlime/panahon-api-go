@@ -61,8 +61,8 @@ type listStationObsUri struct {
 }
 
 type listStationObsReq struct {
-	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"`            // page number
-	PerPage   int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"` // limit
+	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
+	PerPage   int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
 	StartDate string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
 } //@name ListStationObservationsParams
@@ -90,16 +90,22 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
 	startDate, isStartDate := util.ParseDateTime(req.StartDate)
 	endDate, isEndDate := util.ParseDateTime(req.EndDate)
-
 	offset := (req.Page - 1) * req.PerPage
+
+	stn, err := h.store.GetStation(ctx, uri.StationID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var obsSlice []db.ObservationsObservation
 	arg := db.ListStationObservationsParams{
 		StationID: uri.StationID,
 		Limit: pgtype.Int4{
 			Int32: req.PerPage,
-			Valid: true,
+			Valid: req.PerPage != 0,
 		},
 		Offset:      offset,
 		IsStartDate: isStartDate,
@@ -113,29 +119,64 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 			Valid: !endDate.IsZero(),
 		},
 	}
+	if stn.StationType.String == "MO" {
+		argMO := db.ListStationMOObservationsParams{
+			StationID:   uri.StationID,
+			Limit:       arg.Limit,
+			Offset:      arg.Offset,
+			IsStartDate: arg.IsStartDate,
+			StartDate:   arg.StartDate,
+			IsEndDate:   arg.IsEndDate,
+			EndDate:     arg.EndDate,
+		}
 
-	observations, err := h.store.ListStationObservations(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+		obsMOSlice, err := h.store.ListStationMOObservations(ctx, argMO)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		for _, mo := range obsMOSlice {
+			obsSlice = append(obsSlice, convertMOObservationToObservation(mo))
+		}
+	} else {
+		obsSlice, err = h.store.ListStationObservations(ctx, arg)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
-	numObs := len(observations)
+	numObs := len(obsSlice)
 	items := make([]models.StationObservation, numObs)
-	for i, observation := range observations {
-		items[i] = models.NewStationObservation(observation)
+	for i, obs := range obsSlice {
+		items[i] = models.NewStationObservation(obs)
 	}
 
-	count, err := h.store.CountStationObservations(ctx, db.CountStationObservationsParams{
-		StationID:   arg.StationID,
-		IsStartDate: arg.IsStartDate,
-		StartDate:   arg.StartDate,
-		IsEndDate:   arg.IsEndDate,
-		EndDate:     arg.EndDate,
-	})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+	var count int64
+	if stn.StationType.String == "MO" {
+		count, err = h.store.CountStationMOObservations(ctx, db.CountStationMOObservationsParams{
+			StationID:   arg.StationID,
+			IsStartDate: arg.IsStartDate,
+			StartDate:   arg.StartDate,
+			IsEndDate:   arg.IsEndDate,
+			EndDate:     arg.EndDate,
+		})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	} else {
+		count, err = h.store.CountStationObservations(ctx, db.CountStationObservationsParams{
+			StationID:   arg.StationID,
+			IsStartDate: arg.IsStartDate,
+			StartDate:   arg.StartDate,
+			IsEndDate:   arg.IsEndDate,
+			EndDate:     arg.EndDate,
+		})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
 	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
@@ -560,4 +601,49 @@ func (h *DefaultHandler) GetNearestLatestStationObservation(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, newLatestObservationResponse(db.GetLatestStationObservationRow(obs)))
+}
+
+func convertMOObservationToObservation(mo db.ObservationsMoObservation) db.ObservationsObservation {
+	return db.ObservationsObservation{
+		ID:        mo.ID,
+		StationID: mo.StationID,
+		Pres:      mo.Pres,
+		Rr:        mo.Rr,
+		Rh:        mo.Rh,
+		Temp:      mo.Temp,
+		Td:        mo.Td,
+		Wdir:      mo.Wdir,
+		Wspd:      mo.Wspd,
+		Wspdx:     mo.Wspdx,
+		Srad:      mo.Srad,
+		Mslp:      pgtype.Float4{Valid: false},
+		Hi:        mo.Hi,
+		Wchill:    mo.Wchill,
+		QcLevel:   mo.QcLevel,
+		Timestamp: mo.Timestamp,
+		CreatedAt: mo.CreatedAt,
+		UpdatedAt: mo.UpdatedAt,
+	}
+}
+
+func convertObservationToMOObservation(obs db.ObservationsObservation) db.ObservationsMoObservation {
+	return db.ObservationsMoObservation{
+		ID:        obs.ID,
+		StationID: obs.StationID,
+		Pres:      obs.Pres,
+		Rr:        obs.Rr,
+		Rh:        obs.Rh,
+		Temp:      obs.Temp,
+		Td:        obs.Td,
+		Wdir:      obs.Wdir,
+		Wspd:      obs.Wspd,
+		Wspdx:     obs.Wspdx,
+		Srad:      obs.Srad,
+		Hi:        obs.Hi,
+		Wchill:    obs.Wchill,
+		QcLevel:   obs.QcLevel,
+		Timestamp: obs.Timestamp,
+		CreatedAt: obs.CreatedAt,
+		UpdatedAt: obs.UpdatedAt,
+	}
 }

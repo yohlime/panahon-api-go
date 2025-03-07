@@ -32,9 +32,14 @@ type Config struct {
 	LogMaxSize           int           `mapstructure:"LOG_MAX_SIZE"`
 	LogMaxBackups        int           `mapstructure:"LOG_MAX_BACKUPS"`
 	LogMaxAge            int           `mapstructure:"LOG_MAX_AGE"`
-	CronJobs             string        `mapstructure:"CRON_JOBS"`
+	CronJobs             []CronJob     `mapstructure:"-"`
 	DockerTestPGRepo     string        `mapstructure:"DOCKERTEST_PG_REPO"`
 	DockerTestPGTag      string        `mapstructure:"DOCKERTEST_PG_TAG"`
+}
+
+type CronJob struct {
+	Name     string `mapstructure:"name"`
+	Schedule string `mapstructure:"schedule"`
 }
 
 // LoadConfig read configuration from file or environment variables.
@@ -58,7 +63,20 @@ func LoadConfig(path string) (config Config, err error) {
 		return
 	}
 
-	err = viper.Unmarshal(&config)
+	if err = viper.Unmarshal(&config); err != nil {
+		return
+	}
+
+	viper.SetConfigName("app_conf")
+	viper.SetConfigType("yaml")
+
+	if err = viper.ReadInConfig(); err != nil {
+		return
+	}
+
+	if err = viper.UnmarshalKey("cron_jobs", &config.CronJobs); err != nil {
+		return
+	}
 
 	return
 }
