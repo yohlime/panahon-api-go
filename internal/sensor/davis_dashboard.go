@@ -57,7 +57,9 @@ func (r davisRawWeatherDataResponseDashboard) ToDavisCurrentObservation() *Davis
 			obs.Wdir = util.ToFloat4(cur.Value)
 
 		case 20:
-			obs.RainAccum = util.ToFloat4(cur.Value)
+			if cur.SensorDataName == "60 Min Rain Total" {
+				obs.RainAccum = util.ToFloat4(cur.Value)
+			}
 
 		case 22:
 			obs.Rr = util.ToFloat4(cur.Value)
