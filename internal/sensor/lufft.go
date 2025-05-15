@@ -3,11 +3,11 @@ package sensor
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 )
 
 const (
@@ -22,19 +22,21 @@ type Lufft struct {
 }
 
 type StationObservation struct {
-	Pres      *float32  `json:"pres"`
-	Rr        *float32  `json:"rr"`
-	Rh        *float32  `json:"rh"`
-	Temp      *float32  `json:"temp"`
-	Td        *float32  `json:"td"`
-	Wdir      *float32  `json:"wdir"`
-	Wspd      *float32  `json:"wspd"`
-	Wspdx     *float32  `json:"wspdx"`
-	Srad      *float32  `json:"srad"`
-	Mslp      *float32  `json:"mslp"`
-	Hi        *float32  `json:"hi"`
-	Wchill    *float32  `json:"wchill"`
-	Timestamp time.Time `json:"timestamp"`
+	Pres               *float32  `json:"pres"`
+	Rr                 *float32  `json:"rr"`
+	RainTips           *int32    `json:"rain_tips"`
+	RainCumulativeTips *int32    `json:"rain_cumulative_tips"`
+	Rh                 *float32  `json:"rh"`
+	Temp               *float32  `json:"temp"`
+	Td                 *float32  `json:"td"`
+	Wdir               *float32  `json:"wdir"`
+	Wspd               *float32  `json:"wspd"`
+	Wspdx              *float32  `json:"wspdx"`
+	Srad               *float32  `json:"srad"`
+	Mslp               *float32  `json:"mslp"`
+	Hi                 *float32  `json:"hi"`
+	Wchill             *float32  `json:"wchill"`
+	Timestamp          time.Time `json:"timestamp"`
 }
 
 type StationHealth struct {
@@ -72,24 +74,17 @@ func (l Lufft) String(nVal int) string {
 		rr = &v
 	}
 
-	// obsStr := ""
 	var obsStrSlice []string
 	for _, f := range []*float32{l.Obs.Temp, l.Obs.Rh, l.Obs.Pres, wspd, wspdx} {
-		if f != nil {
-			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
-		} else {
-			obsStrSlice = append(obsStrSlice, "")
-		}
+		pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+		obsStrSlice = append(obsStrSlice, pf.String())
 	}
 	if nVal == 20 || nVal == 24 {
 		obsStrSlice = append(obsStrSlice, "0")
 	}
 	for _, f := range []*float32{l.Obs.Wdir, l.Obs.Srad, l.Obs.Td, l.Obs.Wchill} {
-		if f != nil {
-			obsStrSlice = append(obsStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
-		} else {
-			obsStrSlice = append(obsStrSlice, "")
-		}
+		pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+		obsStrSlice = append(obsStrSlice, pf.String())
 	}
 	if rr != nil {
 		obsStrSlice = append(obsStrSlice, fmt.Sprintf("%d", *rr))
@@ -99,13 +94,11 @@ func (l Lufft) String(nVal int) string {
 	obsStr := strings.Join(obsStrSlice, "+")
 
 	var hStrSlice []string
-	if nVal == 23 || nVal == 24 {
+	switch nVal {
+	case 23, 24:
 		for _, f := range []*float32{l.Health.Vb1, l.Health.Vb2, l.Health.Curr, l.Health.Bp1, l.Health.Bp2} {
-			if f != nil {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
-			} else {
-				hStrSlice = append(hStrSlice, "")
-			}
+			pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+			hStrSlice = append(hStrSlice, pf.String())
 		}
 		hStrSlice = append(hStrSlice, l.Health.Cm)
 		if l.Health.Ss != nil {
@@ -114,67 +107,56 @@ func (l Lufft) String(nVal int) string {
 			hStrSlice = append(hStrSlice, "")
 		}
 		for _, f := range []*float32{l.Health.TempArq, l.Health.RhArq} {
-			if f != nil {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
-			} else {
-				hStrSlice = append(hStrSlice, "")
-			}
+			pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+			hStrSlice = append(hStrSlice, pf.String())
 		}
 		hStrSlice = append(hStrSlice, l.Health.Fpm)
-	} else if nVal == 19 {
+	case 19:
 		for _, f := range []*float32{l.Health.TempArq, l.Health.RhArq} {
-			if f != nil {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
-			} else {
-				hStrSlice = append(hStrSlice, "")
-			}
+			pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+			hStrSlice = append(hStrSlice, pf.String())
 		}
 		if l.Health.Ss != nil {
 			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", *l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Vb1 != nil {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(*l.Health.Vb1)*100)/100))
-		} else {
-			hStrSlice = append(hStrSlice, "")
-		}
-		if l.Health.Bp1 != nil {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*l.Health.Bp1)*100)/100))
-		} else {
-			hStrSlice = append(hStrSlice, "")
+		for i, f := range []*float32{l.Health.Vb1, l.Health.Bp1} {
+			pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+			vStr := pf.String()
+			if i == 0 {
+				vStr += "#"
+			}
+			hStrSlice = append(hStrSlice, vStr)
 		}
 		hStrSlice = append(hStrSlice, l.Health.Fpm)
-	} else if nVal == 20 {
+	case 20:
 		if l.Health.Ss != nil {
 			hStrSlice = append(hStrSlice, fmt.Sprintf("%d", *l.Health.Ss))
 		} else {
 			hStrSlice = append(hStrSlice, "")
 		}
-		if l.Health.Vb1 != nil {
-			hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f#", math.Round(float64(*l.Health.Vb1)*100)/100))
-		} else {
-			hStrSlice = append(hStrSlice, "")
-		}
-		for _, f := range []*float32{l.Health.Bp1, l.Health.TempArq, l.Health.RhArq} {
-			if f != nil {
-				hStrSlice = append(hStrSlice, fmt.Sprintf("%.2f", math.Round(float64(*f)*100)/100))
-			} else {
-				hStrSlice = append(hStrSlice, "")
+		for i, f := range []*float32{l.Health.Vb1, l.Health.Bp1, l.Health.TempArq, l.Health.RhArq} {
+			pf := util.WrappedFloat[float32]{Value: *f, Valid: f != nil, Decimals: 2}
+			vStr := pf.String()
+			if i == 0 {
+				vStr += "#"
 			}
+			hStrSlice = append(hStrSlice, vStr)
 		}
 		hStrSlice = append(hStrSlice, l.Health.Fpm)
 	}
 	hStr := strings.Join(hStrSlice, "+")
 
 	timestampStr := l.Obs.Timestamp.Format(time.RFC3339)
-	if nVal == 23 || nVal == 24 {
+	switch nVal {
+	case 23, 24:
 		tStr := fmt.Sprintf("%s%s%s/%s%s%s",
 			timestampStr[0:4], timestampStr[5:7], timestampStr[8:10],
 			timestampStr[11:13], timestampStr[14:16], timestampStr[17:19],
 		)
 		return fmt.Sprintf("0+%s+0+%s+%s", obsStr, hStr, tStr)
-	} else if nVal == 19 || nVal == 20 {
+	case 19, 20:
 		tStr := fmt.Sprintf("%s:%s:%s:%s:%s:%s",
 			timestampStr[0:4], timestampStr[5:7], timestampStr[8:10],
 			timestampStr[11:13], timestampStr[14:16], timestampStr[17:19],
@@ -224,50 +206,53 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 
 	if nVal >= 19 {
 		l.Obs = StationObservation{
-			Temp:      parseFloat(valStrs[0], false),
-			Rh:        parseFloat(valStrs[1], false),
-			Pres:      parseFloat(valStrs[2], true),
-			Wspd:      parseFloatWithCF(valStrs[3], false, 1.0/3.6),
-			Wspdx:     parseFloatWithCF(valStrs[4], false, 1.0/3.6),
-			Wdir:      parseFloat(valStrs[5], false),
-			Srad:      parseFloat(valStrs[6], false),
-			Td:        parseFloat(valStrs[7], false),
-			Wchill:    parseFloat(valStrs[8], false),
-			Rr:        parseFloatWithCF(valStrs[9], false, 0.2*6.0),
+			Temp: util.NewWrappedFloat[float32](valStrs[0]).Round(2).GetRef(),
+			Rh:   util.NewWrappedFloat[float32](valStrs[1]).Round(2).GetRef(),
+			Pres: util.NewWrappedFloat[float32](valStrs[2]).Round(2).Validate(func(v float32) bool {
+				return v != missingValue
+			}).GetRef(),
+			Wspd:      util.NewWrappedFloat[float32](valStrs[3]).Convert(1.0 / 3.6).Round(2).GetRef(),
+			Wspdx:     util.NewWrappedFloat[float32](valStrs[4]).Convert(1.0 / 3.6).Round(2).GetRef(),
+			Wdir:      util.NewWrappedFloat[float32](valStrs[5]).Round(2).GetRef(),
+			Srad:      util.NewWrappedFloat[float32](valStrs[6]).Round(2).GetRef(),
+			Td:        util.NewWrappedFloat[float32](valStrs[7]).Round(2).GetRef(),
+			Wchill:    util.NewWrappedFloat[float32](valStrs[8]).Round(2).GetRef(),
+			Rr:        util.NewWrappedFloat[float32](valStrs[9]).Convert(0.2 * 6.0).Round(2).GetRef(),
 			Timestamp: timestamp,
 		}
 	}
 
 	var health StationHealth
-	if nVal == 23 || nVal == 24 {
+	switch nVal {
+	case 23, 24:
 		health = StationHealth{
-			Vb1:     parseFloat(valStrs[11], false),
-			Vb2:     parseFloat(valStrs[12], false),
-			Curr:    parseFloat(valStrs[13], false),
-			Bp1:     parseFloat(valStrs[14], false),
-			Bp2:     parseFloat(valStrs[15], false),
+			Vb1:     util.NewWrappedFloat[float32](valStrs[11]).Round(2).GetRef(),
+			Vb2:     util.NewWrappedFloat[float32](valStrs[12]).Round(2).GetRef(),
+			Curr:    util.NewWrappedFloat[float32](valStrs[13]).Round(2).GetRef(),
+			Bp1:     util.NewWrappedFloat[float32](valStrs[14]).Round(2).GetRef(),
+			Bp2:     util.NewWrappedFloat[float32](valStrs[15]).Round(2).GetRef(),
 			Cm:      valStrs[16],
-			Ss:      parseInt(valStrs[17]),
-			TempArq: parseFloat(valStrs[18], false),
-			RhArq:   parseFloat(valStrs[19], false),
+			Ss:      util.NewWrappedInt[int32](valStrs[17]).GetRef(),
+			TempArq: util.NewWrappedFloat[float32](valStrs[18]).Round(2).GetRef(),
+			RhArq:   util.NewWrappedFloat[float32](valStrs[19]).Round(2).GetRef(),
 			Fpm:     valStrs[20],
 		}
-	} else if nVal == 19 {
+	case 19:
 		health = StationHealth{
-			TempArq: parseFloat(valStrs[11], false),
-			RhArq:   parseFloat(valStrs[12], false),
-			Ss:      parseInt(valStrs[13]),
-			Vb1:     parseFloat(strings.Split(valStrs[14], "#")[0], false),
-			Bp1:     parseFloat(valStrs[15], false),
+			TempArq: util.NewWrappedFloat[float32](valStrs[11]).Round(2).GetRef(),
+			RhArq:   util.NewWrappedFloat[float32](valStrs[12]).Round(2).GetRef(),
+			Ss:      util.NewWrappedInt[int32](valStrs[13]).GetRef(),
+			Vb1:     util.NewWrappedFloat[float32](strings.Split(valStrs[14], "#")[0]).Round(2).GetRef(),
+			Bp1:     util.NewWrappedFloat[float32](valStrs[15]).Round(2).GetRef(),
 			Fpm:     valStrs[16],
 		}
-	} else if nVal == 20 {
+	case 20:
 		health = StationHealth{
-			Ss:      parseInt(valStrs[11]),
-			Vb1:     parseFloat((valStrs[12])[:len(valStrs[12])-1], false),
-			Bp1:     parseFloat(valStrs[13], false),
-			TempArq: parseFloat(valStrs[14], false),
-			RhArq:   parseFloat(valStrs[15], false),
+			Ss:      util.NewWrappedInt[int32](valStrs[11]).GetRef(),
+			Vb1:     util.NewWrappedFloat[float32]((valStrs[12])[:len(valStrs[12])-1]).Round(2).GetRef(),
+			Bp1:     util.NewWrappedFloat[float32](valStrs[13]).Round(2).GetRef(),
+			TempArq: util.NewWrappedFloat[float32](valStrs[14]).Round(2).GetRef(),
+			RhArq:   util.NewWrappedFloat[float32](valStrs[15]).Round(2).GetRef(),
 			Fpm:     valStrs[16],
 		}
 	}
@@ -301,75 +286,32 @@ func NewLufftFromString(valStr string) (l *Lufft, err error) {
 
 func RandomLufft(timestamp time.Time) Lufft {
 	obs := StationObservation{
-		Pres:      generateFloat32Pointer(990, 1100),
-		Rr:        generateFloat32Pointer(0, 100),
-		Rh:        generateFloat32Pointer(0, 100),
-		Temp:      generateFloat32Pointer(20, 37),
-		Td:        generateFloat32Pointer(15, 40),
-		Wdir:      generateFloat32Pointer(0, 359),
-		Wspd:      generateFloat32Pointer(20, 35),
-		Wspdx:     generateFloat32Pointer(35, 50),
-		Srad:      generateFloat32Pointer(0, 1000),
-		Wchill:    generateFloat32Pointer(20, 35),
+		Pres:      util.ToRef(util.RandomFloat[float32](990, 1100)),
+		Rr:        util.ToRef(util.RandomFloat[float32](0, 100)),
+		Rh:        util.ToRef(util.RandomFloat[float32](0, 100)),
+		Temp:      util.ToRef(util.RandomFloat[float32](20, 37)),
+		Td:        util.ToRef(util.RandomFloat[float32](15, 40)),
+		Wdir:      util.ToRef(util.RandomFloat[float32](0, 359)),
+		Wspd:      util.ToRef(util.RandomFloat[float32](20, 35)),
+		Wspdx:     util.ToRef(util.RandomFloat[float32](35, 50)),
+		Srad:      util.ToRef(util.RandomFloat[float32](0, 1000)),
+		Wchill:    util.ToRef(util.RandomFloat[float32](20, 35)),
 		Timestamp: timestamp,
 	}
 	health := StationHealth{
-		Vb1:       generateFloat32Pointer(0, 20),
-		Vb2:       generateFloat32Pointer(0, 20),
-		Curr:      generateFloat32Pointer(0, 1),
-		Bp1:       generateFloat32Pointer(0, 30),
-		Bp2:       generateFloat32Pointer(0, 30),
+		Vb1:       util.ToRef(util.RandomFloat[float32](0, 20)),
+		Vb2:       util.ToRef(util.RandomFloat[float32](0, 20)),
+		Curr:      util.ToRef(util.RandomFloat[float32](0, 1)),
+		Bp1:       util.ToRef(util.RandomFloat[float32](0, 30)),
+		Bp2:       util.ToRef(util.RandomFloat[float32](0, 30)),
 		Cm:        gofakeit.LetterN(6),
-		Ss:        generateInt32Pointer(0, 100),
-		TempArq:   generateFloat32Pointer(20, 35),
-		RhArq:     generateFloat32Pointer(0, 100),
+		Ss:        util.ToRef(util.RandomInt[int32](0, 100)),
+		TempArq:   util.ToRef(util.RandomFloat[float32](20, 35)),
+		RhArq:     util.ToRef(util.RandomFloat[float32](0, 100)),
 		Fpm:       gofakeit.LetterN(6),
 		Timestamp: timestamp,
 	}
 	return Lufft{Obs: obs, Health: health}
-}
-
-// Helper function to generate a *int32
-func generateInt32Pointer(min, max int) *int32 {
-	value := int32(gofakeit.Number(min, max))
-	return &value
-}
-
-// Helper function to generate a *float32
-func generateFloat32Pointer(min, max float64) *float32 {
-	value := float32(gofakeit.Float64Range(min, max))
-	return &value
-}
-
-func parseFloat(s string, skipValidation bool) *float32 {
-	val, err := strconv.ParseFloat(s, 32)
-	if err != nil || (!skipValidation && val == missingValue) {
-		return nil
-	}
-
-	f := float32(math.Round(val*100) / 100)
-	return &f
-}
-
-func parseFloatWithCF(s string, skipValidation bool, cf float32) *float32 {
-	ret := parseFloat(s, skipValidation)
-
-	if ret != nil {
-		v := float32(math.Round(float64(*ret*cf)*100) / 100)
-		return &v
-	}
-
-	return nil
-}
-
-func parseInt(s string) *int32 {
-	val, err := strconv.ParseInt(s, 10, 0)
-	if err != nil {
-		return nil
-	}
-
-	v := int32(val)
-	return &v
 }
 
 func parseTimestampTz(dateStr string, tz string) time.Time {

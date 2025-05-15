@@ -2,6 +2,8 @@
 INSERT INTO observations_observation (
   pres,
   rr,
+  rain_tips,
+  rain_cumulative_tips,
   rh,
   temp,
   td,
@@ -16,7 +18,7 @@ INSERT INTO observations_observation (
   qc_level,
   station_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 ) RETURNING *;
 
 -- name: GetStationObservation :one
@@ -58,6 +60,8 @@ UPDATE observations_observation
 SET
   pres = COALESCE(sqlc.narg(pres), pres),
   rr = COALESCE(sqlc.narg(rr), rr),
+  rain_tips = COALESCE(sqlc.narg(rain_tips), rain_tips),
+  rain_cumulative_tips = COALESCE(sqlc.narg(rain_cumulative_tips), rain_cumulative_tips),
   rh = COALESCE(sqlc.narg(rh), rh),
   temp = COALESCE(sqlc.narg(temp), temp),
   td = COALESCE(sqlc.narg(td), td),

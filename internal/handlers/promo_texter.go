@@ -24,7 +24,7 @@ type pTexterStoreLufftReq struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	body		pTexterStoreLufftReq	true	"Promo Texter parameters"
-//	@Success	200	{object}	lufftRes
+//	@Success	200	{object}	observationRes
 //	@Router		/ptexter [post]
 func (h *DefaultHandler) PromoTexterStoreLufft(ctx *gin.Context) {
 	var req pTexterStoreLufftReq
@@ -139,7 +139,7 @@ func (h *DefaultHandler) PromoTexterStoreLufft(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 	}
 
-	res := newLufftResponse(station, obs, health)
+	res := newObservationResponse(station, obs, health)
 
 	h.logger.Debug().
 		Str("sender", req.Number).

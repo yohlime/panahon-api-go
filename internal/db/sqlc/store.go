@@ -9,9 +9,10 @@ import (
 // Store provides all functions to execute db queries and transaction
 type Store interface {
 	Querier
-	FirstOrCreateSimAccessTokenTx(ctx context.Context, arg FirstOrCreateSimAccessTokenTxParams) (FirstOrCreateSimAccessTokenTxResult, error)
 	BulkCreateUserRoles(ctx context.Context, arg []UserRolesParams) (ret []UserRolesParams, errs []error)
 	BulkDeleteUserRoles(ctx context.Context, arg []UserRolesParams) []error
+	CreateMisolStationTx(ctx context.Context, arg CreateMisolStationTxParams) (CreateMisolStationTxResult, error)
+	FirstOrCreateSimAccessTokenTx(ctx context.Context, arg FirstOrCreateSimAccessTokenTxParams) (FirstOrCreateSimAccessTokenTxResult, error)
 }
 
 // SQLStore provides all functions to execute SQL queries and transactions

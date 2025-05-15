@@ -45,6 +45,7 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 	r.glabsRouter(api)
 	r.ptexterRouter(api)
 	r.lufftRouter(api)
+	r.csiRouter(api)
 
 	api.POST("/tokens/renew", r.handler.RenewAccessToken)
 
