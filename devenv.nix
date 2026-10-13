@@ -5,39 +5,61 @@
   inputs,
   ...
 }:
-let
-  pkgs-unstable = import inputs.nixpkgs-unstable { system = pkgs.stdenv.system; };
-in
 {
-  # https://devenv.sh/packages/
-  packages = with pkgs-unstable; [
+  packages = with pkgs; [
     air
-    git
-    go-migrate
+    cacert
+    coreutils
+    (go-migrate.overrideAttrs (oldAttrs: {
+      tags = [ "postgres" ];
+    }))
     go-mockery
-    postgresql_14
+    go-swag
+    postgresql_16
+    secretspec
     sqlc
   ];
 
+  env.DOCKER_HOST = "unix://$XDG_RUNTIME_DIR/podman/podman.sock";
+
   languages.go.enable = true;
 
-  # https://devenv.sh/services/
-  # services.postgres.enable = true;
+  services.postgres = {
+    enable = true;
+    package = pkgs.postgresql_16;
+    extensions = extensions: [ extensions.postgis ];
+    listen_addresses = "localhost";
+    port = 5432;
+    initialDatabases = [
+      {
+        name = "weather";
+        user = "weatheradmin";
+        pass = "w5r@dm!N";
+        initialSQL = ''
+          CREATE EXTENSION IF NOT EXISTS postgis;
+        '';
+      }
+    ];
+  };
+
+  # `devenv up` starts postgres to readiness, seeds dev data (idempotent), then air.
+  tasks."db:seed" = {
+    exec = "go run ./cmd/testcli seed all -v";
+    after = [ "devenv:processes:postgres" ];
+    showOutput = true;
+  };
+
+  processes.air = {
+    exec = "air";
+    after = [ "devenv:processes:postgres" "db:seed" ];
+  };
 
   enterShell = ''
-    git --version
+    go version
   '';
 
-  # https://devenv.sh/tasks/
-  # tasks = {
-  #   "myproj:setup".exec = "mytool build";
-  #   "devenv:enterShell".after = [ "myproj:setup" ];
-  # };
-
-  # https://devenv.sh/tests/
   enterTest = ''
     echo "Running tests"
-    git --version | grep --color=auto "${pkgs.git.version}"
+    make test
   '';
-
 }
