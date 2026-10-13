@@ -78,6 +78,7 @@ type paginatedStationObservations = util.PaginatedList[models.StationObservation
 //	@Param		station_id	path	int					true	"Station ID"
 //	@Param		req			query	listStationObsReq	false	"List station observations parameters"
 //	@Security	APITokenAuth
+//	@Security	BearerAuth
 //	@Success	200	{object}	paginatedStationObservations
 //	@Router		/stations/{station_id}/observations [get]
 func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
@@ -93,6 +94,10 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 	}
 	startDate, isStartDate := util.ParseDateTime(req.StartDate)
 	endDate, isEndDate := util.ParseDateTime(req.EndDate)
+	if cutoff, limited := effectiveHistoryStart(ctx); limited && (!isStartDate || startDate.Before(cutoff)) {
+		startDate = cutoff
+		isStartDate = true
+	}
 	offset := (req.Page - 1) * req.PerPage
 
 	stn, err := h.store.GetStation(ctx, uri.StationID)
@@ -150,7 +155,7 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 	numObs := len(obsSlice)
 	items := make([]models.StationObservation, numObs)
 	for i, obs := range obsSlice {
-		items[i] = models.NewStationObservation(obs, getAccessibleVariables(ctx))
+		items[i] = models.NewStationObservation(obs, resolveAccessibleVariables(ctx))
 	}
 
 	var count int64
@@ -196,9 +201,11 @@ type getStationObsReq struct {
 //	@Tags		observations
 //	@Accept		json
 //	@Produce	json
-//	@Param		station_id	path		int	true	"Station ID"
-//	@Param		id			path		int	true	"Station Observation ID"
-//	@Success	200			{object}	models.StationObservation
+//	@Param		station_id	path	int	true	"Station ID"
+//	@Param		id			path	int	true	"Station Observation ID"
+//	@Security	APITokenAuth
+//	@Security	BearerAuth
+//	@Success	200	{object}	models.StationObservation
 //	@Router		/stations/{station_id}/observations/{id} [get]
 func (h *DefaultHandler) GetStationObservation(ctx *gin.Context) {
 	var req getStationObsReq
@@ -323,7 +330,9 @@ type listObservationsReq struct {
 //	@Summary	list station observation
 //	@Tags		observations
 //	@Produce	json
-//	@Param		req	query		listObservationsReq	false	"List observations parameters"
+//	@Param		req	query	listObservationsReq	false	"List observations parameters"
+//	@Security	APITokenAuth
+//	@Security	BearerAuth
 //	@Success	200	{object}	paginatedStationObservations
 //	@Router		/observations [get]
 func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
@@ -333,8 +342,27 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 		return
 	}
 
+	perm, hasToken := getAPITokenPermissions(ctx)
+	tokenScoped := hasToken && !isAdminSession(ctx) && perm.StationIDs != nil
+
 	var stationIDs []int64
-	if len(req.StationIDs) == 0 {
+	switch {
+	case len(req.StationIDs) > 0:
+		stnIDStrs := strings.Split(req.StationIDs, ",")
+		for i := range stnIDStrs {
+			stnID, err := strconv.ParseInt(stnIDStrs[i], 10, 64)
+			if err != nil {
+				continue
+			}
+			stationIDs = append(stationIDs, stnID)
+		}
+		if tokenScoped {
+			stationIDs = intersectInt64(stationIDs, perm.StationIDs)
+		}
+	case tokenScoped:
+		// No stations requested: restrict to the token's stations.
+		stationIDs = perm.StationIDs
+	default:
 		stations, err := h.store.ListStations(ctx, db.ListStationsParams{
 			Limit:  pgtype.Int4{Int32: 10, Valid: true},
 			Offset: 0,
@@ -347,19 +375,14 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 		for i := range stations {
 			stationIDs = append(stationIDs, stations[i].ID)
 		}
-	} else {
-		stnIDStrs := strings.Split(req.StationIDs, ",")
-		for i := range stnIDStrs {
-			stnID, err := strconv.ParseInt(stnIDStrs[i], 10, 64)
-			if err != nil {
-				continue
-			}
-			stationIDs = append(stationIDs, stnID)
-		}
 	}
 
 	startDate, isStartDate := util.ParseDateTime(req.StartDate)
 	endDate, isEndDate := util.ParseDateTime(req.EndDate)
+	if cutoff, limited := effectiveHistoryStart(ctx); limited && (!isStartDate || startDate.Before(cutoff)) {
+		startDate = cutoff
+		isStartDate = true
+	}
 
 	offset := (req.Page - 1) * req.PerPage
 	arg := db.ListObservationsParams{
@@ -390,7 +413,7 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 	numObs := len(obs)
 	items := make([]models.StationObservation, numObs)
 	for i, observation := range obs {
-		items[i] = models.NewStationObservation(observation, nil)
+		items[i] = models.NewStationObservation(observation, resolveAccessibleVariables(ctx))
 	}
 
 	count, err := h.store.CountObservations(ctx, db.CountObservationsParams{
@@ -522,6 +545,50 @@ func newLatestObservationResponse(data any) latestObservationRes {
 	}
 }
 
+// filterLatestObservationVariables nils out met variables the caller may not
+// read (nil vars = all). Timestamps are always kept.
+func filterLatestObservationVariables(res latestObservationRes, vars []string) latestObservationRes {
+	if vars == nil {
+		return res
+	}
+
+	allowed := make(map[string]struct{}, len(vars))
+	for _, v := range vars {
+		allowed[v] = struct{}{}
+	}
+	has := func(name string) bool {
+		_, ok := allowed[name]
+		return ok
+	}
+
+	o := res.Obs
+	if !has("rain") {
+		o.Rain = util.Float4{}
+		o.RainAccum = util.Float4{}
+	}
+	if !has("temp") {
+		o.Temp = util.Float4{}
+		o.Tn = util.Float4{}
+		o.Tx = util.Float4{}
+	}
+	if !has("rh") {
+		o.Rh = util.Float4{}
+	}
+	if !has("wind") {
+		o.Wdir = util.Float4{}
+		o.Wspd = util.Float4{}
+		o.Gust = util.Float4{}
+	}
+	if !has("srad") {
+		o.Srad = util.Float4{}
+	}
+	if !has("pres") {
+		o.Mslp = util.Float4{}
+	}
+	res.Obs = o
+	return res
+}
+
 // ListLatestObservations
 //
 //	@Summary	list latest observation
@@ -555,8 +622,10 @@ type getLatestStationObsReq struct {
 //	@Tags		observations
 //	@Accept		json
 //	@Produce	json
-//	@Param		station_id	path		int	true	"Station ID"
-//	@Success	200			{object}	latestObservationRes
+//	@Param		station_id	path	int	true	"Station ID"
+//	@Security	APITokenAuth
+//	@Security	BearerAuth
+//	@Success	200	{object}	latestObservationRes
 //	@Router		/stations/{station_id}/observations/latest [get]
 func (h *DefaultHandler) GetLatestStationObservation(ctx *gin.Context) {
 	var req getLatestStationObsReq
@@ -575,7 +644,8 @@ func (h *DefaultHandler) GetLatestStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newLatestObservationResponse(obs))
+	res := filterLatestObservationVariables(newLatestObservationResponse(obs), resolveAccessibleVariables(ctx))
+	ctx.JSON(http.StatusOK, res)
 }
 
 type getNearestLatestStationObsReq struct {

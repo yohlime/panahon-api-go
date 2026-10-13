@@ -11,6 +11,7 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
+	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -123,6 +124,18 @@ func TestStationMiddleware(t *testing.T) {
 			},
 		},
 		{
+			name: "AdminBypass",
+			setupAccess: func(ctx *gin.Context) {
+				ctx.Set(models.AuthPayloadKey, &token.Payload{
+					User: token.User{Roles: []string{string(models.AdminRole)}},
+				})
+				ctx.Next()
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
 			name: "TokenMissing",
 			setupAccess: func(ctx *gin.Context) {
 				ctx.Set(models.APITokenAuthKey, nil)
@@ -172,6 +185,81 @@ func TestStationMiddleware(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 			time.Sleep(100 * time.Millisecond)
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
+func TestRequireAdminOrAPIToken(t *testing.T) {
+	testCases := []struct {
+		name          string
+		setupAccess   func(ctx *gin.Context)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "AdminSession",
+			setupAccess: func(ctx *gin.Context) {
+				ctx.Set(models.AuthPayloadKey, &token.Payload{
+					User: token.User{Roles: []string{string(models.SuperAdminRole)}},
+				})
+				ctx.Next()
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "ValidAPIToken",
+			setupAccess: func(ctx *gin.Context) {
+				ctx.Set(models.APITokenAuthKey, &db.APIToken{ID: 1})
+				ctx.Next()
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "NoAuth",
+			setupAccess: func(ctx *gin.Context) {
+				ctx.Next()
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "NonAdminSession",
+			setupAccess: func(ctx *gin.Context) {
+				ctx.Set(models.AuthPayloadKey, &token.Payload{
+					User: token.User{Roles: []string{"USER"}},
+				})
+				ctx.Next()
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			router := gin.Default()
+			router.GET(
+				"/observations",
+				tc.setupAccess,
+				RequireAdminOrAPIToken(),
+				func(ctx *gin.Context) {
+					ctx.JSON(http.StatusOK, gin.H{})
+				},
+			)
+
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodGet, "/observations", nil)
+			require.NoError(t, err)
+
+			router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
 	}

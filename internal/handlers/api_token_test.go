@@ -73,7 +73,7 @@ func TestCreateAPIToken(t *testing.T) {
 					if err != nil {
 						return false
 					}
-					return !arg.ExpiresAt.Valid && permissions.MaxDaysHistory == models.DefaultMaxDaysHistory && len(permissions.StationIDs) == 0 && len(permissions.Variables) == 0
+					return !arg.ExpiresAt.Valid && permissions.MaxDaysHistory == models.DefaultMaxDaysHistory && len(permissions.StationIDs) == 0 && len(permissions.Variables) == len(models.DefaultAPITokenVariables)
 				})).Return(dbAPITok, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {

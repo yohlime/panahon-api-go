@@ -168,6 +168,14 @@
         },
         "/observations": {
             "get": {
+                "security": [
+                    {
+                        "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -694,6 +702,9 @@
                 "security": [
                     {
                         "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
                     }
                 ],
                 "consumes": [
@@ -794,6 +805,14 @@
         },
         "/stations/{station_id}/observations/latest": {
             "get": {
+                "security": [
+                    {
+                        "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -825,6 +844,14 @@
         },
         "/stations/{station_id}/observations/{id}": {
             "get": {
+                "security": [
+                    {
+                        "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],

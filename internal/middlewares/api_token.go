@@ -12,9 +12,48 @@ import (
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
+	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 )
+
+// isAdminPayload reports whether the request carries an authenticated
+// admin/superadmin session (cookie or Bearer).
+func isAdminPayload(ctx *gin.Context) bool {
+	key, exists := ctx.Get(models.AuthPayloadKey)
+	if !exists || key == nil {
+		return false
+	}
+	payload, ok := key.(*token.Payload)
+	if !ok || payload == nil {
+		return false
+	}
+	for _, role := range payload.User.Roles {
+		if models.IsAdminRole(role) {
+			return true
+		}
+	}
+	return false
+}
+
+// RequireAdminOrAPIToken allows admin sessions or a validated API token, else 401.
+func RequireAdminOrAPIToken() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if isAdminPayload(ctx) {
+			ctx.Next()
+			return
+		}
+
+		if key, exists := ctx.Get(models.APITokenAuthKey); exists {
+			if dbToken, ok := key.(*db.APIToken); ok && dbToken != nil {
+				ctx.Next()
+				return
+			}
+		}
+
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(errors.New("authentication required")))
+	}
+}
 
 func APITokenMiddleware(store db.Store, permissive bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -31,6 +70,12 @@ func APITokenMiddleware(store db.Store, permissive bool) gin.HandlerFunc {
 
 func StationMiddleware(stnIDParamKey string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// Admin/superadmin sessions may read any station without an API token.
+		if isAdminPayload(ctx) {
+			ctx.Next()
+			return
+		}
+
 		key, exists := ctx.Get(models.APITokenAuthKey)
 		if !exists {
 			err := fmt.Errorf("api_key not found")

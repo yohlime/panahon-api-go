@@ -664,6 +664,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/PaginatedStationObservations'
+      security:
+      - APITokenAuth: []
+      - BearerAuth: []
       summary: list station observation
       tags:
       - observations
@@ -977,6 +980,7 @@ paths:
             $ref: '#/definitions/PaginatedStationObservations'
       security:
       - APITokenAuth: []
+      - BearerAuth: []
       summary: List station observations
       tags:
       - observations
@@ -1053,6 +1057,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/StationObservation'
+      security:
+      - APITokenAuth: []
+      - BearerAuth: []
       summary: Get station observation
       tags:
       - observations
@@ -1103,6 +1110,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/LatestObservation'
+      security:
+      - APITokenAuth: []
+      - BearerAuth: []
       summary: Get latest station observation
       tags:
       - observations

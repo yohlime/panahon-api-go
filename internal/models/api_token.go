@@ -2,6 +2,8 @@ package models
 
 import (
 	"encoding/json"
+	"slices"
+	"strings"
 	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
@@ -12,6 +14,45 @@ const (
 	APIKeyQueryParam      = "api_key"
 	DefaultMaxDaysHistory = 365
 )
+
+// APITokenVariables is the set of logical met variables a token may request.
+var APITokenVariables = []string{"pres", "rain", "rh", "temp", "td", "wind", "windx", "srad", "hi", "wchill"}
+
+// DefaultAPITokenVariables is granted when a token requests no variables.
+var DefaultAPITokenVariables = []string{"rain", "temp"}
+
+// APITokenAllVariables, when present in Variables, grants access to every variable.
+const APITokenAllVariables = "all"
+
+// Normalize validates and clamps token permissions in place:
+//   - variables: "all" -> nil (all), empty/unknown -> the default set
+//   - max_days_history: clamped to [1, DefaultMaxDaysHistory]
+func (p *APITokenPermissions) Normalize() {
+	normalized := make([]string, 0, len(p.Variables))
+	all := false
+	for _, v := range p.Variables {
+		if strings.EqualFold(v, APITokenAllVariables) {
+			all = true
+			break
+		}
+		if slices.Contains(APITokenVariables, strings.ToLower(v)) {
+			normalized = append(normalized, strings.ToLower(v))
+		}
+	}
+
+	switch {
+	case all:
+		p.Variables = nil
+	case len(normalized) == 0:
+		p.Variables = DefaultAPITokenVariables
+	default:
+		p.Variables = normalized
+	}
+
+	if p.MaxDaysHistory <= 0 || p.MaxDaysHistory > DefaultMaxDaysHistory {
+		p.MaxDaysHistory = DefaultMaxDaysHistory
+	}
+}
 
 // APITokenPermissions defines access restrictions for an API token
 type APITokenPermissions struct {

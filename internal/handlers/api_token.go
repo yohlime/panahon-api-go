@@ -38,9 +38,7 @@ func (h *DefaultHandler) CreateAPIToken(ctx *gin.Context) {
 		return
 	}
 
-	if req.Permissions.MaxDaysHistory == 0 {
-		req.Permissions.MaxDaysHistory = models.DefaultMaxDaysHistory
-	}
+	req.Permissions.Normalize()
 
 	permissionsJSON, err := json.Marshal(req.Permissions)
 	if err != nil {
@@ -204,9 +202,7 @@ func (h *DefaultHandler) CreateUserAPIToken(ctx *gin.Context) {
 	}
 
 	// Set default permissions if not provided
-	if req.Permissions.MaxDaysHistory == 0 {
-		req.Permissions.MaxDaysHistory = 365
-	}
+	req.Permissions.Normalize()
 
 	permissionsJSON, err := json.Marshal(req.Permissions)
 	if err != nil {

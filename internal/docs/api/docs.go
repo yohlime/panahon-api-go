@@ -176,6 +176,14 @@ const docTemplate = `{
         },
         "/observations": {
             "get": {
+                "security": [
+                    {
+                        "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -702,6 +710,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
                     }
                 ],
                 "consumes": [
@@ -802,6 +813,14 @@ const docTemplate = `{
         },
         "/stations/{station_id}/observations/latest": {
             "get": {
+                "security": [
+                    {
+                        "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -833,6 +852,14 @@ const docTemplate = `{
         },
         "/stations/{station_id}/observations/{id}": {
             "get": {
+                "security": [
+                    {
+                        "APITokenAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
