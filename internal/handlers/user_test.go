@@ -1046,8 +1046,6 @@ func TestLogoutUserAPI(t *testing.T) {
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {},
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{}, token.ErrInvalidToken)
-				store.EXPECT().DeleteSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -1072,8 +1070,6 @@ func TestLogoutUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{}, token.ErrInvalidToken)
-				store.EXPECT().DeleteSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)

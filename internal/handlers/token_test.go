@@ -47,6 +47,8 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: tokenExpiresAt, Valid: true}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
+					Return([]string{"USER"}, nil)
 				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("time.Duration")).
 					Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil)
 			},
@@ -79,6 +81,8 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: tokenExpiresAt, Valid: true}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
+					Return([]string{"USER"}, nil)
 				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("time.Duration")).
 					Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil)
 			},
@@ -353,6 +357,8 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
+					Return([]string{"USER"}, nil)
 				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("time.Duration")).
 					Return("", &token.Payload{}, errors.New("error token create"))
 			},

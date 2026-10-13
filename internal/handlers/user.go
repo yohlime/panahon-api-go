@@ -442,10 +442,8 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	cookieIsSecure := h.config.Environment == "production"
-
-	ctx.SetCookie(models.AccessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), h.config.CookiePath, h.config.CookieDomain, cookieIsSecure, true)
-	ctx.SetCookie(models.RefreshTokenCookieName, refreshToken, int(time.Until(refreshPayload.ExpiresAt).Seconds()), h.config.CookiePath, h.config.CookieDomain, cookieIsSecure, true)
+	h.setAuthCookie(ctx, models.AccessTokenCookieName, accessToken, accessPayload.ExpiresAt)
+	h.setAuthCookie(ctx, models.RefreshTokenCookieName, refreshToken, refreshPayload.ExpiresAt)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
@@ -461,11 +459,12 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 func (h *DefaultHandler) LogoutUser(ctx *gin.Context) {
 	refreshToken, _ := ctx.Cookie(models.RefreshTokenCookieName)
 
-	refreshPayload, _ := h.tokenMaker.VerifyToken(refreshToken)
+	if refreshPayload, err := h.tokenMaker.VerifyToken(refreshToken); err == nil && refreshPayload != nil {
+		h.store.DeleteSession(ctx, refreshPayload.ID)
+	}
 
-	h.store.DeleteSession(ctx, refreshPayload.ID)
-	ctx.SetCookie(models.AccessTokenCookieName, "", -1, h.config.CookiePath, h.config.CookieDomain, true, true)
-	ctx.SetCookie(models.RefreshTokenCookieName, "", -1, h.config.CookiePath, h.config.CookieDomain, true, true)
+	h.clearAuthCookie(ctx, models.AccessTokenCookieName)
+	h.clearAuthCookie(ctx, models.RefreshTokenCookieName)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }

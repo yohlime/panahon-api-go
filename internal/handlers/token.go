@@ -8,6 +8,7 @@ import (
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
+	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -86,14 +87,20 @@ func (h *DefaultHandler) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := h.tokenMaker.CreateToken(refreshPayload.User, h.config.AccessTokenDuration)
+	roleNames, err := h.store.ListUserRoles(ctx, user.ID)
+	if err != nil && !errors.Is(err, db.ErrRecordNotFound) {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	payloadUser := token.User{Username: user.Username, Roles: roleNames}
+
+	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, h.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	cookieIsSecure := h.config.Environment == "production"
-	ctx.SetCookie(models.AccessTokenCookieName, accessToken, int(time.Until(accessPayload.ExpiresAt).Seconds()), h.config.CookiePath, h.config.CookieDomain, cookieIsSecure, true)
+	h.setAuthCookie(ctx, models.AccessTokenCookieName, accessToken, accessPayload.ExpiresAt)
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
