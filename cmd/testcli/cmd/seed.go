@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/factory"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -13,27 +15,110 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var nStations int
+var (
+	nStations    int
+	seedDir      string
+	pgRestoreBin string
+	forceSeed    bool
+)
 
 var seedCmd = &cobra.Command{
 	Use:   "seed",
-	Short: "Seeds the database with test data",
+	Short: "Seeds the dev database",
+}
+
+var seedUsersCmd = &cobra.Command{
+	Use:   "users",
+	Short: "Seeds users and roles",
+	Run:   func(cmd *cobra.Command, args []string) { seedUsers() },
 }
 
 var seedStationsCmd = &cobra.Command{
 	Use:   "stations",
-	Short: "Seeds the stations table with test data",
-	Run: func(cmd *cobra.Command, args []string) {
-		seedStations()
-	},
+	Short: "Seeds stations from the seed dump",
+	Run:   func(cmd *cobra.Command, args []string) { seedStations() },
+}
+
+var seedRecordsCmd = &cobra.Command{
+	Use:   "records",
+	Short: "Seeds observation records from the seed CSVs",
+	Run:   func(cmd *cobra.Command, args []string) { seedRecords() },
+}
+
+var seedAllCmd = &cobra.Command{
+	Use:   "all",
+	Short: "Seeds users, stations and observation records",
+	Run:   func(cmd *cobra.Command, args []string) { seedAll() },
+}
+
+var seedRandomStationsCmd = &cobra.Command{
+	Use:   "random-stations",
+	Short: "Seeds the stations table with random test data",
+	Run:   func(cmd *cobra.Command, args []string) { seedRandomStations() },
 }
 
 func init() {
-	seedCmd.AddCommand(seedStationsCmd)
-	seedStationsCmd.Flags().IntVar(&nStations, "station", 10, "number of stations to create")
+	seedCmd.AddCommand(seedUsersCmd, seedStationsCmd, seedRecordsCmd, seedAllCmd, seedRandomStationsCmd)
+
+	seedCmd.PersistentFlags().StringVar(&seedDir, "seed-dir", "scripts/seed", "directory containing seed files")
+	seedCmd.PersistentFlags().StringVar(&pgRestoreBin, "pg-restore", "", "path to pg_restore (default: resolved on PATH)")
+	seedCmd.PersistentFlags().BoolVar(&forceSeed, "force", false, "reload records even when the table already has rows")
+
+	seedRandomStationsCmd.Flags().IntVar(&nStations, "station", 10, "number of stations to create")
 }
 
-func seedStations() []db.ObservationsStation {
+func seedUsers() {
+	ctx := context.Background()
+	connPool, store := dbConnectDev(ctx)
+	defer connPool.Close()
+
+	if err := factory.SeedUsers(ctx, store, logger, factory.DefaultDevUsers()); err != nil {
+		logger.Fatal().Err(err).Msg("failed to seed users")
+	}
+}
+
+func seedStations() {
+	ctx := context.Background()
+	connPool, _ := dbConnectDev(ctx)
+	defer connPool.Close()
+
+	if err := factory.SeedStations(ctx, connPool, logger, factory.StationSeedOptions{
+		DumpPath:  filepath.Join(seedDir, "stations.dump"),
+		PGRestore: pgRestoreBin,
+	}); err != nil {
+		logger.Fatal().Err(err).Msg("failed to seed stations")
+	}
+}
+
+func seedRecords() {
+	ctx := context.Background()
+	connPool, _ := dbConnectDev(ctx)
+	defer connPool.Close()
+
+	if err := factory.SeedObservations(ctx, connPool, logger, factory.ObservationSeedOptions{
+		Dir:   seedDir,
+		Force: forceSeed,
+	}); err != nil {
+		logger.Fatal().Err(err).Msg("failed to seed records")
+	}
+}
+
+func seedAll() {
+	ctx := context.Background()
+	connPool, store := dbConnectDev(ctx)
+	defer connPool.Close()
+
+	if err := factory.SeedAll(ctx, connPool, store, logger, factory.SeedOptions{
+		SeedDir:   seedDir,
+		PGRestore: pgRestoreBin,
+		Force:     forceSeed,
+		Users:     factory.DefaultDevUsers(),
+	}); err != nil {
+		logger.Fatal().Err(err).Msg("failed to seed")
+	}
+}
+
+func seedRandomStations() []db.ObservationsStation {
 	ctx := context.Background()
 
 	connPool, store := dbConnect(ctx)

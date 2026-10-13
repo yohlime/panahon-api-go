@@ -71,14 +71,13 @@ func initCmd() {
 	}
 }
 
-func dbConnect(ctx context.Context) (*pgxpool.Pool, db.Store) {
-	config.DBSource, _ = replaceDBName(config.DBSource, testDBName)
-	connPool, err := pgxpool.New(ctx, config.DBSource)
+func connect(ctx context.Context, source string) (*pgxpool.Pool, db.Store) {
+	connPool, err := pgxpool.New(ctx, source)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("cannot connect to db")
 	}
 
-	migration, err := migrate.New("file://"+config.MigrationPath, config.DBSource)
+	migration, err := migrate.New("file://"+config.MigrationPath, source)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("db migration problem")
 	}
@@ -104,6 +103,21 @@ func dbConnect(ctx context.Context) (*pgxpool.Pool, db.Store) {
 	store := db.NewStore(connPool)
 
 	return connPool, store
+}
+
+// dbConnect connects to the --db database (default testweather).
+func dbConnect(ctx context.Context) (*pgxpool.Pool, db.Store) {
+	source, err := replaceDBName(config.DBSource, testDBName)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("invalid db source")
+	}
+
+	return connect(ctx, source)
+}
+
+// dbConnectDev connects to the database configured in app.env (dev).
+func dbConnectDev(ctx context.Context) (*pgxpool.Pool, db.Store) {
+	return connect(ctx, config.DBSource)
 }
 
 func runGinServer(ctx context.Context, g *errgroup.Group, store db.Store) {

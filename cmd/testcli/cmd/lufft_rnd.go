@@ -57,7 +57,7 @@ func sendRandomLufft() {
 		logger.Info().Msgf("%s, creating %d stations", msg, dStns)
 		_nStations := nStations
 		nStations = dStns
-		stns = append(stns, seedStations()...)
+		stns = append(stns, seedRandomStations()...)
 		nStations = _nStations
 	}
 
