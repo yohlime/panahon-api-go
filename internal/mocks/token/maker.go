@@ -17,10 +17,19 @@ func NewMockMaker(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockMaker {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockMaker{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -80,7 +89,7 @@ type MockMaker_CreateToken_Call struct {
 // CreateToken is a helper method to define mock.On call
 //   - user token.User
 //   - duration time.Duration
-func (_e *MockMaker_Expecter) CreateToken(user interface{}, duration interface{}) *MockMaker_CreateToken_Call {
+func (_e *MockMaker_Expecter) CreateToken(user any, duration any) *MockMaker_CreateToken_Call {
 	return &MockMaker_CreateToken_Call{Call: _e.mock.On("CreateToken", user, duration)}
 }
 
@@ -147,7 +156,7 @@ type MockMaker_VerifyToken_Call struct {
 
 // VerifyToken is a helper method to define mock.On call
 //   - token1 string
-func (_e *MockMaker_Expecter) VerifyToken(token1 interface{}) *MockMaker_VerifyToken_Call {
+func (_e *MockMaker_Expecter) VerifyToken(token1 any) *MockMaker_VerifyToken_Call {
 	return &MockMaker_VerifyToken_Call{Call: _e.mock.On("VerifyToken", token1)}
 }
 

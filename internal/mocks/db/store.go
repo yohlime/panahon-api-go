@@ -19,10 +19,19 @@ func NewMockStore(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockStore {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockStore{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -67,7 +76,7 @@ type MockStore_BatchCreateUserRoles_Call struct {
 // BatchCreateUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg []db.BatchCreateUserRolesParams
-func (_e *MockStore_Expecter) BatchCreateUserRoles(ctx interface{}, arg interface{}) *MockStore_BatchCreateUserRoles_Call {
+func (_e *MockStore_Expecter) BatchCreateUserRoles(ctx any, arg any) *MockStore_BatchCreateUserRoles_Call {
 	return &MockStore_BatchCreateUserRoles_Call{Call: _e.mock.On("BatchCreateUserRoles", ctx, arg)}
 }
 
@@ -126,7 +135,7 @@ type MockStore_BatchDeleteUserRoles_Call struct {
 // BatchDeleteUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg []db.BatchDeleteUserRolesParams
-func (_e *MockStore_Expecter) BatchDeleteUserRoles(ctx interface{}, arg interface{}) *MockStore_BatchDeleteUserRoles_Call {
+func (_e *MockStore_Expecter) BatchDeleteUserRoles(ctx any, arg any) *MockStore_BatchDeleteUserRoles_Call {
 	return &MockStore_BatchDeleteUserRoles_Call{Call: _e.mock.On("BatchDeleteUserRoles", ctx, arg)}
 }
 
@@ -196,7 +205,7 @@ type MockStore_BulkCreateUserRoles_Call struct {
 // BulkCreateUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg []db.UserRolesParams
-func (_e *MockStore_Expecter) BulkCreateUserRoles(ctx interface{}, arg interface{}) *MockStore_BulkCreateUserRoles_Call {
+func (_e *MockStore_Expecter) BulkCreateUserRoles(ctx any, arg any) *MockStore_BulkCreateUserRoles_Call {
 	return &MockStore_BulkCreateUserRoles_Call{Call: _e.mock.On("BulkCreateUserRoles", ctx, arg)}
 }
 
@@ -255,7 +264,7 @@ type MockStore_BulkDeleteUserRoles_Call struct {
 // BulkDeleteUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg []db.UserRolesParams
-func (_e *MockStore_Expecter) BulkDeleteUserRoles(ctx interface{}, arg interface{}) *MockStore_BulkDeleteUserRoles_Call {
+func (_e *MockStore_Expecter) BulkDeleteUserRoles(ctx any, arg any) *MockStore_BulkDeleteUserRoles_Call {
 	return &MockStore_BulkDeleteUserRoles_Call{Call: _e.mock.On("BulkDeleteUserRoles", ctx, arg)}
 }
 
@@ -321,7 +330,7 @@ type MockStore_CountAPITokensByUser_Call struct {
 // CountAPITokensByUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID int64
-func (_e *MockStore_Expecter) CountAPITokensByUser(ctx interface{}, userID interface{}) *MockStore_CountAPITokensByUser_Call {
+func (_e *MockStore_Expecter) CountAPITokensByUser(ctx any, userID any) *MockStore_CountAPITokensByUser_Call {
 	return &MockStore_CountAPITokensByUser_Call{Call: _e.mock.On("CountAPITokensByUser", ctx, userID)}
 }
 
@@ -349,6 +358,132 @@ func (_c *MockStore_CountAPITokensByUser_Call) Return(n int64, err error) *MockS
 }
 
 func (_c *MockStore_CountAPITokensByUser_Call) RunAndReturn(run func(ctx context.Context, userID int64) (int64, error)) *MockStore_CountAPITokensByUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountAccessRequests provides a mock function for the type MockStore
+func (_mock *MockStore) CountAccessRequests(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountAccessRequests")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_CountAccessRequests_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountAccessRequests'
+type MockStore_CountAccessRequests_Call struct {
+	*mock.Call
+}
+
+// CountAccessRequests is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockStore_Expecter) CountAccessRequests(ctx any) *MockStore_CountAccessRequests_Call {
+	return &MockStore_CountAccessRequests_Call{Call: _e.mock.On("CountAccessRequests", ctx)}
+}
+
+func (_c *MockStore_CountAccessRequests_Call) Run(run func(ctx context.Context)) *MockStore_CountAccessRequests_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_CountAccessRequests_Call) Return(n int64, err error) *MockStore_CountAccessRequests_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockStore_CountAccessRequests_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockStore_CountAccessRequests_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountAccessRequestsByStatus provides a mock function for the type MockStore
+func (_mock *MockStore) CountAccessRequestsByStatus(ctx context.Context, status string) (int64, error) {
+	ret := _mock.Called(ctx, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountAccessRequestsByStatus")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (int64, error)); ok {
+		return returnFunc(ctx, status)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) int64); ok {
+		r0 = returnFunc(ctx, status)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, status)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_CountAccessRequestsByStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountAccessRequestsByStatus'
+type MockStore_CountAccessRequestsByStatus_Call struct {
+	*mock.Call
+}
+
+// CountAccessRequestsByStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - status string
+func (_e *MockStore_Expecter) CountAccessRequestsByStatus(ctx any, status any) *MockStore_CountAccessRequestsByStatus_Call {
+	return &MockStore_CountAccessRequestsByStatus_Call{Call: _e.mock.On("CountAccessRequestsByStatus", ctx, status)}
+}
+
+func (_c *MockStore_CountAccessRequestsByStatus_Call) Run(run func(ctx context.Context, status string)) *MockStore_CountAccessRequestsByStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_CountAccessRequestsByStatus_Call) Return(n int64, err error) *MockStore_CountAccessRequestsByStatus_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockStore_CountAccessRequestsByStatus_Call) RunAndReturn(run func(ctx context.Context, status string) (int64, error)) *MockStore_CountAccessRequestsByStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -387,7 +522,7 @@ type MockStore_CountLufftStationMsg_Call struct {
 // CountLufftStationMsg is a helper method to define mock.On call
 //   - ctx context.Context
 //   - stationID int64
-func (_e *MockStore_Expecter) CountLufftStationMsg(ctx interface{}, stationID interface{}) *MockStore_CountLufftStationMsg_Call {
+func (_e *MockStore_Expecter) CountLufftStationMsg(ctx any, stationID any) *MockStore_CountLufftStationMsg_Call {
 	return &MockStore_CountLufftStationMsg_Call{Call: _e.mock.On("CountLufftStationMsg", ctx, stationID)}
 }
 
@@ -453,7 +588,7 @@ type MockStore_CountMOObservations_Call struct {
 // CountMOObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CountMOObservationsParams
-func (_e *MockStore_Expecter) CountMOObservations(ctx interface{}, arg interface{}) *MockStore_CountMOObservations_Call {
+func (_e *MockStore_Expecter) CountMOObservations(ctx any, arg any) *MockStore_CountMOObservations_Call {
 	return &MockStore_CountMOObservations_Call{Call: _e.mock.On("CountMOObservations", ctx, arg)}
 }
 
@@ -519,7 +654,7 @@ type MockStore_CountObservations_Call struct {
 // CountObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CountObservationsParams
-func (_e *MockStore_Expecter) CountObservations(ctx interface{}, arg interface{}) *MockStore_CountObservations_Call {
+func (_e *MockStore_Expecter) CountObservations(ctx any, arg any) *MockStore_CountObservations_Call {
 	return &MockStore_CountObservations_Call{Call: _e.mock.On("CountObservations", ctx, arg)}
 }
 
@@ -584,7 +719,7 @@ type MockStore_CountRoles_Call struct {
 
 // CountRoles is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) CountRoles(ctx interface{}) *MockStore_CountRoles_Call {
+func (_e *MockStore_Expecter) CountRoles(ctx any) *MockStore_CountRoles_Call {
 	return &MockStore_CountRoles_Call{Call: _e.mock.On("CountRoles", ctx)}
 }
 
@@ -645,7 +780,7 @@ type MockStore_CountStationMOObservations_Call struct {
 // CountStationMOObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CountStationMOObservationsParams
-func (_e *MockStore_Expecter) CountStationMOObservations(ctx interface{}, arg interface{}) *MockStore_CountStationMOObservations_Call {
+func (_e *MockStore_Expecter) CountStationMOObservations(ctx any, arg any) *MockStore_CountStationMOObservations_Call {
 	return &MockStore_CountStationMOObservations_Call{Call: _e.mock.On("CountStationMOObservations", ctx, arg)}
 }
 
@@ -711,7 +846,7 @@ type MockStore_CountStationObservations_Call struct {
 // CountStationObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CountStationObservationsParams
-func (_e *MockStore_Expecter) CountStationObservations(ctx interface{}, arg interface{}) *MockStore_CountStationObservations_Call {
+func (_e *MockStore_Expecter) CountStationObservations(ctx any, arg any) *MockStore_CountStationObservations_Call {
 	return &MockStore_CountStationObservations_Call{Call: _e.mock.On("CountStationObservations", ctx, arg)}
 }
 
@@ -777,7 +912,7 @@ type MockStore_CountStations_Call struct {
 // CountStations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - status pgtype.Text
-func (_e *MockStore_Expecter) CountStations(ctx interface{}, status interface{}) *MockStore_CountStations_Call {
+func (_e *MockStore_Expecter) CountStations(ctx any, status any) *MockStore_CountStations_Call {
 	return &MockStore_CountStations_Call{Call: _e.mock.On("CountStations", ctx, status)}
 }
 
@@ -843,7 +978,7 @@ type MockStore_CountStationsWithinBBox_Call struct {
 // CountStationsWithinBBox is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CountStationsWithinBBoxParams
-func (_e *MockStore_Expecter) CountStationsWithinBBox(ctx interface{}, arg interface{}) *MockStore_CountStationsWithinBBox_Call {
+func (_e *MockStore_Expecter) CountStationsWithinBBox(ctx any, arg any) *MockStore_CountStationsWithinBBox_Call {
 	return &MockStore_CountStationsWithinBBox_Call{Call: _e.mock.On("CountStationsWithinBBox", ctx, arg)}
 }
 
@@ -909,7 +1044,7 @@ type MockStore_CountStationsWithinRadius_Call struct {
 // CountStationsWithinRadius is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CountStationsWithinRadiusParams
-func (_e *MockStore_Expecter) CountStationsWithinRadius(ctx interface{}, arg interface{}) *MockStore_CountStationsWithinRadius_Call {
+func (_e *MockStore_Expecter) CountStationsWithinRadius(ctx any, arg any) *MockStore_CountStationsWithinRadius_Call {
 	return &MockStore_CountStationsWithinRadius_Call{Call: _e.mock.On("CountStationsWithinRadius", ctx, arg)}
 }
 
@@ -974,7 +1109,7 @@ type MockStore_CountUsers_Call struct {
 
 // CountUsers is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) CountUsers(ctx interface{}) *MockStore_CountUsers_Call {
+func (_e *MockStore_Expecter) CountUsers(ctx any) *MockStore_CountUsers_Call {
 	return &MockStore_CountUsers_Call{Call: _e.mock.On("CountUsers", ctx)}
 }
 
@@ -1035,7 +1170,7 @@ type MockStore_CreateAPIToken_Call struct {
 // CreateAPIToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateAPITokenParams
-func (_e *MockStore_Expecter) CreateAPIToken(ctx interface{}, arg interface{}) *MockStore_CreateAPIToken_Call {
+func (_e *MockStore_Expecter) CreateAPIToken(ctx any, arg any) *MockStore_CreateAPIToken_Call {
 	return &MockStore_CreateAPIToken_Call{Call: _e.mock.On("CreateAPIToken", ctx, arg)}
 }
 
@@ -1063,6 +1198,72 @@ func (_c *MockStore_CreateAPIToken_Call) Return(aPIToken db.APIToken, err error)
 }
 
 func (_c *MockStore_CreateAPIToken_Call) RunAndReturn(run func(ctx context.Context, arg db.CreateAPITokenParams) (db.APIToken, error)) *MockStore_CreateAPIToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateAccessRequest provides a mock function for the type MockStore
+func (_mock *MockStore) CreateAccessRequest(ctx context.Context, arg db.CreateAccessRequestParams) (db.AccessRequest, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateAccessRequest")
+	}
+
+	var r0 db.AccessRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.CreateAccessRequestParams) (db.AccessRequest, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.CreateAccessRequestParams) db.AccessRequest); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.AccessRequest)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.CreateAccessRequestParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_CreateAccessRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateAccessRequest'
+type MockStore_CreateAccessRequest_Call struct {
+	*mock.Call
+}
+
+// CreateAccessRequest is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.CreateAccessRequestParams
+func (_e *MockStore_Expecter) CreateAccessRequest(ctx any, arg any) *MockStore_CreateAccessRequest_Call {
+	return &MockStore_CreateAccessRequest_Call{Call: _e.mock.On("CreateAccessRequest", ctx, arg)}
+}
+
+func (_c *MockStore_CreateAccessRequest_Call) Run(run func(ctx context.Context, arg db.CreateAccessRequestParams)) *MockStore_CreateAccessRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.CreateAccessRequestParams
+		if args[1] != nil {
+			arg1 = args[1].(db.CreateAccessRequestParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_CreateAccessRequest_Call) Return(accessRequest db.AccessRequest, err error) *MockStore_CreateAccessRequest_Call {
+	_c.Call.Return(accessRequest, err)
+	return _c
+}
+
+func (_c *MockStore_CreateAccessRequest_Call) RunAndReturn(run func(ctx context.Context, arg db.CreateAccessRequestParams) (db.AccessRequest, error)) *MockStore_CreateAccessRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1101,7 +1302,7 @@ type MockStore_CreateCurrentObservation_Call struct {
 // CreateCurrentObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateCurrentObservationParams
-func (_e *MockStore_Expecter) CreateCurrentObservation(ctx interface{}, arg interface{}) *MockStore_CreateCurrentObservation_Call {
+func (_e *MockStore_Expecter) CreateCurrentObservation(ctx any, arg any) *MockStore_CreateCurrentObservation_Call {
 	return &MockStore_CreateCurrentObservation_Call{Call: _e.mock.On("CreateCurrentObservation", ctx, arg)}
 }
 
@@ -1167,7 +1368,7 @@ type MockStore_CreateGLabsLoad_Call struct {
 // CreateGLabsLoad is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateGLabsLoadParams
-func (_e *MockStore_Expecter) CreateGLabsLoad(ctx interface{}, arg interface{}) *MockStore_CreateGLabsLoad_Call {
+func (_e *MockStore_Expecter) CreateGLabsLoad(ctx any, arg any) *MockStore_CreateGLabsLoad_Call {
 	return &MockStore_CreateGLabsLoad_Call{Call: _e.mock.On("CreateGLabsLoad", ctx, arg)}
 }
 
@@ -1233,7 +1434,7 @@ type MockStore_CreateMisolStation_Call struct {
 // CreateMisolStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateMisolStationParams
-func (_e *MockStore_Expecter) CreateMisolStation(ctx interface{}, arg interface{}) *MockStore_CreateMisolStation_Call {
+func (_e *MockStore_Expecter) CreateMisolStation(ctx any, arg any) *MockStore_CreateMisolStation_Call {
 	return &MockStore_CreateMisolStation_Call{Call: _e.mock.On("CreateMisolStation", ctx, arg)}
 }
 
@@ -1299,7 +1500,7 @@ type MockStore_CreateMisolStationTx_Call struct {
 // CreateMisolStationTx is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateMisolStationTxParams
-func (_e *MockStore_Expecter) CreateMisolStationTx(ctx interface{}, arg interface{}) *MockStore_CreateMisolStationTx_Call {
+func (_e *MockStore_Expecter) CreateMisolStationTx(ctx any, arg any) *MockStore_CreateMisolStationTx_Call {
 	return &MockStore_CreateMisolStationTx_Call{Call: _e.mock.On("CreateMisolStationTx", ctx, arg)}
 }
 
@@ -1365,7 +1566,7 @@ type MockStore_CreateRole_Call struct {
 // CreateRole is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateRoleParams
-func (_e *MockStore_Expecter) CreateRole(ctx interface{}, arg interface{}) *MockStore_CreateRole_Call {
+func (_e *MockStore_Expecter) CreateRole(ctx any, arg any) *MockStore_CreateRole_Call {
 	return &MockStore_CreateRole_Call{Call: _e.mock.On("CreateRole", ctx, arg)}
 }
 
@@ -1431,7 +1632,7 @@ type MockStore_CreateSession_Call struct {
 // CreateSession is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateSessionParams
-func (_e *MockStore_Expecter) CreateSession(ctx interface{}, arg interface{}) *MockStore_CreateSession_Call {
+func (_e *MockStore_Expecter) CreateSession(ctx any, arg any) *MockStore_CreateSession_Call {
 	return &MockStore_CreateSession_Call{Call: _e.mock.On("CreateSession", ctx, arg)}
 }
 
@@ -1497,7 +1698,7 @@ type MockStore_CreateSimAccessToken_Call struct {
 // CreateSimAccessToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateSimAccessTokenParams
-func (_e *MockStore_Expecter) CreateSimAccessToken(ctx interface{}, arg interface{}) *MockStore_CreateSimAccessToken_Call {
+func (_e *MockStore_Expecter) CreateSimAccessToken(ctx any, arg any) *MockStore_CreateSimAccessToken_Call {
 	return &MockStore_CreateSimAccessToken_Call{Call: _e.mock.On("CreateSimAccessToken", ctx, arg)}
 }
 
@@ -1563,7 +1764,7 @@ type MockStore_CreateSimCard_Call struct {
 // CreateSimCard is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateSimCardParams
-func (_e *MockStore_Expecter) CreateSimCard(ctx interface{}, arg interface{}) *MockStore_CreateSimCard_Call {
+func (_e *MockStore_Expecter) CreateSimCard(ctx any, arg any) *MockStore_CreateSimCard_Call {
 	return &MockStore_CreateSimCard_Call{Call: _e.mock.On("CreateSimCard", ctx, arg)}
 }
 
@@ -1629,7 +1830,7 @@ type MockStore_CreateStation_Call struct {
 // CreateStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateStationParams
-func (_e *MockStore_Expecter) CreateStation(ctx interface{}, arg interface{}) *MockStore_CreateStation_Call {
+func (_e *MockStore_Expecter) CreateStation(ctx any, arg any) *MockStore_CreateStation_Call {
 	return &MockStore_CreateStation_Call{Call: _e.mock.On("CreateStation", ctx, arg)}
 }
 
@@ -1695,7 +1896,7 @@ type MockStore_CreateStationHealth_Call struct {
 // CreateStationHealth is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateStationHealthParams
-func (_e *MockStore_Expecter) CreateStationHealth(ctx interface{}, arg interface{}) *MockStore_CreateStationHealth_Call {
+func (_e *MockStore_Expecter) CreateStationHealth(ctx any, arg any) *MockStore_CreateStationHealth_Call {
 	return &MockStore_CreateStationHealth_Call{Call: _e.mock.On("CreateStationHealth", ctx, arg)}
 }
 
@@ -1761,7 +1962,7 @@ type MockStore_CreateStationMOObservation_Call struct {
 // CreateStationMOObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateStationMOObservationParams
-func (_e *MockStore_Expecter) CreateStationMOObservation(ctx interface{}, arg interface{}) *MockStore_CreateStationMOObservation_Call {
+func (_e *MockStore_Expecter) CreateStationMOObservation(ctx any, arg any) *MockStore_CreateStationMOObservation_Call {
 	return &MockStore_CreateStationMOObservation_Call{Call: _e.mock.On("CreateStationMOObservation", ctx, arg)}
 }
 
@@ -1827,7 +2028,7 @@ type MockStore_CreateStationObservation_Call struct {
 // CreateStationObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateStationObservationParams
-func (_e *MockStore_Expecter) CreateStationObservation(ctx interface{}, arg interface{}) *MockStore_CreateStationObservation_Call {
+func (_e *MockStore_Expecter) CreateStationObservation(ctx any, arg any) *MockStore_CreateStationObservation_Call {
 	return &MockStore_CreateStationObservation_Call{Call: _e.mock.On("CreateStationObservation", ctx, arg)}
 }
 
@@ -1893,7 +2094,7 @@ type MockStore_CreateUser_Call struct {
 // CreateUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateUserParams
-func (_e *MockStore_Expecter) CreateUser(ctx interface{}, arg interface{}) *MockStore_CreateUser_Call {
+func (_e *MockStore_Expecter) CreateUser(ctx any, arg any) *MockStore_CreateUser_Call {
 	return &MockStore_CreateUser_Call{Call: _e.mock.On("CreateUser", ctx, arg)}
 }
 
@@ -1959,7 +2160,7 @@ type MockStore_CreateWeatherlinkStation_Call struct {
 // CreateWeatherlinkStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.CreateWeatherlinkStationParams
-func (_e *MockStore_Expecter) CreateWeatherlinkStation(ctx interface{}, arg interface{}) *MockStore_CreateWeatherlinkStation_Call {
+func (_e *MockStore_Expecter) CreateWeatherlinkStation(ctx any, arg any) *MockStore_CreateWeatherlinkStation_Call {
 	return &MockStore_CreateWeatherlinkStation_Call{Call: _e.mock.On("CreateWeatherlinkStation", ctx, arg)}
 }
 
@@ -2016,7 +2217,7 @@ type MockStore_DeleteAPIToken_Call struct {
 // DeleteAPIToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) DeleteAPIToken(ctx interface{}, id interface{}) *MockStore_DeleteAPIToken_Call {
+func (_e *MockStore_Expecter) DeleteAPIToken(ctx any, id any) *MockStore_DeleteAPIToken_Call {
 	return &MockStore_DeleteAPIToken_Call{Call: _e.mock.On("DeleteAPIToken", ctx, id)}
 }
 
@@ -2048,6 +2249,63 @@ func (_c *MockStore_DeleteAPIToken_Call) RunAndReturn(run func(ctx context.Conte
 	return _c
 }
 
+// DeleteAccessRequest provides a mock function for the type MockStore
+func (_mock *MockStore) DeleteAccessRequest(ctx context.Context, id int64) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteAccessRequest")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockStore_DeleteAccessRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAccessRequest'
+type MockStore_DeleteAccessRequest_Call struct {
+	*mock.Call
+}
+
+// DeleteAccessRequest is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id int64
+func (_e *MockStore_Expecter) DeleteAccessRequest(ctx any, id any) *MockStore_DeleteAccessRequest_Call {
+	return &MockStore_DeleteAccessRequest_Call{Call: _e.mock.On("DeleteAccessRequest", ctx, id)}
+}
+
+func (_c *MockStore_DeleteAccessRequest_Call) Run(run func(ctx context.Context, id int64)) *MockStore_DeleteAccessRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_DeleteAccessRequest_Call) Return(err error) *MockStore_DeleteAccessRequest_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockStore_DeleteAccessRequest_Call) RunAndReturn(run func(ctx context.Context, id int64) error) *MockStore_DeleteAccessRequest_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteMisolStation provides a mock function for the type MockStore
 func (_mock *MockStore) DeleteMisolStation(ctx context.Context, id int64) error {
 	ret := _mock.Called(ctx, id)
@@ -2073,7 +2331,7 @@ type MockStore_DeleteMisolStation_Call struct {
 // DeleteMisolStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) DeleteMisolStation(ctx interface{}, id interface{}) *MockStore_DeleteMisolStation_Call {
+func (_e *MockStore_Expecter) DeleteMisolStation(ctx any, id any) *MockStore_DeleteMisolStation_Call {
 	return &MockStore_DeleteMisolStation_Call{Call: _e.mock.On("DeleteMisolStation", ctx, id)}
 }
 
@@ -2130,7 +2388,7 @@ type MockStore_DeleteRole_Call struct {
 // DeleteRole is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) DeleteRole(ctx interface{}, id interface{}) *MockStore_DeleteRole_Call {
+func (_e *MockStore_Expecter) DeleteRole(ctx any, id any) *MockStore_DeleteRole_Call {
 	return &MockStore_DeleteRole_Call{Call: _e.mock.On("DeleteRole", ctx, id)}
 }
 
@@ -2187,7 +2445,7 @@ type MockStore_DeleteSession_Call struct {
 // DeleteSession is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-func (_e *MockStore_Expecter) DeleteSession(ctx interface{}, id interface{}) *MockStore_DeleteSession_Call {
+func (_e *MockStore_Expecter) DeleteSession(ctx any, id any) *MockStore_DeleteSession_Call {
 	return &MockStore_DeleteSession_Call{Call: _e.mock.On("DeleteSession", ctx, id)}
 }
 
@@ -2244,7 +2502,7 @@ type MockStore_DeleteSimAccessToken_Call struct {
 // DeleteSimAccessToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - accessToken string
-func (_e *MockStore_Expecter) DeleteSimAccessToken(ctx interface{}, accessToken interface{}) *MockStore_DeleteSimAccessToken_Call {
+func (_e *MockStore_Expecter) DeleteSimAccessToken(ctx any, accessToken any) *MockStore_DeleteSimAccessToken_Call {
 	return &MockStore_DeleteSimAccessToken_Call{Call: _e.mock.On("DeleteSimAccessToken", ctx, accessToken)}
 }
 
@@ -2301,7 +2559,7 @@ type MockStore_DeleteStation_Call struct {
 // DeleteStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) DeleteStation(ctx interface{}, id interface{}) *MockStore_DeleteStation_Call {
+func (_e *MockStore_Expecter) DeleteStation(ctx any, id any) *MockStore_DeleteStation_Call {
 	return &MockStore_DeleteStation_Call{Call: _e.mock.On("DeleteStation", ctx, id)}
 }
 
@@ -2358,7 +2616,7 @@ type MockStore_DeleteStationHealth_Call struct {
 // DeleteStationHealth is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.DeleteStationHealthParams
-func (_e *MockStore_Expecter) DeleteStationHealth(ctx interface{}, arg interface{}) *MockStore_DeleteStationHealth_Call {
+func (_e *MockStore_Expecter) DeleteStationHealth(ctx any, arg any) *MockStore_DeleteStationHealth_Call {
 	return &MockStore_DeleteStationHealth_Call{Call: _e.mock.On("DeleteStationHealth", ctx, arg)}
 }
 
@@ -2415,7 +2673,7 @@ type MockStore_DeleteStationMOObservation_Call struct {
 // DeleteStationMOObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.DeleteStationMOObservationParams
-func (_e *MockStore_Expecter) DeleteStationMOObservation(ctx interface{}, arg interface{}) *MockStore_DeleteStationMOObservation_Call {
+func (_e *MockStore_Expecter) DeleteStationMOObservation(ctx any, arg any) *MockStore_DeleteStationMOObservation_Call {
 	return &MockStore_DeleteStationMOObservation_Call{Call: _e.mock.On("DeleteStationMOObservation", ctx, arg)}
 }
 
@@ -2472,7 +2730,7 @@ type MockStore_DeleteStationObservation_Call struct {
 // DeleteStationObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.DeleteStationObservationParams
-func (_e *MockStore_Expecter) DeleteStationObservation(ctx interface{}, arg interface{}) *MockStore_DeleteStationObservation_Call {
+func (_e *MockStore_Expecter) DeleteStationObservation(ctx any, arg any) *MockStore_DeleteStationObservation_Call {
 	return &MockStore_DeleteStationObservation_Call{Call: _e.mock.On("DeleteStationObservation", ctx, arg)}
 }
 
@@ -2529,7 +2787,7 @@ type MockStore_DeleteUser_Call struct {
 // DeleteUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) DeleteUser(ctx interface{}, id interface{}) *MockStore_DeleteUser_Call {
+func (_e *MockStore_Expecter) DeleteUser(ctx any, id any) *MockStore_DeleteUser_Call {
 	return &MockStore_DeleteUser_Call{Call: _e.mock.On("DeleteUser", ctx, id)}
 }
 
@@ -2557,6 +2815,63 @@ func (_c *MockStore_DeleteUser_Call) Return(err error) *MockStore_DeleteUser_Cal
 }
 
 func (_c *MockStore_DeleteUser_Call) RunAndReturn(run func(ctx context.Context, id int64) error) *MockStore_DeleteUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteUserAccess provides a mock function for the type MockStore
+func (_mock *MockStore) DeleteUserAccess(ctx context.Context, userID int64) error {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteUserAccess")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) error); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockStore_DeleteUserAccess_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteUserAccess'
+type MockStore_DeleteUserAccess_Call struct {
+	*mock.Call
+}
+
+// DeleteUserAccess is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID int64
+func (_e *MockStore_Expecter) DeleteUserAccess(ctx any, userID any) *MockStore_DeleteUserAccess_Call {
+	return &MockStore_DeleteUserAccess_Call{Call: _e.mock.On("DeleteUserAccess", ctx, userID)}
+}
+
+func (_c *MockStore_DeleteUserAccess_Call) Run(run func(ctx context.Context, userID int64)) *MockStore_DeleteUserAccess_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_DeleteUserAccess_Call) Return(err error) *MockStore_DeleteUserAccess_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockStore_DeleteUserAccess_Call) RunAndReturn(run func(ctx context.Context, userID int64) error) *MockStore_DeleteUserAccess_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2595,7 +2910,7 @@ type MockStore_FirstOrCreateSimAccessTokenTx_Call struct {
 // FirstOrCreateSimAccessTokenTx is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.FirstOrCreateSimAccessTokenTxParams
-func (_e *MockStore_Expecter) FirstOrCreateSimAccessTokenTx(ctx interface{}, arg interface{}) *MockStore_FirstOrCreateSimAccessTokenTx_Call {
+func (_e *MockStore_Expecter) FirstOrCreateSimAccessTokenTx(ctx any, arg any) *MockStore_FirstOrCreateSimAccessTokenTx_Call {
 	return &MockStore_FirstOrCreateSimAccessTokenTx_Call{Call: _e.mock.On("FirstOrCreateSimAccessTokenTx", ctx, arg)}
 }
 
@@ -2661,7 +2976,7 @@ type MockStore_GetAPIToken_Call struct {
 // GetAPIToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) GetAPIToken(ctx interface{}, id interface{}) *MockStore_GetAPIToken_Call {
+func (_e *MockStore_Expecter) GetAPIToken(ctx any, id any) *MockStore_GetAPIToken_Call {
 	return &MockStore_GetAPIToken_Call{Call: _e.mock.On("GetAPIToken", ctx, id)}
 }
 
@@ -2727,7 +3042,7 @@ type MockStore_GetAPITokenByHash_Call struct {
 // GetAPITokenByHash is a helper method to define mock.On call
 //   - ctx context.Context
 //   - tokenHash string
-func (_e *MockStore_Expecter) GetAPITokenByHash(ctx interface{}, tokenHash interface{}) *MockStore_GetAPITokenByHash_Call {
+func (_e *MockStore_Expecter) GetAPITokenByHash(ctx any, tokenHash any) *MockStore_GetAPITokenByHash_Call {
 	return &MockStore_GetAPITokenByHash_Call{Call: _e.mock.On("GetAPITokenByHash", ctx, tokenHash)}
 }
 
@@ -2755,6 +3070,72 @@ func (_c *MockStore_GetAPITokenByHash_Call) Return(aPIToken db.APIToken, err err
 }
 
 func (_c *MockStore_GetAPITokenByHash_Call) RunAndReturn(run func(ctx context.Context, tokenHash string) (db.APIToken, error)) *MockStore_GetAPITokenByHash_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetAccessRequest provides a mock function for the type MockStore
+func (_mock *MockStore) GetAccessRequest(ctx context.Context, id int64) (db.AccessRequest, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAccessRequest")
+	}
+
+	var r0 db.AccessRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) (db.AccessRequest, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) db.AccessRequest); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(db.AccessRequest)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_GetAccessRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAccessRequest'
+type MockStore_GetAccessRequest_Call struct {
+	*mock.Call
+}
+
+// GetAccessRequest is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id int64
+func (_e *MockStore_Expecter) GetAccessRequest(ctx any, id any) *MockStore_GetAccessRequest_Call {
+	return &MockStore_GetAccessRequest_Call{Call: _e.mock.On("GetAccessRequest", ctx, id)}
+}
+
+func (_c *MockStore_GetAccessRequest_Call) Run(run func(ctx context.Context, id int64)) *MockStore_GetAccessRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_GetAccessRequest_Call) Return(accessRequest db.AccessRequest, err error) *MockStore_GetAccessRequest_Call {
+	_c.Call.Return(accessRequest, err)
+	return _c
+}
+
+func (_c *MockStore_GetAccessRequest_Call) RunAndReturn(run func(ctx context.Context, id int64) (db.AccessRequest, error)) *MockStore_GetAccessRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2793,7 +3174,7 @@ type MockStore_GetLatestStationObservation_Call struct {
 // GetLatestStationObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) GetLatestStationObservation(ctx interface{}, id interface{}) *MockStore_GetLatestStationObservation_Call {
+func (_e *MockStore_Expecter) GetLatestStationObservation(ctx any, id any) *MockStore_GetLatestStationObservation_Call {
 	return &MockStore_GetLatestStationObservation_Call{Call: _e.mock.On("GetLatestStationObservation", ctx, id)}
 }
 
@@ -2859,7 +3240,7 @@ type MockStore_GetMisolStation_Call struct {
 // GetMisolStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) GetMisolStation(ctx interface{}, id interface{}) *MockStore_GetMisolStation_Call {
+func (_e *MockStore_Expecter) GetMisolStation(ctx any, id any) *MockStore_GetMisolStation_Call {
 	return &MockStore_GetMisolStation_Call{Call: _e.mock.On("GetMisolStation", ctx, id)}
 }
 
@@ -2925,7 +3306,7 @@ type MockStore_GetNearestLatestStationObservation_Call struct {
 // GetNearestLatestStationObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.GetNearestLatestStationObservationParams
-func (_e *MockStore_Expecter) GetNearestLatestStationObservation(ctx interface{}, arg interface{}) *MockStore_GetNearestLatestStationObservation_Call {
+func (_e *MockStore_Expecter) GetNearestLatestStationObservation(ctx any, arg any) *MockStore_GetNearestLatestStationObservation_Call {
 	return &MockStore_GetNearestLatestStationObservation_Call{Call: _e.mock.On("GetNearestLatestStationObservation", ctx, arg)}
 }
 
@@ -2991,7 +3372,7 @@ type MockStore_GetRole_Call struct {
 // GetRole is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) GetRole(ctx interface{}, id interface{}) *MockStore_GetRole_Call {
+func (_e *MockStore_Expecter) GetRole(ctx any, id any) *MockStore_GetRole_Call {
 	return &MockStore_GetRole_Call{Call: _e.mock.On("GetRole", ctx, id)}
 }
 
@@ -3057,7 +3438,7 @@ type MockStore_GetRoleByName_Call struct {
 // GetRoleByName is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockStore_Expecter) GetRoleByName(ctx interface{}, name interface{}) *MockStore_GetRoleByName_Call {
+func (_e *MockStore_Expecter) GetRoleByName(ctx any, name any) *MockStore_GetRoleByName_Call {
 	return &MockStore_GetRoleByName_Call{Call: _e.mock.On("GetRoleByName", ctx, name)}
 }
 
@@ -3123,7 +3504,7 @@ type MockStore_GetSession_Call struct {
 // GetSession is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-func (_e *MockStore_Expecter) GetSession(ctx interface{}, id interface{}) *MockStore_GetSession_Call {
+func (_e *MockStore_Expecter) GetSession(ctx any, id any) *MockStore_GetSession_Call {
 	return &MockStore_GetSession_Call{Call: _e.mock.On("GetSession", ctx, id)}
 }
 
@@ -3189,7 +3570,7 @@ type MockStore_GetSimAccessToken_Call struct {
 // GetSimAccessToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - accessToken string
-func (_e *MockStore_Expecter) GetSimAccessToken(ctx interface{}, accessToken interface{}) *MockStore_GetSimAccessToken_Call {
+func (_e *MockStore_Expecter) GetSimAccessToken(ctx any, accessToken any) *MockStore_GetSimAccessToken_Call {
 	return &MockStore_GetSimAccessToken_Call{Call: _e.mock.On("GetSimAccessToken", ctx, accessToken)}
 }
 
@@ -3255,7 +3636,7 @@ type MockStore_GetSimCard_Call struct {
 // GetSimCard is a helper method to define mock.On call
 //   - ctx context.Context
 //   - mobileNumber string
-func (_e *MockStore_Expecter) GetSimCard(ctx interface{}, mobileNumber interface{}) *MockStore_GetSimCard_Call {
+func (_e *MockStore_Expecter) GetSimCard(ctx any, mobileNumber any) *MockStore_GetSimCard_Call {
 	return &MockStore_GetSimCard_Call{Call: _e.mock.On("GetSimCard", ctx, mobileNumber)}
 }
 
@@ -3321,7 +3702,7 @@ type MockStore_GetStation_Call struct {
 // GetStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) GetStation(ctx interface{}, id interface{}) *MockStore_GetStation_Call {
+func (_e *MockStore_Expecter) GetStation(ctx any, id any) *MockStore_GetStation_Call {
 	return &MockStore_GetStation_Call{Call: _e.mock.On("GetStation", ctx, id)}
 }
 
@@ -3387,7 +3768,7 @@ type MockStore_GetStationByMobileNumber_Call struct {
 // GetStationByMobileNumber is a helper method to define mock.On call
 //   - ctx context.Context
 //   - mobileNumber pgtype.Text
-func (_e *MockStore_Expecter) GetStationByMobileNumber(ctx interface{}, mobileNumber interface{}) *MockStore_GetStationByMobileNumber_Call {
+func (_e *MockStore_Expecter) GetStationByMobileNumber(ctx any, mobileNumber any) *MockStore_GetStationByMobileNumber_Call {
 	return &MockStore_GetStationByMobileNumber_Call{Call: _e.mock.On("GetStationByMobileNumber", ctx, mobileNumber)}
 }
 
@@ -3453,7 +3834,7 @@ type MockStore_GetStationHealth_Call struct {
 // GetStationHealth is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.GetStationHealthParams
-func (_e *MockStore_Expecter) GetStationHealth(ctx interface{}, arg interface{}) *MockStore_GetStationHealth_Call {
+func (_e *MockStore_Expecter) GetStationHealth(ctx any, arg any) *MockStore_GetStationHealth_Call {
 	return &MockStore_GetStationHealth_Call{Call: _e.mock.On("GetStationHealth", ctx, arg)}
 }
 
@@ -3519,7 +3900,7 @@ type MockStore_GetStationMOObservation_Call struct {
 // GetStationMOObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.GetStationMOObservationParams
-func (_e *MockStore_Expecter) GetStationMOObservation(ctx interface{}, arg interface{}) *MockStore_GetStationMOObservation_Call {
+func (_e *MockStore_Expecter) GetStationMOObservation(ctx any, arg any) *MockStore_GetStationMOObservation_Call {
 	return &MockStore_GetStationMOObservation_Call{Call: _e.mock.On("GetStationMOObservation", ctx, arg)}
 }
 
@@ -3585,7 +3966,7 @@ type MockStore_GetStationObservation_Call struct {
 // GetStationObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.GetStationObservationParams
-func (_e *MockStore_Expecter) GetStationObservation(ctx interface{}, arg interface{}) *MockStore_GetStationObservation_Call {
+func (_e *MockStore_Expecter) GetStationObservation(ctx any, arg any) *MockStore_GetStationObservation_Call {
 	return &MockStore_GetStationObservation_Call{Call: _e.mock.On("GetStationObservation", ctx, arg)}
 }
 
@@ -3651,7 +4032,7 @@ type MockStore_GetUser_Call struct {
 // GetUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) GetUser(ctx interface{}, id interface{}) *MockStore_GetUser_Call {
+func (_e *MockStore_Expecter) GetUser(ctx any, id any) *MockStore_GetUser_Call {
 	return &MockStore_GetUser_Call{Call: _e.mock.On("GetUser", ctx, id)}
 }
 
@@ -3679,6 +4060,72 @@ func (_c *MockStore_GetUser_Call) Return(user db.User, err error) *MockStore_Get
 }
 
 func (_c *MockStore_GetUser_Call) RunAndReturn(run func(ctx context.Context, id int64) (db.User, error)) *MockStore_GetUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUserAccess provides a mock function for the type MockStore
+func (_mock *MockStore) GetUserAccess(ctx context.Context, userID int64) (db.UserAccess, error) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserAccess")
+	}
+
+	var r0 db.UserAccess
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) (db.UserAccess, error)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) db.UserAccess); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(db.UserAccess)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_GetUserAccess_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserAccess'
+type MockStore_GetUserAccess_Call struct {
+	*mock.Call
+}
+
+// GetUserAccess is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID int64
+func (_e *MockStore_Expecter) GetUserAccess(ctx any, userID any) *MockStore_GetUserAccess_Call {
+	return &MockStore_GetUserAccess_Call{Call: _e.mock.On("GetUserAccess", ctx, userID)}
+}
+
+func (_c *MockStore_GetUserAccess_Call) Run(run func(ctx context.Context, userID int64)) *MockStore_GetUserAccess_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_GetUserAccess_Call) Return(userAccess db.UserAccess, err error) *MockStore_GetUserAccess_Call {
+	_c.Call.Return(userAccess, err)
+	return _c
+}
+
+func (_c *MockStore_GetUserAccess_Call) RunAndReturn(run func(ctx context.Context, userID int64) (db.UserAccess, error)) *MockStore_GetUserAccess_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3717,7 +4164,7 @@ type MockStore_GetUserByEmail_Call struct {
 // GetUserByEmail is a helper method to define mock.On call
 //   - ctx context.Context
 //   - email string
-func (_e *MockStore_Expecter) GetUserByEmail(ctx interface{}, email interface{}) *MockStore_GetUserByEmail_Call {
+func (_e *MockStore_Expecter) GetUserByEmail(ctx any, email any) *MockStore_GetUserByEmail_Call {
 	return &MockStore_GetUserByEmail_Call{Call: _e.mock.On("GetUserByEmail", ctx, email)}
 }
 
@@ -3783,7 +4230,7 @@ type MockStore_GetUserByUsername_Call struct {
 // GetUserByUsername is a helper method to define mock.On call
 //   - ctx context.Context
 //   - username string
-func (_e *MockStore_Expecter) GetUserByUsername(ctx interface{}, username interface{}) *MockStore_GetUserByUsername_Call {
+func (_e *MockStore_Expecter) GetUserByUsername(ctx any, username any) *MockStore_GetUserByUsername_Call {
 	return &MockStore_GetUserByUsername_Call{Call: _e.mock.On("GetUserByUsername", ctx, username)}
 }
 
@@ -3850,7 +4297,7 @@ type MockStore_InsertCurrentMOObservations_Call struct {
 
 // InsertCurrentMOObservations is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) InsertCurrentMOObservations(ctx interface{}) *MockStore_InsertCurrentMOObservations_Call {
+func (_e *MockStore_Expecter) InsertCurrentMOObservations(ctx any) *MockStore_InsertCurrentMOObservations_Call {
 	return &MockStore_InsertCurrentMOObservations_Call{Call: _e.mock.On("InsertCurrentMOObservations", ctx)}
 }
 
@@ -3912,7 +4359,7 @@ type MockStore_InsertCurrentObservations_Call struct {
 
 // InsertCurrentObservations is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) InsertCurrentObservations(ctx interface{}) *MockStore_InsertCurrentObservations_Call {
+func (_e *MockStore_Expecter) InsertCurrentObservations(ctx any) *MockStore_InsertCurrentObservations_Call {
 	return &MockStore_InsertCurrentObservations_Call{Call: _e.mock.On("InsertCurrentObservations", ctx)}
 }
 
@@ -3975,7 +4422,7 @@ type MockStore_ListAPITokensByUser_Call struct {
 // ListAPITokensByUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID int64
-func (_e *MockStore_Expecter) ListAPITokensByUser(ctx interface{}, userID interface{}) *MockStore_ListAPITokensByUser_Call {
+func (_e *MockStore_Expecter) ListAPITokensByUser(ctx any, userID any) *MockStore_ListAPITokensByUser_Call {
 	return &MockStore_ListAPITokensByUser_Call{Call: _e.mock.On("ListAPITokensByUser", ctx, userID)}
 }
 
@@ -4003,6 +4450,210 @@ func (_c *MockStore_ListAPITokensByUser_Call) Return(aPITokens []db.APIToken, er
 }
 
 func (_c *MockStore_ListAPITokensByUser_Call) RunAndReturn(run func(ctx context.Context, userID int64) ([]db.APIToken, error)) *MockStore_ListAPITokensByUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAccessRequests provides a mock function for the type MockStore
+func (_mock *MockStore) ListAccessRequests(ctx context.Context, arg db.ListAccessRequestsParams) ([]db.AccessRequest, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAccessRequests")
+	}
+
+	var r0 []db.AccessRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ListAccessRequestsParams) ([]db.AccessRequest, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ListAccessRequestsParams) []db.AccessRequest); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.AccessRequest)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.ListAccessRequestsParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ListAccessRequests_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAccessRequests'
+type MockStore_ListAccessRequests_Call struct {
+	*mock.Call
+}
+
+// ListAccessRequests is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.ListAccessRequestsParams
+func (_e *MockStore_Expecter) ListAccessRequests(ctx any, arg any) *MockStore_ListAccessRequests_Call {
+	return &MockStore_ListAccessRequests_Call{Call: _e.mock.On("ListAccessRequests", ctx, arg)}
+}
+
+func (_c *MockStore_ListAccessRequests_Call) Run(run func(ctx context.Context, arg db.ListAccessRequestsParams)) *MockStore_ListAccessRequests_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.ListAccessRequestsParams
+		if args[1] != nil {
+			arg1 = args[1].(db.ListAccessRequestsParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ListAccessRequests_Call) Return(accessRequests []db.AccessRequest, err error) *MockStore_ListAccessRequests_Call {
+	_c.Call.Return(accessRequests, err)
+	return _c
+}
+
+func (_c *MockStore_ListAccessRequests_Call) RunAndReturn(run func(ctx context.Context, arg db.ListAccessRequestsParams) ([]db.AccessRequest, error)) *MockStore_ListAccessRequests_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAccessRequestsByStatus provides a mock function for the type MockStore
+func (_mock *MockStore) ListAccessRequestsByStatus(ctx context.Context, arg db.ListAccessRequestsByStatusParams) ([]db.AccessRequest, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAccessRequestsByStatus")
+	}
+
+	var r0 []db.AccessRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ListAccessRequestsByStatusParams) ([]db.AccessRequest, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ListAccessRequestsByStatusParams) []db.AccessRequest); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.AccessRequest)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.ListAccessRequestsByStatusParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ListAccessRequestsByStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAccessRequestsByStatus'
+type MockStore_ListAccessRequestsByStatus_Call struct {
+	*mock.Call
+}
+
+// ListAccessRequestsByStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.ListAccessRequestsByStatusParams
+func (_e *MockStore_Expecter) ListAccessRequestsByStatus(ctx any, arg any) *MockStore_ListAccessRequestsByStatus_Call {
+	return &MockStore_ListAccessRequestsByStatus_Call{Call: _e.mock.On("ListAccessRequestsByStatus", ctx, arg)}
+}
+
+func (_c *MockStore_ListAccessRequestsByStatus_Call) Run(run func(ctx context.Context, arg db.ListAccessRequestsByStatusParams)) *MockStore_ListAccessRequestsByStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.ListAccessRequestsByStatusParams
+		if args[1] != nil {
+			arg1 = args[1].(db.ListAccessRequestsByStatusParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ListAccessRequestsByStatus_Call) Return(accessRequests []db.AccessRequest, err error) *MockStore_ListAccessRequestsByStatus_Call {
+	_c.Call.Return(accessRequests, err)
+	return _c
+}
+
+func (_c *MockStore_ListAccessRequestsByStatus_Call) RunAndReturn(run func(ctx context.Context, arg db.ListAccessRequestsByStatusParams) ([]db.AccessRequest, error)) *MockStore_ListAccessRequestsByStatus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAccessRequestsByUser provides a mock function for the type MockStore
+func (_mock *MockStore) ListAccessRequestsByUser(ctx context.Context, userID int64) ([]db.AccessRequest, error) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAccessRequestsByUser")
+	}
+
+	var r0 []db.AccessRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) ([]db.AccessRequest, error)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) []db.AccessRequest); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.AccessRequest)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ListAccessRequestsByUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAccessRequestsByUser'
+type MockStore_ListAccessRequestsByUser_Call struct {
+	*mock.Call
+}
+
+// ListAccessRequestsByUser is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID int64
+func (_e *MockStore_Expecter) ListAccessRequestsByUser(ctx any, userID any) *MockStore_ListAccessRequestsByUser_Call {
+	return &MockStore_ListAccessRequestsByUser_Call{Call: _e.mock.On("ListAccessRequestsByUser", ctx, userID)}
+}
+
+func (_c *MockStore_ListAccessRequestsByUser_Call) Run(run func(ctx context.Context, userID int64)) *MockStore_ListAccessRequestsByUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ListAccessRequestsByUser_Call) Return(accessRequests []db.AccessRequest, err error) *MockStore_ListAccessRequestsByUser_Call {
+	_c.Call.Return(accessRequests, err)
+	return _c
+}
+
+func (_c *MockStore_ListAccessRequestsByUser_Call) RunAndReturn(run func(ctx context.Context, userID int64) ([]db.AccessRequest, error)) *MockStore_ListAccessRequestsByUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4042,7 +4693,7 @@ type MockStore_ListLatestObservations_Call struct {
 
 // ListLatestObservations is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) ListLatestObservations(ctx interface{}) *MockStore_ListLatestObservations_Call {
+func (_e *MockStore_Expecter) ListLatestObservations(ctx any) *MockStore_ListLatestObservations_Call {
 	return &MockStore_ListLatestObservations_Call{Call: _e.mock.On("ListLatestObservations", ctx)}
 }
 
@@ -4105,7 +4756,7 @@ type MockStore_ListLufftStationMsg_Call struct {
 // ListLufftStationMsg is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListLufftStationMsgParams
-func (_e *MockStore_Expecter) ListLufftStationMsg(ctx interface{}, arg interface{}) *MockStore_ListLufftStationMsg_Call {
+func (_e *MockStore_Expecter) ListLufftStationMsg(ctx any, arg any) *MockStore_ListLufftStationMsg_Call {
 	return &MockStore_ListLufftStationMsg_Call{Call: _e.mock.On("ListLufftStationMsg", ctx, arg)}
 }
 
@@ -4173,7 +4824,7 @@ type MockStore_ListMOObservations_Call struct {
 // ListMOObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListMOObservationsParams
-func (_e *MockStore_Expecter) ListMOObservations(ctx interface{}, arg interface{}) *MockStore_ListMOObservations_Call {
+func (_e *MockStore_Expecter) ListMOObservations(ctx any, arg any) *MockStore_ListMOObservations_Call {
 	return &MockStore_ListMOObservations_Call{Call: _e.mock.On("ListMOObservations", ctx, arg)}
 }
 
@@ -4241,7 +4892,7 @@ type MockStore_ListObservations_Call struct {
 // ListObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListObservationsParams
-func (_e *MockStore_Expecter) ListObservations(ctx interface{}, arg interface{}) *MockStore_ListObservations_Call {
+func (_e *MockStore_Expecter) ListObservations(ctx any, arg any) *MockStore_ListObservations_Call {
 	return &MockStore_ListObservations_Call{Call: _e.mock.On("ListObservations", ctx, arg)}
 }
 
@@ -4309,7 +4960,7 @@ type MockStore_ListRoles_Call struct {
 // ListRoles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListRolesParams
-func (_e *MockStore_Expecter) ListRoles(ctx interface{}, arg interface{}) *MockStore_ListRoles_Call {
+func (_e *MockStore_Expecter) ListRoles(ctx any, arg any) *MockStore_ListRoles_Call {
 	return &MockStore_ListRoles_Call{Call: _e.mock.On("ListRoles", ctx, arg)}
 }
 
@@ -4377,7 +5028,7 @@ type MockStore_ListStationHealths_Call struct {
 // ListStationHealths is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListStationHealthsParams
-func (_e *MockStore_Expecter) ListStationHealths(ctx interface{}, arg interface{}) *MockStore_ListStationHealths_Call {
+func (_e *MockStore_Expecter) ListStationHealths(ctx any, arg any) *MockStore_ListStationHealths_Call {
 	return &MockStore_ListStationHealths_Call{Call: _e.mock.On("ListStationHealths", ctx, arg)}
 }
 
@@ -4445,7 +5096,7 @@ type MockStore_ListStationMOObservations_Call struct {
 // ListStationMOObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListStationMOObservationsParams
-func (_e *MockStore_Expecter) ListStationMOObservations(ctx interface{}, arg interface{}) *MockStore_ListStationMOObservations_Call {
+func (_e *MockStore_Expecter) ListStationMOObservations(ctx any, arg any) *MockStore_ListStationMOObservations_Call {
 	return &MockStore_ListStationMOObservations_Call{Call: _e.mock.On("ListStationMOObservations", ctx, arg)}
 }
 
@@ -4513,7 +5164,7 @@ type MockStore_ListStationObservations_Call struct {
 // ListStationObservations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListStationObservationsParams
-func (_e *MockStore_Expecter) ListStationObservations(ctx interface{}, arg interface{}) *MockStore_ListStationObservations_Call {
+func (_e *MockStore_Expecter) ListStationObservations(ctx any, arg any) *MockStore_ListStationObservations_Call {
 	return &MockStore_ListStationObservations_Call{Call: _e.mock.On("ListStationObservations", ctx, arg)}
 }
 
@@ -4581,7 +5232,7 @@ type MockStore_ListStations_Call struct {
 // ListStations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListStationsParams
-func (_e *MockStore_Expecter) ListStations(ctx interface{}, arg interface{}) *MockStore_ListStations_Call {
+func (_e *MockStore_Expecter) ListStations(ctx any, arg any) *MockStore_ListStations_Call {
 	return &MockStore_ListStations_Call{Call: _e.mock.On("ListStations", ctx, arg)}
 }
 
@@ -4649,7 +5300,7 @@ type MockStore_ListStationsWithinBBox_Call struct {
 // ListStationsWithinBBox is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListStationsWithinBBoxParams
-func (_e *MockStore_Expecter) ListStationsWithinBBox(ctx interface{}, arg interface{}) *MockStore_ListStationsWithinBBox_Call {
+func (_e *MockStore_Expecter) ListStationsWithinBBox(ctx any, arg any) *MockStore_ListStationsWithinBBox_Call {
 	return &MockStore_ListStationsWithinBBox_Call{Call: _e.mock.On("ListStationsWithinBBox", ctx, arg)}
 }
 
@@ -4717,7 +5368,7 @@ type MockStore_ListStationsWithinRadius_Call struct {
 // ListStationsWithinRadius is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListStationsWithinRadiusParams
-func (_e *MockStore_Expecter) ListStationsWithinRadius(ctx interface{}, arg interface{}) *MockStore_ListStationsWithinRadius_Call {
+func (_e *MockStore_Expecter) ListStationsWithinRadius(ctx any, arg any) *MockStore_ListStationsWithinRadius_Call {
 	return &MockStore_ListStationsWithinRadius_Call{Call: _e.mock.On("ListStationsWithinRadius", ctx, arg)}
 }
 
@@ -4785,7 +5436,7 @@ type MockStore_ListUserRoles_Call struct {
 // ListUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID int64
-func (_e *MockStore_Expecter) ListUserRoles(ctx interface{}, userID interface{}) *MockStore_ListUserRoles_Call {
+func (_e *MockStore_Expecter) ListUserRoles(ctx any, userID any) *MockStore_ListUserRoles_Call {
 	return &MockStore_ListUserRoles_Call{Call: _e.mock.On("ListUserRoles", ctx, userID)}
 }
 
@@ -4853,7 +5504,7 @@ type MockStore_ListUsers_Call struct {
 // ListUsers is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListUsersParams
-func (_e *MockStore_Expecter) ListUsers(ctx interface{}, arg interface{}) *MockStore_ListUsers_Call {
+func (_e *MockStore_Expecter) ListUsers(ctx any, arg any) *MockStore_ListUsers_Call {
 	return &MockStore_ListUsers_Call{Call: _e.mock.On("ListUsers", ctx, arg)}
 }
 
@@ -4921,7 +5572,7 @@ type MockStore_ListWeatherlinkStations_Call struct {
 // ListWeatherlinkStations is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.ListWeatherlinkStationsParams
-func (_e *MockStore_Expecter) ListWeatherlinkStations(ctx interface{}, arg interface{}) *MockStore_ListWeatherlinkStations_Call {
+func (_e *MockStore_Expecter) ListWeatherlinkStations(ctx any, arg any) *MockStore_ListWeatherlinkStations_Call {
 	return &MockStore_ListWeatherlinkStations_Call{Call: _e.mock.On("ListWeatherlinkStations", ctx, arg)}
 }
 
@@ -4978,7 +5629,7 @@ type MockStore_UpdateAPITokenLastUsedAt_Call struct {
 // UpdateAPITokenLastUsedAt is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-func (_e *MockStore_Expecter) UpdateAPITokenLastUsedAt(ctx interface{}, id interface{}) *MockStore_UpdateAPITokenLastUsedAt_Call {
+func (_e *MockStore_Expecter) UpdateAPITokenLastUsedAt(ctx any, id any) *MockStore_UpdateAPITokenLastUsedAt_Call {
 	return &MockStore_UpdateAPITokenLastUsedAt_Call{Call: _e.mock.On("UpdateAPITokenLastUsedAt", ctx, id)}
 }
 
@@ -5006,6 +5657,72 @@ func (_c *MockStore_UpdateAPITokenLastUsedAt_Call) Return(err error) *MockStore_
 }
 
 func (_c *MockStore_UpdateAPITokenLastUsedAt_Call) RunAndReturn(run func(ctx context.Context, id int64) error) *MockStore_UpdateAPITokenLastUsedAt_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateAccessRequestStatus provides a mock function for the type MockStore
+func (_mock *MockStore) UpdateAccessRequestStatus(ctx context.Context, arg db.UpdateAccessRequestStatusParams) (db.AccessRequest, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateAccessRequestStatus")
+	}
+
+	var r0 db.AccessRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.UpdateAccessRequestStatusParams) (db.AccessRequest, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.UpdateAccessRequestStatusParams) db.AccessRequest); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.AccessRequest)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.UpdateAccessRequestStatusParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_UpdateAccessRequestStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateAccessRequestStatus'
+type MockStore_UpdateAccessRequestStatus_Call struct {
+	*mock.Call
+}
+
+// UpdateAccessRequestStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.UpdateAccessRequestStatusParams
+func (_e *MockStore_Expecter) UpdateAccessRequestStatus(ctx any, arg any) *MockStore_UpdateAccessRequestStatus_Call {
+	return &MockStore_UpdateAccessRequestStatus_Call{Call: _e.mock.On("UpdateAccessRequestStatus", ctx, arg)}
+}
+
+func (_c *MockStore_UpdateAccessRequestStatus_Call) Run(run func(ctx context.Context, arg db.UpdateAccessRequestStatusParams)) *MockStore_UpdateAccessRequestStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.UpdateAccessRequestStatusParams
+		if args[1] != nil {
+			arg1 = args[1].(db.UpdateAccessRequestStatusParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_UpdateAccessRequestStatus_Call) Return(accessRequest db.AccessRequest, err error) *MockStore_UpdateAccessRequestStatus_Call {
+	_c.Call.Return(accessRequest, err)
+	return _c
+}
+
+func (_c *MockStore_UpdateAccessRequestStatus_Call) RunAndReturn(run func(ctx context.Context, arg db.UpdateAccessRequestStatusParams) (db.AccessRequest, error)) *MockStore_UpdateAccessRequestStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5044,7 +5761,7 @@ type MockStore_UpdateRole_Call struct {
 // UpdateRole is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.UpdateRoleParams
-func (_e *MockStore_Expecter) UpdateRole(ctx interface{}, arg interface{}) *MockStore_UpdateRole_Call {
+func (_e *MockStore_Expecter) UpdateRole(ctx any, arg any) *MockStore_UpdateRole_Call {
 	return &MockStore_UpdateRole_Call{Call: _e.mock.On("UpdateRole", ctx, arg)}
 }
 
@@ -5110,7 +5827,7 @@ type MockStore_UpdateStation_Call struct {
 // UpdateStation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.UpdateStationParams
-func (_e *MockStore_Expecter) UpdateStation(ctx interface{}, arg interface{}) *MockStore_UpdateStation_Call {
+func (_e *MockStore_Expecter) UpdateStation(ctx any, arg any) *MockStore_UpdateStation_Call {
 	return &MockStore_UpdateStation_Call{Call: _e.mock.On("UpdateStation", ctx, arg)}
 }
 
@@ -5176,7 +5893,7 @@ type MockStore_UpdateStationHealth_Call struct {
 // UpdateStationHealth is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.UpdateStationHealthParams
-func (_e *MockStore_Expecter) UpdateStationHealth(ctx interface{}, arg interface{}) *MockStore_UpdateStationHealth_Call {
+func (_e *MockStore_Expecter) UpdateStationHealth(ctx any, arg any) *MockStore_UpdateStationHealth_Call {
 	return &MockStore_UpdateStationHealth_Call{Call: _e.mock.On("UpdateStationHealth", ctx, arg)}
 }
 
@@ -5242,7 +5959,7 @@ type MockStore_UpdateStationMOObservation_Call struct {
 // UpdateStationMOObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.UpdateStationMOObservationParams
-func (_e *MockStore_Expecter) UpdateStationMOObservation(ctx interface{}, arg interface{}) *MockStore_UpdateStationMOObservation_Call {
+func (_e *MockStore_Expecter) UpdateStationMOObservation(ctx any, arg any) *MockStore_UpdateStationMOObservation_Call {
 	return &MockStore_UpdateStationMOObservation_Call{Call: _e.mock.On("UpdateStationMOObservation", ctx, arg)}
 }
 
@@ -5308,7 +6025,7 @@ type MockStore_UpdateStationObservation_Call struct {
 // UpdateStationObservation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.UpdateStationObservationParams
-func (_e *MockStore_Expecter) UpdateStationObservation(ctx interface{}, arg interface{}) *MockStore_UpdateStationObservation_Call {
+func (_e *MockStore_Expecter) UpdateStationObservation(ctx any, arg any) *MockStore_UpdateStationObservation_Call {
 	return &MockStore_UpdateStationObservation_Call{Call: _e.mock.On("UpdateStationObservation", ctx, arg)}
 }
 
@@ -5374,7 +6091,7 @@ type MockStore_UpdateUser_Call struct {
 // UpdateUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - arg db.UpdateUserParams
-func (_e *MockStore_Expecter) UpdateUser(ctx interface{}, arg interface{}) *MockStore_UpdateUser_Call {
+func (_e *MockStore_Expecter) UpdateUser(ctx any, arg any) *MockStore_UpdateUser_Call {
 	return &MockStore_UpdateUser_Call{Call: _e.mock.On("UpdateUser", ctx, arg)}
 }
 
@@ -5402,6 +6119,72 @@ func (_c *MockStore_UpdateUser_Call) Return(user db.User, err error) *MockStore_
 }
 
 func (_c *MockStore_UpdateUser_Call) RunAndReturn(run func(ctx context.Context, arg db.UpdateUserParams) (db.User, error)) *MockStore_UpdateUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpsertUserAccess provides a mock function for the type MockStore
+func (_mock *MockStore) UpsertUserAccess(ctx context.Context, arg db.UpsertUserAccessParams) (db.UserAccess, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpsertUserAccess")
+	}
+
+	var r0 db.UserAccess
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.UpsertUserAccessParams) (db.UserAccess, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.UpsertUserAccessParams) db.UserAccess); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.UserAccess)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.UpsertUserAccessParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_UpsertUserAccess_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpsertUserAccess'
+type MockStore_UpsertUserAccess_Call struct {
+	*mock.Call
+}
+
+// UpsertUserAccess is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.UpsertUserAccessParams
+func (_e *MockStore_Expecter) UpsertUserAccess(ctx any, arg any) *MockStore_UpsertUserAccess_Call {
+	return &MockStore_UpsertUserAccess_Call{Call: _e.mock.On("UpsertUserAccess", ctx, arg)}
+}
+
+func (_c *MockStore_UpsertUserAccess_Call) Run(run func(ctx context.Context, arg db.UpsertUserAccessParams)) *MockStore_UpsertUserAccess_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.UpsertUserAccessParams
+		if args[1] != nil {
+			arg1 = args[1].(db.UpsertUserAccessParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_UpsertUserAccess_Call) Return(userAccess db.UserAccess, err error) *MockStore_UpsertUserAccess_Call {
+	_c.Call.Return(userAccess, err)
+	return _c
+}
+
+func (_c *MockStore_UpsertUserAccess_Call) RunAndReturn(run func(ctx context.Context, arg db.UpsertUserAccessParams) (db.UserAccess, error)) *MockStore_UpsertUserAccess_Call {
 	_c.Call.Return(run)
 	return _c
 }

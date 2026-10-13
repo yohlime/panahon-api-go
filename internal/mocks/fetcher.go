@@ -16,10 +16,19 @@ func NewMockFetcher(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockFetcher {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockFetcher{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -72,7 +81,7 @@ type MockFetcher_Do_Call struct {
 
 // Do is a helper method to define mock.On call
 //   - req *http.Request
-func (_e *MockFetcher_Expecter) Do(req interface{}) *MockFetcher_Do_Call {
+func (_e *MockFetcher_Expecter) Do(req any) *MockFetcher_Do_Call {
 	return &MockFetcher_Do_Call{Call: _e.mock.On("Do", req)}
 }
 
@@ -134,7 +143,7 @@ type MockFetcher_Get_Call struct {
 
 // Get is a helper method to define mock.On call
 //   - url string
-func (_e *MockFetcher_Expecter) Get(url interface{}) *MockFetcher_Get_Call {
+func (_e *MockFetcher_Expecter) Get(url any) *MockFetcher_Get_Call {
 	return &MockFetcher_Get_Call{Call: _e.mock.On("Get", url)}
 }
 
