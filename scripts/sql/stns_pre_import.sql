@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE observations_station
+ALTER COLUMN created_at DROP NOT NULL,
+ALTER COLUMN deleted_at DROP NOT NULL;
+
+COMMIT;

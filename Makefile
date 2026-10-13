@@ -1,15 +1,17 @@
 -include app.env
 
 createdb:
-	${DOCKER_PG} createdb --username=${PG_ADMIN_USER} --owner=${PG_DB_USER} ${PG_DB_NAME}
-	${DOCKER_PG} psql ${PG_DB_NAME} -U ${PG_ADMIN_USER} -c "CREATE EXTENSION postgis;"
+	# createuser -h ${PG_HOST} -U ${PG_ADMIN_USER} --login --pwprompt ${PG_DB_USER}
+	# createdb -h ${PG_HOST} -U ${PG_ADMIN_USER} --owner=${PG_DB_USER} ${PG_DB_NAME}
+	psql -h ${PG_HOST} -p ${PG_PORT} ${PG_DB_NAME} -U ${PG_ADMIN_USER} -c "CREATE EXTENSION postgis;"
 
 dropdb:
-	${DOCKER_PG} dropdb --username=${PG_ADMIN_USER} ${PG_DB_NAME}
+	dropdb --username=${PG_ADMIN_USER} ${PG_DB_NAME}
 
 MIGRATE_CMD = migrate -path ${MIGRATION_PATH} -database "${DB_SOURCE}" -verbose
 
 migrate-cmd:
+	echo ${DB_SOURCE}
 	@read -p "Enter the number of migrations to $(NAME) (leave empty for all): " count; \
 	if [ -z "$$count" ]; then \
 		${MIGRATE_CMD} $(ACTION); \

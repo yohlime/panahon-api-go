@@ -27,6 +27,7 @@ go.work
 # End of https://www.toptal.com/developers/gitignore/api/go
 
 *.env
+kulala/http-client.private.env.json
 app_conf.yaml
 docker-compose.yaml
 .vscode
@@ -42,3 +43,4 @@ devenv.local.nix
 
 # pre-commit
 .pre-commit-config.yaml
+.opencode/
