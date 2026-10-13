@@ -1,6 +1,8 @@
 package routers
 
 import (
+	"strings"
+
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/handlers"
 	mw "github.com/emiliogozo/panahon-api-go/internal/middlewares"
@@ -26,8 +28,21 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 	g.Use(mw.Zerologger(logger), gin.Recovery())
 
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowAllOrigins = true
-	corsConfig.AllowCredentials = true
+	var origins []string
+	for _, o := range strings.Split(config.CorsAllowOrigins, ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			origins = append(origins, o)
+		}
+	}
+	if len(origins) == 0 {
+		// No configured origins: allow any origin but never send credentials,
+		// which keeps cookie-auth requests effectively same-origin only.
+		corsConfig.AllowAllOrigins = true
+		corsConfig.AllowCredentials = false
+	} else {
+		corsConfig.AllowOrigins = origins
+		corsConfig.AllowCredentials = true
+	}
 	corsConfig.AddAllowMethods("OPTIONS")
 	corsConfig.AddAllowHeaders("Authorization")
 	g.Use(cors.New(corsConfig))

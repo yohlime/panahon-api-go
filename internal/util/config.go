@@ -22,6 +22,7 @@ type Config struct {
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	APIBasePath          string        `mapstructure:"API_BASE_PATH"`
 	SwagAPIBasePath      string        `mapstructure:"SWAG_API_BASE_PATH"`
+	CorsAllowOrigins     string        `mapstructure:"CORS_ALLOW_ORIGINS"`
 	GlabsAppID           string        `mapstructure:"GLABS_APP_ID"`
 	GlabsAppSecret       string        `mapstructure:"GLABS_APP_SECRET"`
 	EnableConsoleLogging bool          `mapstructure:"ENABLE_CONSOLE_LOGGING"`
@@ -51,7 +52,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("GinMode", "debug")
 	viper.SetDefault("APIBasePath", "/")
 	viper.SetDefault("SwagAPIBasePath", "/")
-	viper.SetDefault("CookieDomain", "localhost")
+	viper.SetDefault("CookieDomain", "")
 	viper.SetDefault("CookiePath", "/")
 	viper.SetDefault("LogDirectory", "./logs")
 	viper.SetDefault("LogFilename", "log")
