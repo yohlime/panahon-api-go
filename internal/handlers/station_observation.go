@@ -92,9 +92,14 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	if !h.stationAllowed(ctx, uri.StationID) {
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("no access to this station")))
+		return
+	}
+
 	startDate, isStartDate := util.ParseDateTime(req.StartDate)
 	endDate, isEndDate := util.ParseDateTime(req.EndDate)
-	if cutoff, limited := effectiveHistoryStart(ctx); limited && (!isStartDate || startDate.Before(cutoff)) {
+	if cutoff, limited := h.effectiveHistoryStart(ctx); limited && (!isStartDate || startDate.Before(cutoff)) {
 		startDate = cutoff
 		isStartDate = true
 	}
@@ -155,7 +160,7 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 	numObs := len(obsSlice)
 	items := make([]models.StationObservation, numObs)
 	for i, obs := range obsSlice {
-		items[i] = models.NewStationObservation(obs, resolveAccessibleVariables(ctx))
+		items[i] = models.NewStationObservation(obs, h.resolveAccessibleVariables(ctx))
 	}
 
 	var count int64
@@ -211,6 +216,11 @@ func (h *DefaultHandler) GetStationObservation(ctx *gin.Context) {
 	var req getStationObsReq
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	if !h.stationAllowed(ctx, req.StationID) {
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("no access to this station")))
 		return
 	}
 
@@ -342,8 +352,8 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 		return
 	}
 
-	perm, hasToken := getAPITokenPermissions(ctx)
-	tokenScoped := hasToken && !isAdminSession(ctx) && perm.StationIDs != nil
+	allowed, restricted := h.stationFilter(ctx)
+	tokenScoped := restricted && allowed != nil
 
 	var stationIDs []int64
 	switch {
@@ -357,11 +367,11 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 			stationIDs = append(stationIDs, stnID)
 		}
 		if tokenScoped {
-			stationIDs = intersectInt64(stationIDs, perm.StationIDs)
+			stationIDs = intersectInt64(stationIDs, allowed)
 		}
 	case tokenScoped:
 		// No stations requested: restrict to the token's stations.
-		stationIDs = perm.StationIDs
+		stationIDs = allowed
 	default:
 		stations, err := h.store.ListStations(ctx, db.ListStationsParams{
 			Limit:  pgtype.Int4{Int32: 10, Valid: true},
@@ -379,7 +389,7 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 
 	startDate, isStartDate := util.ParseDateTime(req.StartDate)
 	endDate, isEndDate := util.ParseDateTime(req.EndDate)
-	if cutoff, limited := effectiveHistoryStart(ctx); limited && (!isStartDate || startDate.Before(cutoff)) {
+	if cutoff, limited := h.effectiveHistoryStart(ctx); limited && (!isStartDate || startDate.Before(cutoff)) {
 		startDate = cutoff
 		isStartDate = true
 	}
@@ -413,7 +423,7 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 	numObs := len(obs)
 	items := make([]models.StationObservation, numObs)
 	for i, observation := range obs {
-		items[i] = models.NewStationObservation(observation, resolveAccessibleVariables(ctx))
+		items[i] = models.NewStationObservation(observation, h.resolveAccessibleVariables(ctx))
 	}
 
 	count, err := h.store.CountObservations(ctx, db.CountObservationsParams{
@@ -634,6 +644,11 @@ func (h *DefaultHandler) GetLatestStationObservation(ctx *gin.Context) {
 		return
 	}
 
+	if !h.stationAllowed(ctx, req.StationID) {
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("no access to this station")))
+		return
+	}
+
 	obs, err := h.store.GetLatestStationObservation(ctx, req.StationID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
@@ -644,7 +659,7 @@ func (h *DefaultHandler) GetLatestStationObservation(ctx *gin.Context) {
 		return
 	}
 
-	res := filterLatestObservationVariables(newLatestObservationResponse(obs), resolveAccessibleVariables(ctx))
+	res := filterLatestObservationVariables(newLatestObservationResponse(obs), h.resolveAccessibleVariables(ctx))
 	ctx.JSON(http.StatusOK, res)
 }
 

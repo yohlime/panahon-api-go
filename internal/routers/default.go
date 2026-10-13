@@ -57,6 +57,7 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 	}
 
 	r.userRouter(api)
+	r.accessRouter(api)
 	r.roleRouter(api)
 	r.stationRouter(api)
 	r.observationRouter(api)

@@ -45,15 +45,24 @@ func isAdminSession(ctx *gin.Context) bool {
 	return false
 }
 
-// getAPITokenPermissions decodes the permissions of the request's API token.
-// The bool is false when there is no API token (e.g. an admin session).
-func getAPITokenPermissions(ctx *gin.Context) (models.APITokenPermissions, bool) {
+// getAPIToken returns the validated API token attached to the request, if any.
+func getAPIToken(ctx *gin.Context) (*db.APIToken, bool) {
 	key, exists := ctx.Get(models.APITokenAuthKey)
 	if !exists || key == nil {
-		return models.APITokenPermissions{}, false
+		return nil, false
 	}
 	dbToken, ok := key.(*db.APIToken)
 	if !ok || dbToken == nil {
+		return nil, false
+	}
+	return dbToken, true
+}
+
+// getAPITokenPermissions decodes the permissions of the request's API token.
+// The bool is false when there is no API token (e.g. an admin session).
+func getAPITokenPermissions(ctx *gin.Context) (models.APITokenPermissions, bool) {
+	dbToken, ok := getAPIToken(ctx)
+	if !ok {
 		return models.APITokenPermissions{}, false
 	}
 
@@ -76,37 +85,6 @@ func resolveVariables(vars []string) []string {
 		}
 	}
 	return vars
-}
-
-// resolveAccessibleVariables returns the met variables the caller may read
-// (nil = all). Admin sessions and missing tokens are unrestricted.
-func resolveAccessibleVariables(ctx *gin.Context) []string {
-	if isAdminSession(ctx) {
-		return nil
-	}
-	perm, ok := getAPITokenPermissions(ctx)
-	if !ok {
-		return nil
-	}
-	return resolveVariables(perm.Variables)
-}
-
-// effectiveHistoryStart returns the oldest timestamp a scoped caller may query.
-// The bool is false when the caller is unrestricted (admin) or unauthenticated.
-func effectiveHistoryStart(ctx *gin.Context) (time.Time, bool) {
-	if isAdminSession(ctx) {
-		return time.Time{}, false
-	}
-	perm, ok := getAPITokenPermissions(ctx)
-	if !ok {
-		return time.Time{}, false
-	}
-
-	days := perm.MaxDaysHistory
-	if days <= 0 || days > models.DefaultMaxDaysHistory {
-		days = models.DefaultMaxDaysHistory
-	}
-	return time.Now().AddDate(0, 0, -days), true
 }
 
 // intersectInt64 returns the elements of a that are also present in b.

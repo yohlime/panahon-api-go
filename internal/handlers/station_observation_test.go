@@ -16,12 +16,24 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	mockdb "github.com/emiliogozo/panahon-api-go/internal/mocks/db"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
+	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+// adminContext marks the request as an authenticated admin session
+// (unrestricted) for handlers that enforce access scope.
+func adminContext() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.Set(models.AuthPayloadKey, &token.Payload{
+			User: token.User{Roles: []string{string(models.AdminRole)}},
+		})
+		ctx.Next()
+	}
+}
 
 func TestCreateStationObservationAPI(t *testing.T) {
 	stnObs := randomObservation(t)
@@ -300,6 +312,7 @@ func TestListStationObservationsAPI(t *testing.T) {
 
 			router := gin.Default()
 			router.GET(":station_id/observations",
+				adminContext(),
 				handler.ListStationObservations)
 
 			recorder := httptest.NewRecorder()
@@ -410,7 +423,7 @@ func TestGetStationObservationAPI(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.GET(":station_id/observations/:id", handler.GetStationObservation)
+			router.GET(":station_id/observations/:id", adminContext(), handler.GetStationObservation)
 
 			recorder := httptest.NewRecorder()
 
@@ -804,7 +817,7 @@ func TestListObservationsAPI(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.GET("", handler.ListObservations)
+			router.GET("", adminContext(), handler.ListObservations)
 
 			recorder := httptest.NewRecorder()
 
@@ -996,7 +1009,7 @@ func TestGetLatestStationObservationAPI(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.GET(":station_id", handler.GetLatestStationObservation)
+			router.GET(":station_id", adminContext(), handler.GetLatestStationObservation)
 
 			recorder := httptest.NewRecorder()
 

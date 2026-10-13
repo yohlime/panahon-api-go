@@ -1,10 +1,62 @@
 definitions:
+  AccessRequest:
+    properties:
+      all_stations:
+        type: boolean
+      all_variables:
+        type: boolean
+      created_at:
+        type: string
+      id:
+        type: integer
+      max_days_history:
+        type: integer
+      reason:
+        type: string
+      review_note:
+        type: string
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: integer
+      station_ids:
+        items:
+          type: integer
+        type: array
+      status:
+        type: string
+      user_id:
+        type: integer
+      variables:
+        items:
+          type: string
+        type: array
+    type: object
   CSIMisolParams:
     properties:
       weather:
         type: string
     required:
     - weather
+    type: object
+  CreateAccessRequestParams:
+    properties:
+      all_stations:
+        type: boolean
+      all_variables:
+        type: boolean
+      max_days_history:
+        type: integer
+      reason:
+        type: string
+      station_ids:
+        items:
+          type: integer
+        type: array
+      variables:
+        items:
+          type: string
+        type: array
     type: object
   CreateRoleParams:
     properties:
@@ -171,6 +223,8 @@ definitions:
       station:
         $ref: '#/definitions/Station'
     type: object
+  PaginatedAccessRequests:
+    type: object
   PaginatedRoles:
     type: object
   PaginatedStationObservations:
@@ -204,6 +258,25 @@ definitions:
     properties:
       refresh_token:
         type: string
+    type: object
+  ReviewAccessRequestParams:
+    properties:
+      all_stations:
+        type: boolean
+      all_variables:
+        type: boolean
+      max_days_history:
+        type: integer
+      note:
+        type: string
+      station_ids:
+        items:
+          type: integer
+        type: array
+      variables:
+        items:
+          type: string
+        type: array
     type: object
   Role:
     properties:
@@ -395,6 +468,23 @@ definitions:
       status:
         type: string
     type: object
+  UpdateUserAccessParams:
+    properties:
+      all_stations:
+        type: boolean
+      all_variables:
+        type: boolean
+      max_days_history:
+        type: integer
+      station_ids:
+        items:
+          type: integer
+        type: array
+      variables:
+        items:
+          type: string
+        type: array
+    type: object
   UpdateUserParams:
     properties:
       email:
@@ -427,6 +517,23 @@ definitions:
         type: array
       username:
         type: string
+    type: object
+  UserAccess:
+    properties:
+      max_days_history:
+        type: integer
+      station_ids:
+        items:
+          type: integer
+        type: array
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      variables:
+        items:
+          type: string
+        type: array
     type: object
   handlers.latestObsRes:
     properties:
@@ -534,6 +641,92 @@ info:
   title: Panahon API
   version: "1.0"
 paths:
+  /access-requests:
+    get:
+      parameters:
+      - in: query
+        minimum: 1
+        name: page
+        type: integer
+      - in: query
+        maximum: 100
+        minimum: 1
+        name: per_page
+        type: integer
+      - enum:
+        - pending
+        - approved
+        - denied
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PaginatedAccessRequests'
+      security:
+      - BearerAuth: []
+      summary: List access requests
+      tags:
+      - access
+  /access-requests/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Optional partial approval / note
+        in: body
+        name: req
+        schema:
+          $ref: '#/definitions/ReviewAccessRequestParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserAccess'
+      security:
+      - BearerAuth: []
+      summary: Approve an access request (optionally a subset)
+      tags:
+      - access
+  /access-requests/{id}/deny:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Denial (note required)
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/ReviewAccessRequestParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AccessRequest'
+      security:
+      - BearerAuth: []
+      summary: Deny an access request
+      tags:
+      - access
   /csi:
     post:
       consumes:
@@ -1270,6 +1463,53 @@ paths:
       summary: Update user
       tags:
       - users
+  /users/{id}/access:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserAccess'
+      security:
+      - BearerAuth: []
+      summary: Get a user's access entitlement
+      tags:
+      - access
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Entitlement
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateUserAccessParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserAccess'
+      security:
+      - BearerAuth: []
+      summary: Set a user's access entitlement
+      tags:
+      - access
   /users/{id}/api-tokens:
     get:
       consumes:
@@ -1393,6 +1633,76 @@ paths:
       summary: User logout
       tags:
       - users
+  /users/me/access:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserAccess'
+      security:
+      - BearerAuth: []
+      summary: Get my access
+      tags:
+      - access
+  /users/me/access-requests:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/AccessRequest'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List my access requests
+      tags:
+      - access
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Access request parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CreateAccessRequestParams'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/AccessRequest'
+      security:
+      - BearerAuth: []
+      summary: Request additional access
+      tags:
+      - access
+  /users/me/access-requests/{id}:
+    delete:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Cancel a pending access request
+      tags:
+      - access
   /users/me/api-tokens:
     get:
       consumes:
