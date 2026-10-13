@@ -17,29 +17,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// isAdminPayload reports whether the request carries an authenticated
-// admin/superadmin session (cookie or Bearer).
-func isAdminPayload(ctx *gin.Context) bool {
+// isAuthenticated reports whether the request carries an authenticated session
+// (cookie or Bearer) of any role.
+func isAuthenticated(ctx *gin.Context) bool {
 	key, exists := ctx.Get(models.AuthPayloadKey)
 	if !exists || key == nil {
 		return false
 	}
 	payload, ok := key.(*token.Payload)
-	if !ok || payload == nil {
-		return false
-	}
-	for _, role := range payload.User.Roles {
-		if models.IsAdminRole(role) {
-			return true
-		}
-	}
-	return false
+	return ok && payload != nil
 }
 
-// RequireAdminOrAPIToken allows admin sessions or a validated API token, else 401.
-func RequireAdminOrAPIToken() gin.HandlerFunc {
+// RequireAuthOrAPIToken allows any authenticated session or a validated API
+// token, else 401. Access scope is enforced by the handlers.
+func RequireAuthOrAPIToken() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if isAdminPayload(ctx) {
+		if isAuthenticated(ctx) {
 			ctx.Next()
 			return
 		}
@@ -70,8 +63,9 @@ func APITokenMiddleware(store db.Store, permissive bool) gin.HandlerFunc {
 
 func StationMiddleware(stnIDParamKey string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// Admin/superadmin sessions may read any station without an API token.
-		if isAdminPayload(ctx) {
+		// Any authenticated session may read; the handler enforces the user's
+		// entitlement station scope (no API key needed for logged-in users).
+		if isAuthenticated(ctx) {
 			ctx.Next()
 			return
 		}

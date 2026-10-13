@@ -136,6 +136,18 @@ func TestStationMiddleware(t *testing.T) {
 			},
 		},
 		{
+			name: "UserSession",
+			setupAccess: func(ctx *gin.Context) {
+				ctx.Set(models.AuthPayloadKey, &token.Payload{
+					User: token.User{Roles: []string{"USER"}},
+				})
+				ctx.Next()
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
 			name: "TokenMissing",
 			setupAccess: func(ctx *gin.Context) {
 				ctx.Set(models.APITokenAuthKey, nil)
@@ -190,7 +202,7 @@ func TestStationMiddleware(t *testing.T) {
 	}
 }
 
-func TestRequireAdminOrAPIToken(t *testing.T) {
+func TestRequireAuthOrAPIToken(t *testing.T) {
 	testCases := []struct {
 		name          string
 		setupAccess   func(ctx *gin.Context)
@@ -236,7 +248,7 @@ func TestRequireAdminOrAPIToken(t *testing.T) {
 				ctx.Next()
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 	}
@@ -249,7 +261,7 @@ func TestRequireAdminOrAPIToken(t *testing.T) {
 			router.GET(
 				"/observations",
 				tc.setupAccess,
-				RequireAdminOrAPIToken(),
+				RequireAuthOrAPIToken(),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
 				},

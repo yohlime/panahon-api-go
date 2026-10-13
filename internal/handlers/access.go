@@ -96,29 +96,35 @@ func (h *DefaultHandler) setUserAccess(ctx context.Context, userID int64, access
 	return nil
 }
 
-// effectivePermissions returns a token's permissions capped by the user's
-// entitlement. restricted is false for admin sessions (unrestricted) and only
-// false there.
+// effectivePermissions returns the scope a request may read. restricted is
+// false only for admin sessions (unrestricted). API-token requests are capped
+// by the token permissions; other authenticated sessions are scoped by the
+// user's entitlement (privileges are tied to the user, no API key needed).
 func (h *DefaultHandler) effectivePermissions(ctx *gin.Context) (models.APITokenPermissions, bool) {
+	if dbToken, ok := getAPIToken(ctx); ok {
+		var perm models.APITokenPermissions
+		if err := json.Unmarshal(dbToken.Permissions, &perm); err != nil {
+			perm = models.APITokenPermissions{}
+		}
+		return models.IntersectPermissions(perm, h.getUserAccess(ctx, dbToken.UserID)), true
+	}
+
 	if isAdminSession(ctx) {
 		return models.APITokenPermissions{}, false
 	}
 
-	dbToken, ok := getAPIToken(ctx)
-	if !ok {
-		return models.APITokenPermissions{
-			StationIDs:     []int64{},
-			Variables:      models.DefaultAPITokenVariables,
-			MaxDaysHistory: models.DefaultMaxDaysHistory,
-		}, true
+	if payload, ok := authPayload(ctx); ok {
+		if user, err := h.store.GetUserByUsername(ctx, payload.User.Username); err == nil {
+			return h.getUserAccess(ctx, user.ID).Permissions(), true
+		}
 	}
 
-	var perm models.APITokenPermissions
-	if err := json.Unmarshal(dbToken.Permissions, &perm); err != nil {
-		perm = models.APITokenPermissions{}
-	}
-
-	return models.IntersectPermissions(perm, h.getUserAccess(ctx, dbToken.UserID)), true
+	// Unauthenticated: deny-by-default.
+	return models.APITokenPermissions{
+		StationIDs:     []int64{},
+		Variables:      models.DefaultAPITokenVariables,
+		MaxDaysHistory: models.DefaultMaxDaysHistory,
+	}, true
 }
 
 func (h *DefaultHandler) resolveAccessibleVariables(ctx *gin.Context) []string {

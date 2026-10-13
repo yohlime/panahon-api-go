@@ -290,6 +290,15 @@ func MarshalUserAccess(a UserAccess) (stationIDs, variables []byte) {
 	return marshalNullable(a.StationIDs), marshalNullable(a.Variables)
 }
 
+// Permissions expresses the entitlement as token-style permissions.
+func (a UserAccess) Permissions() APITokenPermissions {
+	return APITokenPermissions{
+		StationIDs:     a.StationIDs,
+		Variables:      a.Variables,
+		MaxDaysHistory: a.MaxDaysHistory,
+	}
+}
+
 func marshalNullable[T any](v []T) []byte {
 	if v == nil {
 		return nil

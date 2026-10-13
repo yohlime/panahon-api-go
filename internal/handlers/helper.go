@@ -26,6 +26,19 @@ func (h *DefaultHandler) clearAuthCookie(ctx *gin.Context, name string) {
 	ctx.SetCookie(name, "", -1, h.config.CookiePath, h.config.CookieDomain, secure, true)
 }
 
+// authPayload returns the authenticated session payload, if any.
+func authPayload(ctx *gin.Context) (*token.Payload, bool) {
+	key, exists := ctx.Get(models.AuthPayloadKey)
+	if !exists || key == nil {
+		return nil, false
+	}
+	payload, ok := key.(*token.Payload)
+	if !ok || payload == nil {
+		return nil, false
+	}
+	return payload, true
+}
+
 // isAdminSession reports whether the request carries an authenticated
 // admin/superadmin payload (cookie or Bearer).
 func isAdminSession(ctx *gin.Context) bool {

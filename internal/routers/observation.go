@@ -16,7 +16,7 @@ func (r *DefaultRouter) observationRouter(gr *gin.RouterGroup) {
 		gated := addMiddleware(observations,
 			mw.AuthMiddleware(r.tokenMaker, true),
 			mw.APITokenMiddleware(r.store, true),
-			mw.RequireAdminOrAPIToken(),
+			mw.RequireAuthOrAPIToken(),
 		)
 		gated.GET("", r.handler.ListObservations)
 	}
