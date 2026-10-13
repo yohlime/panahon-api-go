@@ -311,8 +311,8 @@ func (h *DefaultHandler) DeleteStationObservation(ctx *gin.Context) {
 }
 
 type listObservationsReq struct {
-	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"`                  // page number
-	PerPage    int32  `form:"per_page,default=100" binding:"omitempty,min=50,max=50000"` // limit
+	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"`                 // page number
+	PerPage    int32  `form:"per_page,default=100" binding:"omitempty,min=5,max=50000"` // limit
 	StationIDs string `form:"station_ids" binding:"omitempty"`
 	StartDate  string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate    string `form:"end_date" binding:"omitempty,date_time"`
