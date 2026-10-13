@@ -211,6 +211,8 @@ definitions:
         type: string
       description:
         type: string
+      id:
+        type: integer
       name:
         type: string
       updated_at:
@@ -415,6 +417,8 @@ definitions:
         type: string
       full_name:
         type: string
+      id:
+        type: integer
       password_changed_at:
         type: string
       roles:
@@ -644,7 +648,7 @@ paths:
       - description: limit
         in: query
         maximum: 50000
-        minimum: 50
+        minimum: 5
         name: per_page
         type: integer
       - in: query

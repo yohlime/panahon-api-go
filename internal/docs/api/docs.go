@@ -198,7 +198,7 @@ const docTemplate = `{
                     },
                     {
                         "maximum": 50000,
-                        "minimum": 50,
+                        "minimum": 5,
                         "type": "integer",
                         "description": "limit",
                         "name": "per_page",
@@ -1819,6 +1819,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2127,6 +2130,9 @@ const docTemplate = `{
                 },
                 "full_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "password_changed_at": {
                     "type": "string"

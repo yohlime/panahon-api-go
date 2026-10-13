@@ -7,6 +7,7 @@ import (
 )
 
 type User struct {
+	ID                int64     `json:"id" fake:"{number:1,10000}"`
 	Username          string    `json:"username" fake:"{username}"`
 	FullName          string    `json:"full_name" fake:"{name}"`
 	Email             string    `json:"email" fake:"{email}"`
@@ -18,6 +19,7 @@ type User struct {
 // NewUser creates new User from db.User
 func NewUser(user db.User, roleNames []string) User {
 	ret := User{
+		ID:       user.ID,
 		Username: user.Username,
 		FullName: user.FullName,
 		Email:    user.Email,

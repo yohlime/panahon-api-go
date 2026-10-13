@@ -8,6 +8,7 @@ import (
 )
 
 type Role struct {
+	ID          int64     `json:"id" fake:"{number:1,10000}"`
 	Name        string    `json:"name" fake:"{regex:[A-Z]{6,12}}"`
 	Description string    `json:"description" fake:"{sentence:10}"`
 	UpdatedAt   time.Time `json:"updated_at"`
@@ -17,6 +18,7 @@ type Role struct {
 // NewRole creates new Role from db.Role
 func NewRole(role db.Role) Role {
 	res := Role{
+		ID:   role.ID,
 		Name: role.Name,
 	}
 
