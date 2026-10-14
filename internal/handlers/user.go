@@ -41,6 +41,11 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	if !isSuperAdminSession(ctx) && containsSuperAdminRole(req.Roles) {
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("only a superadmin can grant the SUPERADMIN role")))
+		return
+	}
+
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -203,6 +208,11 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 	var req updateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	if !isSuperAdminSession(ctx) && containsSuperAdminRole(req.Roles) {
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("only a superadmin can grant the SUPERADMIN role")))
 		return
 	}
 

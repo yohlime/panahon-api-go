@@ -9,13 +9,19 @@ import (
 func (r *DefaultRouter) roleRouter(gr *gin.RouterGroup) {
 	roles := gr.Group("/roles")
 	{
-		rolesAuth := addMiddleware(roles,
+		// Anyone at admin level can read roles (e.g. to populate the user role
+		// picker), but only a superadmin may create/update/delete them.
+		rolesRead := addMiddleware(roles,
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
+			mw.AdminMiddleware())
+		rolesRead.GET("", r.handler.ListRoles)
+		rolesRead.GET(":id", r.handler.GetRole)
+
+		rolesWrite := addMiddleware(roles,
 			mw.AuthMiddleware(r.tokenMaker, r.store, false),
 			mw.RoleMiddleware(string(models.SuperAdminRole)))
-		rolesAuth.GET("", r.handler.ListRoles)
-		rolesAuth.GET(":id", r.handler.GetRole)
-		rolesAuth.POST("", r.handler.CreateRole)
-		rolesAuth.PUT(":id", r.handler.UpdateRole)
-		rolesAuth.DELETE(":id", r.handler.DeleteRole)
+		rolesWrite.POST("", r.handler.CreateRole)
+		rolesWrite.PUT(":id", r.handler.UpdateRole)
+		rolesWrite.DELETE(":id", r.handler.DeleteRole)
 	}
 }

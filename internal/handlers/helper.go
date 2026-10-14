@@ -58,6 +58,32 @@ func isAdminSession(ctx *gin.Context) bool {
 	return false
 }
 
+// isSuperAdminSession reports whether the request carries an authenticated
+// SUPERADMIN payload (cookie or Bearer).
+func isSuperAdminSession(ctx *gin.Context) bool {
+	payload, ok := authPayload(ctx)
+	if !ok {
+		return false
+	}
+	for _, role := range payload.User.Roles {
+		if role == string(models.SuperAdminRole) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsSuperAdminRole reports whether any of the given role names is
+// SUPERADMIN (case-insensitive).
+func containsSuperAdminRole(roles []string) bool {
+	for _, role := range roles {
+		if strings.EqualFold(role, string(models.SuperAdminRole)) {
+			return true
+		}
+	}
+	return false
+}
+
 // getAPIToken returns the validated API token attached to the request, if any.
 func getAPIToken(ctx *gin.Context) (*db.APIToken, bool) {
 	key, exists := ctx.Get(models.APITokenAuthKey)

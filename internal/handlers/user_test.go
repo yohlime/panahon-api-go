@@ -434,7 +434,7 @@ func TestCreateUserAPI(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.POST("", handler.CreateUser)
+			router.POST("", authAsCaller(nil), handler.CreateUser)
 
 			recorder := httptest.NewRecorder()
 
@@ -567,7 +567,7 @@ func TestUpdateUserAPI(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.PUT(":id", handler.UpdateUser)
+			router.PUT(":id", authAsCaller(nil), handler.UpdateUser)
 
 			recorder := httptest.NewRecorder()
 
@@ -1215,6 +1215,75 @@ func TestGetAuthUserAPI(t *testing.T) {
 			tc.checkResponse(recorder, store)
 		})
 	}
+}
+
+// authAsCaller injects an authenticated payload for the given caller roles
+// (defaulting to SUPERADMIN) so handler-level authorization can be exercised
+// without going through the real auth middleware.
+func authAsCaller(roles []string) gin.HandlerFunc {
+	if len(roles) == 0 {
+		roles = []string{string(models.SuperAdminRole)}
+	}
+	return func(ctx *gin.Context) {
+		ctx.Set(models.AuthPayloadKey, &token.Payload{User: token.User{Username: "caller", Roles: roles}})
+		ctx.Next()
+	}
+}
+
+func TestCreateUserAdminCannotGrantSuperAdmin(t *testing.T) {
+	user, password, _ := randomUser(t)
+
+	store := mockdb.NewMockStore(t)
+	handler := newTestHandler(store, nil)
+
+	router := gin.Default()
+	router.POST("", authAsCaller([]string{string(models.AdminRole)}), handler.CreateUser)
+
+	body := gin.H{
+		"username":  user.Username,
+		"password":  password,
+		"full_name": user.FullName,
+		"email":     user.Email,
+		"roles":     []string{"ADMIN", "SUPERADMIN"},
+	}
+	data, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
+	require.NoError(t, err)
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusForbidden, recorder.Code)
+	store.AssertNotCalled(t, "CreateUser", mock.Anything, mock.Anything)
+}
+
+func TestUpdateUserAdminCannotGrantSuperAdmin(t *testing.T) {
+	user, _, _ := randomUser(t)
+
+	store := mockdb.NewMockStore(t)
+	handler := newTestHandler(store, nil)
+
+	router := gin.Default()
+	router.PUT(":id", authAsCaller([]string{string(models.AdminRole)}), handler.UpdateUser)
+
+	body := gin.H{
+		"id":        user.ID,
+		"full_name": user.FullName,
+		"roles":     []string{"SUPERADMIN"},
+	}
+	data, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/%d", user.ID), bytes.NewReader(data))
+	require.NoError(t, err)
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusForbidden, recorder.Code)
+	store.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
 }
 
 func randomUser(t *testing.T) (user db.User, password string, roleNames []string) {
