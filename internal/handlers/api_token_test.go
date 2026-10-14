@@ -29,6 +29,7 @@ func TestCreateAPIToken(t *testing.T) {
 
 	apiTok := util.NewAPIToken("")
 	dbAPITok := db.APIToken{
+		UserID:    user.ID,
 		Name:      "Test Token",
 		TokenHash: apiTok.GetHash(),
 	}
@@ -65,7 +66,7 @@ func TestCreateAPIToken(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
 					var permissions models.APITokenPermissions
@@ -73,7 +74,7 @@ func TestCreateAPIToken(t *testing.T) {
 					if err != nil {
 						return false
 					}
-					return !arg.ExpiresAt.Valid && permissions.MaxDaysHistory == models.DefaultMaxDaysHistory && len(permissions.StationIDs) == 0 && len(permissions.Variables) == len(models.DefaultAPITokenVariables)
+					return arg.UserID == user.ID && !arg.ExpiresAt.Valid && permissions.MaxDaysHistory == models.DefaultMaxDaysHistory && len(permissions.StationIDs) == 0 && len(permissions.Variables) == len(models.DefaultAPITokenVariables)
 				})).Return(dbAPITok, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -104,7 +105,7 @@ func TestCreateAPIToken(t *testing.T) {
 				require.NoError(t, err)
 				newDBAPITok.Permissions = perm
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
 					var permissions models.APITokenPermissions
@@ -163,12 +164,12 @@ func TestCreateAPIToken(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(db.User{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 		},
 		{
@@ -185,7 +186,7 @@ func TestCreateAPIToken(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CreateAPITokenParams")).
 					Return(db.APIToken{}, sql.ErrConnDone)
@@ -207,7 +208,7 @@ func TestCreateAPIToken(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.POST("",
+			router.POST("/:id/api-tokens",
 				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.CreateAPIToken)
 
@@ -216,7 +217,7 @@ func TestCreateAPIToken(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/"
+			url := fmt.Sprintf("/%d/api-tokens", user.ID)
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -233,19 +234,13 @@ func TestListAPITokens(t *testing.T) {
 
 	n := 3
 	dbAPITokens := make([]db.APIToken, n)
-	apiTokens := make([]models.APITokenWithSecret, n)
 	for t := range dbAPITokens {
 		apiTok := util.NewAPIToken("")
-		dbAPITok := db.APIToken{
+		dbAPITokens[t] = db.APIToken{
+			UserID:    user.ID,
 			Name:      util.RandomString(12),
 			TokenHash: apiTok.GetHash(),
 		}
-		dbAPITokens[t] = dbAPITok
-		apiToken := models.APITokenWithSecret{
-			APIToken: models.NewAPIToken(dbAPITok),
-			Token:    apiTok.GetValue(),
-		}
-		apiTokens[t] = apiToken
 	}
 
 	authUser := token.User{
@@ -265,8 +260,6 @@ func TestListAPITokens(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(user, nil)
 				store.EXPECT().ListAPITokensByUser(mock.AnythingOfType("*gin.Context"), user.ID).Return(dbAPITokens, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -283,21 +276,6 @@ func TestListAPITokens(t *testing.T) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
-		{
-			name: "UserNotFound",
-			setupAuth: func(request *http.Request) {
-				addAuthorization(request, AuthTypeBearer, tokenStr)
-			},
-			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
-				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(db.User{}, db.ErrRecordNotFound)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertExpectations(t)
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-			},
-		},
 	}
 	for i := range testCases {
 		tc := testCases[i]
@@ -310,13 +288,13 @@ func TestListAPITokens(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.GET("",
+			router.GET("/:id/api-tokens",
 				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.ListAPITokens)
 
 			recorder := httptest.NewRecorder()
 
-			url := "/"
+			url := fmt.Sprintf("/%d/api-tokens", user.ID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -343,12 +321,6 @@ func TestDeleteAPIToken(t *testing.T) {
 		Username: user.Username,
 	}
 
-	nStn := 5
-	stationIDs := make([]int64, nStn)
-	for s := range stationIDs {
-		stationIDs[s] = gofakeit.Int64()
-	}
-
 	testCases := []struct {
 		name          string
 		tokenID       int64
@@ -364,8 +336,6 @@ func TestDeleteAPIToken(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(user, nil)
 				store.EXPECT().GetAPIToken(mock.AnythingOfType("*gin.Context"), dbAPITok.ID).
 					Return(dbAPITok, nil)
 				store.EXPECT().DeleteAPIToken(mock.AnythingOfType("*gin.Context"), dbAPITok.ID).Return(nil)
@@ -376,15 +346,16 @@ func TestDeleteAPIToken(t *testing.T) {
 			},
 		},
 		{
-			name: "NoTokenID",
+			name: "InvalidTokenID",
 			setupAuth: func(request *http.Request) {
 				addAuthorization(request, AuthTypeBearer, tokenStr)
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -398,22 +369,6 @@ func TestDeleteAPIToken(t *testing.T) {
 			},
 		},
 		{
-			name:    "UserNotFound",
-			tokenID: dbAPITok.ID,
-			setupAuth: func(request *http.Request) {
-				addAuthorization(request, AuthTypeBearer, tokenStr)
-			},
-			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
-				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(db.User{}, db.ErrRecordNotFound)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertExpectations(t)
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-			},
-		},
-		{
 			name:    "TokenNotFound",
 			tokenID: dbAPITok.ID,
 			setupAuth: func(request *http.Request) {
@@ -421,8 +376,6 @@ func TestDeleteAPIToken(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(user, nil)
 				store.EXPECT().GetAPIToken(mock.AnythingOfType("*gin.Context"), dbAPITok.ID).
 					Return(db.APIToken{}, db.ErrRecordNotFound)
 			},
@@ -441,8 +394,6 @@ func TestDeleteAPIToken(t *testing.T) {
 				wrongDBAPITok := dbAPITok
 				wrongDBAPITok.UserID = dbAPITok.UserID + 1
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(user, nil)
 				store.EXPECT().GetAPIToken(mock.AnythingOfType("*gin.Context"), dbAPITok.ID).
 					Return(wrongDBAPITok, nil)
 			},
@@ -459,8 +410,6 @@ func TestDeleteAPIToken(t *testing.T) {
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
-				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
-					Return(user, nil)
 				store.EXPECT().GetAPIToken(mock.AnythingOfType("*gin.Context"), dbAPITok.ID).
 					Return(dbAPITok, nil)
 				store.EXPECT().DeleteAPIToken(mock.AnythingOfType("*gin.Context"), dbAPITok.ID).Return(fmt.Errorf("error"))
@@ -482,16 +431,13 @@ func TestDeleteAPIToken(t *testing.T) {
 			handler := newTestHandler(store, nil)
 
 			router := gin.Default()
-			router.DELETE(":token_id",
+			router.DELETE("/:id/api-tokens/:token_id",
 				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.DeleteAPIToken)
 
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/%d", tc.tokenID)
-			if tc.tokenID == 0 {
-				url = "/"
-			}
+			url := fmt.Sprintf("/%d/api-tokens/%d", user.ID, tc.tokenID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 

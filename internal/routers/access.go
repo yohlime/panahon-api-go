@@ -8,19 +8,26 @@ import (
 func (r *DefaultRouter) accessRouter(gr *gin.RouterGroup) {
 	users := gr.Group("/users")
 	{
-		me := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false))
-		me.GET("/me/access", r.handler.GetMyAccess)
-		me.POST("/me/access-requests", r.handler.CreateMyAccessRequest)
-		me.GET("/me/access-requests", r.handler.ListMyAccessRequests)
-		me.DELETE("/me/access-requests/:id", r.handler.CancelMyAccessRequest)
+		// Entitlement reads and access requests: the user themselves or an admin.
+		selfOrAdmin := addMiddleware(users,
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
+			mw.RequireSelfOrAdmin(r.store, "id"))
+		selfOrAdmin.GET(":id/access", r.handler.GetUserAccess)
+		selfOrAdmin.GET(":id/access-requests", r.handler.ListUserAccessRequests)
+		selfOrAdmin.POST(":id/access-requests", r.handler.CreateUserAccessRequest)
+		selfOrAdmin.DELETE(":id/access-requests/:request_id", r.handler.CancelUserAccessRequest)
 
-		admin := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false), mw.AdminMiddleware())
-		admin.GET("/:id/access", r.handler.GetUserAccess)
-		admin.PUT("/:id/access", r.handler.UpdateUserAccess)
+		// Setting an entitlement stays admin-only (users request it instead).
+		admin := addMiddleware(users,
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
+			mw.AdminMiddleware())
+		admin.PUT(":id/access", r.handler.UpdateUserAccess)
 	}
 
 	requests := gr.Group("/access-requests")
-	adminRequests := addMiddleware(requests, mw.AuthMiddleware(r.tokenMaker, r.store, false), mw.AdminMiddleware())
+	adminRequests := addMiddleware(requests,
+		mw.AuthMiddleware(r.tokenMaker, r.store, false),
+		mw.AdminMiddleware())
 	adminRequests.GET("", r.handler.ListAccessRequests)
 	adminRequests.POST("/:id/approve", r.handler.ApproveAccessRequest)
 	adminRequests.POST("/:id/deny", r.handler.DenyAccessRequest)

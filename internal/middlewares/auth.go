@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
@@ -59,6 +60,49 @@ func AuthMiddleware(tokenMaker token.Maker, store db.Store, permissive bool) gin
 		}
 
 		ctx.Set(models.AuthPayloadKey, payload)
+		ctx.Next()
+	}
+}
+
+// RequireSelfOrAdmin allows admin/superadmin sessions, or a session whose user
+// id matches the path param. Otherwise it aborts with 403.
+func RequireSelfOrAdmin(store db.Store, paramKey string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		key, exists := ctx.Get(models.AuthPayloadKey)
+		payload, ok := key.(*token.Payload)
+		if !exists || !ok || payload == nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(errors.New("authentication required")))
+			return
+		}
+
+		for _, role := range payload.User.Roles {
+			if models.IsAdminRole(role) {
+				ctx.Next()
+				return
+			}
+		}
+
+		targetID, err := strconv.ParseInt(ctx.Param(paramKey), 10, 64)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, errorResponse(err))
+			return
+		}
+
+		user, err := store.GetUserByUsername(ctx, payload.User.Username)
+		if err != nil {
+			if errors.Is(err, db.ErrRecordNotFound) {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(errors.New("user not found")))
+				return
+			}
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+
+		if user.ID != targetID {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, errorResponse(errors.New("cannot access another user")))
+			return
+		}
+
 		ctx.Next()
 	}
 }

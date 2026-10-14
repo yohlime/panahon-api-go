@@ -1273,222 +1273,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/me/access": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "access"
-                ],
-                "summary": "Get my access",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/UserAccess"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/me/access-requests": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "access"
-                ],
-                "summary": "List my access requests",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/AccessRequest"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "access"
-                ],
-                "summary": "Request additional access",
-                "parameters": [
-                    {
-                        "description": "Access request parameters",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/CreateAccessRequestParams"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/AccessRequest"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/me/access-requests/{id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "access"
-                ],
-                "summary": "Cancel a pending access request",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Request ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/users/me/api-tokens": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-tokens"
-                ],
-                "summary": "List API tokens for current user",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.APIToken"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-tokens"
-                ],
-                "summary": "Create API token for current user",
-                "parameters": [
-                    {
-                        "description": "Create API token parameters",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateAPITokenReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.APITokenWithSecret"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/me/api-tokens/{token_id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-tokens"
-                ],
-                "summary": "Delete API token for current user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Token ID",
-                        "name": "token_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
         "/users/register": {
             "post": {
                 "consumes": [
@@ -1678,7 +1462,7 @@ const docTemplate = `{
                 "tags": [
                     "access"
                 ],
-                "summary": "Get a user's access entitlement",
+                "summary": "Get a user's access entitlement (self or admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1741,6 +1525,122 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{id}/access-requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access"
+                ],
+                "summary": "List a user's access requests (self or admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/AccessRequest"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access"
+                ],
+                "summary": "Request additional access for a user (self or admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Access request parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateAccessRequestParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/AccessRequest"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/access-requests/{request_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access"
+                ],
+                "summary": "Cancel a user's pending access request (self or admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "request_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/users/{id}/api-tokens": {
             "get": {
                 "security": [
@@ -1757,7 +1657,7 @@ const docTemplate = `{
                 "tags": [
                     "api-tokens"
                 ],
-                "summary": "List API tokens for any user (Admin only)",
+                "summary": "List a user's API tokens (self or admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1794,7 +1694,7 @@ const docTemplate = `{
                 "tags": [
                     "api-tokens"
                 ],
-                "summary": "Create API token for any user (Admin only)",
+                "summary": "Create an API token for a user (self or admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1839,7 +1739,7 @@ const docTemplate = `{
                 "tags": [
                     "api-tokens"
                 ],
-                "summary": "Delete API token for any user (Admin only)",
+                "summary": "Delete a user's API token (self or admin)",
                 "parameters": [
                     {
                         "type": "integer",

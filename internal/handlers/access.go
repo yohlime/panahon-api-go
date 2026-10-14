@@ -199,35 +199,43 @@ func toInt4(v *int) pgtype.Int4 {
 
 // ---- user endpoints --------------------------------------------------------
 
-// GetMyAccess
-//
-//	@Summary	Get my access
-//	@Tags		access
-//	@Produce	json
-//	@Security	BearerAuth
-//	@Success	200	{object}	models.UserAccess
-//	@Router		/users/me/access [get]
-func (h *DefaultHandler) GetMyAccess(ctx *gin.Context) {
-	user, ok := h.authUser(ctx)
-	if !ok {
-		return
-	}
-	ctx.JSON(http.StatusOK, h.getUserAccess(ctx, user.ID))
+type getUserAccessUri struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-// CreateMyAccessRequest
+// GetUserAccess
 //
-//	@Summary	Request additional access
+//	@Summary	Get a user's access entitlement (self or admin)
+//	@Tags		access
+//	@Produce	json
+//	@Param		id	path	int	true	"User ID"
+//	@Security	BearerAuth
+//	@Success	200	{object}	models.UserAccess
+//	@Router		/users/{id}/access [get]
+func (h *DefaultHandler) GetUserAccess(ctx *gin.Context) {
+	var uri getUserAccessUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, h.getUserAccess(ctx, uri.ID))
+}
+
+// CreateUserAccessRequest
+//
+//	@Summary	Request additional access for a user (self or admin)
 //	@Tags		access
 //	@Accept		json
 //	@Produce	json
+//	@Param		id	path	int								true	"User ID"
 //	@Param		req	body	models.CreateAccessRequestReq	true	"Access request parameters"
 //	@Security	BearerAuth
 //	@Success	201	{object}	models.AccessRequest
-//	@Router		/users/me/access-requests [post]
-func (h *DefaultHandler) CreateMyAccessRequest(ctx *gin.Context) {
-	user, ok := h.authUser(ctx)
-	if !ok {
+//	@Router		/users/{id}/access-requests [post]
+func (h *DefaultHandler) CreateUserAccessRequest(ctx *gin.Context) {
+	var uri getUserAccessUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
@@ -238,7 +246,7 @@ func (h *DefaultHandler) CreateMyAccessRequest(ctx *gin.Context) {
 	}
 
 	row, err := h.store.CreateAccessRequest(ctx, db.CreateAccessRequestParams{
-		UserID:         user.ID,
+		UserID:         uri.ID,
 		StationIds:     marshalSlice(req.StationIDs),
 		AllStations:    req.AllStations,
 		Variables:      marshalSlice(req.Variables),
@@ -254,21 +262,23 @@ func (h *DefaultHandler) CreateMyAccessRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, models.NewAccessRequest(row))
 }
 
-// ListMyAccessRequests
+// ListUserAccessRequests
 //
-//	@Summary	List my access requests
+//	@Summary	List a user's access requests (self or admin)
 //	@Tags		access
 //	@Produce	json
+//	@Param		id	path	int	true	"User ID"
 //	@Security	BearerAuth
 //	@Success	200	{array}	models.AccessRequest
-//	@Router		/users/me/access-requests [get]
-func (h *DefaultHandler) ListMyAccessRequests(ctx *gin.Context) {
-	user, ok := h.authUser(ctx)
-	if !ok {
+//	@Router		/users/{id}/access-requests [get]
+func (h *DefaultHandler) ListUserAccessRequests(ctx *gin.Context) {
+	var uri getUserAccessUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	rows, err := h.store.ListAccessRequestsByUser(ctx, user.ID)
+	rows, err := h.store.ListAccessRequestsByUser(ctx, uri.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -282,32 +292,29 @@ func (h *DefaultHandler) ListMyAccessRequests(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, items)
 }
 
-type accessRequestUri struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+type cancelAccessRequestUri struct {
+	ID        int64 `uri:"id" binding:"required,min=1"`
+	RequestID int64 `uri:"request_id" binding:"required,min=1"`
 }
 
-// CancelMyAccessRequest
+// CancelUserAccessRequest
 //
-//	@Summary	Cancel a pending access request
+//	@Summary	Cancel a user's pending access request (self or admin)
 //	@Tags		access
 //	@Produce	json
-//	@Param		id	path	int	true	"Request ID"
+//	@Param		id			path	int	true	"User ID"
+//	@Param		request_id	path	int	true	"Request ID"
 //	@Security	BearerAuth
 //	@Success	204
-//	@Router		/users/me/access-requests/{id} [delete]
-func (h *DefaultHandler) CancelMyAccessRequest(ctx *gin.Context) {
-	user, ok := h.authUser(ctx)
-	if !ok {
-		return
-	}
-
-	var uri accessRequestUri
+//	@Router		/users/{id}/access-requests/{request_id} [delete]
+func (h *DefaultHandler) CancelUserAccessRequest(ctx *gin.Context) {
+	var uri cancelAccessRequestUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	row, err := h.store.GetAccessRequest(ctx, uri.ID)
+	row, err := h.store.GetAccessRequest(ctx, uri.RequestID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("request not found")))
@@ -316,12 +323,12 @@ func (h *DefaultHandler) CancelMyAccessRequest(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if row.UserID != user.ID || row.Status != models.AccessRequestPending {
+	if row.UserID != uri.ID || row.Status != models.AccessRequestPending {
 		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("cannot cancel this request")))
 		return
 	}
 
-	if err := h.store.DeleteAccessRequest(ctx, uri.ID); err != nil {
+	if err := h.store.DeleteAccessRequest(ctx, uri.RequestID); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -330,28 +337,6 @@ func (h *DefaultHandler) CancelMyAccessRequest(ctx *gin.Context) {
 }
 
 // ---- admin endpoints -------------------------------------------------------
-
-type getUserAccessUri struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-// GetUserAccess
-//
-//	@Summary	Get a user's access entitlement
-//	@Tags		access
-//	@Produce	json
-//	@Param		id	path	int	true	"User ID"
-//	@Security	BearerAuth
-//	@Success	200	{object}	models.UserAccess
-//	@Router		/users/{id}/access [get]
-func (h *DefaultHandler) GetUserAccess(ctx *gin.Context) {
-	var uri getUserAccessUri
-	if err := ctx.ShouldBindUri(&uri); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-	ctx.JSON(http.StatusOK, h.getUserAccess(ctx, uri.ID))
-}
 
 // UpdateUserAccess
 //

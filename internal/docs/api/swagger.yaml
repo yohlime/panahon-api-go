@@ -1484,7 +1484,7 @@ paths:
             $ref: '#/definitions/UserAccess'
       security:
       - BearerAuth: []
-      summary: Get a user's access entitlement
+      summary: Get a user's access entitlement (self or admin)
       tags:
       - access
     put:
@@ -1514,6 +1514,78 @@ paths:
       summary: Set a user's access entitlement
       tags:
       - access
+  /users/{id}/access-requests:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/AccessRequest'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List a user's access requests (self or admin)
+      tags:
+      - access
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Access request parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CreateAccessRequestParams'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/AccessRequest'
+      security:
+      - BearerAuth: []
+      summary: Request additional access for a user (self or admin)
+      tags:
+      - access
+  /users/{id}/access-requests/{request_id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Request ID
+        in: path
+        name: request_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Cancel a user's pending access request (self or admin)
+      tags:
+      - access
   /users/{id}/api-tokens:
     get:
       consumes:
@@ -1535,7 +1607,7 @@ paths:
             type: array
       security:
       - BearerAuth: []
-      summary: List API tokens for any user (Admin only)
+      summary: List a user's API tokens (self or admin)
       tags:
       - api-tokens
     post:
@@ -1562,7 +1634,7 @@ paths:
             $ref: '#/definitions/models.APITokenWithSecret'
       security:
       - BearerAuth: []
-      summary: Create API token for any user (Admin only)
+      summary: Create an API token for a user (self or admin)
       tags:
       - api-tokens
   /users/{id}/api-tokens/{token_id}:
@@ -1587,7 +1659,7 @@ paths:
           description: No Content
       security:
       - BearerAuth: []
-      summary: Delete API token for any user (Admin only)
+      summary: Delete a user's API token (self or admin)
       tags:
       - api-tokens
   /users/auth:
@@ -1637,136 +1709,6 @@ paths:
       summary: User logout
       tags:
       - users
-  /users/me/access:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/UserAccess'
-      security:
-      - BearerAuth: []
-      summary: Get my access
-      tags:
-      - access
-  /users/me/access-requests:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/AccessRequest'
-            type: array
-      security:
-      - BearerAuth: []
-      summary: List my access requests
-      tags:
-      - access
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Access request parameters
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/CreateAccessRequestParams'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/AccessRequest'
-      security:
-      - BearerAuth: []
-      summary: Request additional access
-      tags:
-      - access
-  /users/me/access-requests/{id}:
-    delete:
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-      security:
-      - BearerAuth: []
-      summary: Cancel a pending access request
-      tags:
-      - access
-  /users/me/api-tokens:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.APIToken'
-            type: array
-      security:
-      - BearerAuth: []
-      summary: List API tokens for current user
-      tags:
-      - api-tokens
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Create API token parameters
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateAPITokenReq'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.APITokenWithSecret'
-      security:
-      - BearerAuth: []
-      summary: Create API token for current user
-      tags:
-      - api-tokens
-  /users/me/api-tokens/{token_id}:
-    delete:
-      consumes:
-      - application/json
-      parameters:
-      - description: Token ID
-        in: path
-        name: token_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-      security:
-      - BearerAuth: []
-      summary: Delete API token for current user
-      tags:
-      - api-tokens
   /users/register:
     post:
       consumes:

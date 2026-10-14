@@ -355,6 +355,106 @@ func TestValidateAPIToken(t *testing.T) {
 	}
 }
 
+// TestRequireSelfOrAdmin verifies the admin-or-self guard: admins pass, a user
+// passes only for their own id, and everyone else is rejected.
+func TestRequireSelfOrAdmin(t *testing.T) {
+	caller := db.User{ID: 7, Username: "caller"}
+
+	testCases := []struct {
+		name        string
+		callerRoles []string
+		hasAuth     bool
+		targetID    string
+		buildStubs  func(store *mockdb.MockStore)
+		wantStatus  int
+	}{
+		{
+			name:        "AdminAllowed",
+			callerRoles: []string{string(models.AdminRole)},
+			hasAuth:     true,
+			targetID:    "99",
+			buildStubs:  func(store *mockdb.MockStore) {},
+			wantStatus:  http.StatusOK,
+		},
+		{
+			name:        "SuperAdminAllowed",
+			callerRoles: []string{string(models.SuperAdminRole)},
+			hasAuth:     true,
+			targetID:    "99",
+			buildStubs:  func(store *mockdb.MockStore) {},
+			wantStatus:  http.StatusOK,
+		},
+		{
+			name:        "SelfAllowed",
+			callerRoles: []string{"USER"},
+			hasAuth:     true,
+			targetID:    "7",
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(caller, nil)
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:        "OtherDenied",
+			callerRoles: []string{"USER"},
+			hasAuth:     true,
+			targetID:    "99",
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(caller, nil)
+			},
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name:       "Unauthenticated",
+			hasAuth:    false,
+			targetID:   "7",
+			buildStubs: func(store *mockdb.MockStore) {},
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name:        "InvalidTargetID",
+			callerRoles: []string{"USER"},
+			hasAuth:     true,
+			targetID:    "abc",
+			buildStubs:  func(store *mockdb.MockStore) {},
+			wantStatus:  http.StatusBadRequest,
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+
+			router := gin.Default()
+			router.GET(
+				"/users/:id/things",
+				func(ctx *gin.Context) {
+					if tc.hasAuth {
+						ctx.Set(models.AuthPayloadKey, &token.Payload{
+							User: token.User{Username: "caller", Roles: tc.callerRoles},
+						})
+					}
+					ctx.Next()
+				},
+				RequireSelfOrAdmin(store, "id"),
+				func(ctx *gin.Context) {
+					ctx.JSON(http.StatusOK, gin.H{})
+				},
+			)
+
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodGet, "/users/"+tc.targetID+"/things", nil)
+			require.NoError(t, err)
+
+			router.ServeHTTP(recorder, request)
+			require.Equal(t, tc.wantStatus, recorder.Code)
+		})
+	}
+}
+
 func addAuthorization(
 	request *http.Request,
 	authType string,
