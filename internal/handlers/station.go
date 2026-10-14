@@ -45,11 +45,12 @@ func (h *DefaultHandler) CreateStation(ctx *gin.Context) {
 }
 
 type listStationsReq struct {
-	Circle  string `form:"circle" binding:"omitempty"`
-	BBox    string `form:"bbox" binding:"omitempty"`
-	Status  string `form:"status" binding:"omitempty"`
-	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
-	PerPage int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
+	Circle     string `form:"circle" binding:"omitempty"`
+	BBox       string `form:"bbox" binding:"omitempty"`
+	Status     string `form:"status" binding:"omitempty"`
+	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
+	PerPage    int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
+	Accessible bool   `form:"accessible" binding:"omitempty"`           // restrict to the caller's entitlement
 } //@name ListStationsParams
 
 type paginatedStations = util.PaginatedList[models.Station] //@name PaginatedStations
@@ -72,6 +73,14 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 	}
 
 	offset := (req.Page - 1) * req.PerPage
+
+	// When requested, restrict the list to the caller's entitled stations.
+	var restrictedIDs []int64
+	if req.Accessible {
+		if perm, restricted := h.effectivePermissions(ctx); restricted && perm.StationIDs != nil {
+			restrictedIDs = perm.StationIDs
+		}
+	}
 
 	var stations []db.ObservationsStation
 	var err error
@@ -144,6 +153,12 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
 				Offset: offset,
 			})
+	} else if restrictedIDs != nil {
+		stations, err = h.store.ListStationsByIds(ctx, db.ListStationsByIdsParams{
+			StationIds: restrictedIDs,
+			Limit:      pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
+			Offset:     offset,
+		})
 	} else {
 		arg := db.ListStationsParams{
 			Status: util.ToPgText(req.Status),
@@ -190,6 +205,8 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 				Ymax:   float32(yMax),
 				Status: util.ToPgText(req.Status),
 			})
+	} else if restrictedIDs != nil {
+		count, err = h.store.CountStationsByIds(ctx, restrictedIDs)
 	} else {
 		count, err = h.store.CountStations(ctx, util.ToPgText(req.Status))
 	}

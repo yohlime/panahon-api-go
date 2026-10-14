@@ -43,6 +43,17 @@ ORDER BY id
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
+-- name: ListStationsByIds :many
+SELECT * FROM observations_station
+WHERE id = ANY(@station_ids::bigint[])
+ORDER BY id
+LIMIT sqlc.narg('limit')
+OFFSET sqlc.arg('offset');
+
+-- name: CountStationsByIds :one
+SELECT count(*) FROM observations_station
+WHERE id = ANY(@station_ids::bigint[]);
+
 -- name: ListStationsWithinRadius :many
 SELECT * FROM observations_station
 WHERE ST_DWithin(geom, ST_Point(@cx::real, @cy::real, 4326), @r::real)

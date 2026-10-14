@@ -590,7 +590,7 @@ definitions:
   models.APITokenPermissions:
     properties:
       max_days_history:
-        description: 0 means unlimited
+        description: -1 means unlimited, 0 means the default (365)
         type: integer
       station_ids:
         description: null means all stations
@@ -1019,6 +1019,10 @@ paths:
       consumes:
       - application/json
       parameters:
+      - description: restrict to the caller's entitlement
+        in: query
+        name: accessible
+        type: boolean
       - in: query
         name: bbox
         type: string

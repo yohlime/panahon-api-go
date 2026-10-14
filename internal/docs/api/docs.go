@@ -633,6 +633,12 @@ const docTemplate = `{
                 "summary": "List stations",
                 "parameters": [
                     {
+                        "type": "boolean",
+                        "description": "restrict to the caller's entitlement",
+                        "name": "accessible",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "name": "bbox",
                         "in": "query"
@@ -2752,7 +2758,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "max_days_history": {
-                    "description": "0 means unlimited",
+                    "description": "-1 means unlimited, 0 means the default (365)",
                     "type": "integer"
                 },
                 "station_ids": {

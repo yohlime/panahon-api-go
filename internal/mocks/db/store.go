@@ -944,6 +944,72 @@ func (_c *MockStore_CountStations_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
+// CountStationsByIds provides a mock function for the type MockStore
+func (_mock *MockStore) CountStationsByIds(ctx context.Context, stationIds []int64) (int64, error) {
+	ret := _mock.Called(ctx, stationIds)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountStationsByIds")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) (int64, error)); ok {
+		return returnFunc(ctx, stationIds)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) int64); ok {
+		r0 = returnFunc(ctx, stationIds)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []int64) error); ok {
+		r1 = returnFunc(ctx, stationIds)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_CountStationsByIds_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountStationsByIds'
+type MockStore_CountStationsByIds_Call struct {
+	*mock.Call
+}
+
+// CountStationsByIds is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stationIds []int64
+func (_e *MockStore_Expecter) CountStationsByIds(ctx any, stationIds any) *MockStore_CountStationsByIds_Call {
+	return &MockStore_CountStationsByIds_Call{Call: _e.mock.On("CountStationsByIds", ctx, stationIds)}
+}
+
+func (_c *MockStore_CountStationsByIds_Call) Run(run func(ctx context.Context, stationIds []int64)) *MockStore_CountStationsByIds_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []int64
+		if args[1] != nil {
+			arg1 = args[1].([]int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_CountStationsByIds_Call) Return(n int64, err error) *MockStore_CountStationsByIds_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockStore_CountStationsByIds_Call) RunAndReturn(run func(ctx context.Context, stationIds []int64) (int64, error)) *MockStore_CountStationsByIds_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountStationsWithinBBox provides a mock function for the type MockStore
 func (_mock *MockStore) CountStationsWithinBBox(ctx context.Context, arg db.CountStationsWithinBBoxParams) (int64, error) {
 	ret := _mock.Called(ctx, arg)
@@ -5260,6 +5326,74 @@ func (_c *MockStore_ListStations_Call) Return(observationsStations []db.Observat
 }
 
 func (_c *MockStore_ListStations_Call) RunAndReturn(run func(ctx context.Context, arg db.ListStationsParams) ([]db.ObservationsStation, error)) *MockStore_ListStations_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListStationsByIds provides a mock function for the type MockStore
+func (_mock *MockStore) ListStationsByIds(ctx context.Context, arg db.ListStationsByIdsParams) ([]db.ObservationsStation, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListStationsByIds")
+	}
+
+	var r0 []db.ObservationsStation
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ListStationsByIdsParams) ([]db.ObservationsStation, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ListStationsByIdsParams) []db.ObservationsStation); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.ObservationsStation)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.ListStationsByIdsParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ListStationsByIds_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListStationsByIds'
+type MockStore_ListStationsByIds_Call struct {
+	*mock.Call
+}
+
+// ListStationsByIds is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.ListStationsByIdsParams
+func (_e *MockStore_Expecter) ListStationsByIds(ctx any, arg any) *MockStore_ListStationsByIds_Call {
+	return &MockStore_ListStationsByIds_Call{Call: _e.mock.On("ListStationsByIds", ctx, arg)}
+}
+
+func (_c *MockStore_ListStationsByIds_Call) Run(run func(ctx context.Context, arg db.ListStationsByIdsParams)) *MockStore_ListStationsByIds_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.ListStationsByIdsParams
+		if args[1] != nil {
+			arg1 = args[1].(db.ListStationsByIdsParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ListStationsByIds_Call) Return(observationsStations []db.ObservationsStation, err error) *MockStore_ListStationsByIds_Call {
+	_c.Call.Return(observationsStations, err)
+	return _c
+}
+
+func (_c *MockStore_ListStationsByIds_Call) RunAndReturn(run func(ctx context.Context, arg db.ListStationsByIdsParams) ([]db.ObservationsStation, error)) *MockStore_ListStationsByIds_Call {
 	_c.Call.Return(run)
 	return _c
 }

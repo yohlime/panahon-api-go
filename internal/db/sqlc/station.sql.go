@@ -23,6 +23,18 @@ func (q *Queries) CountStations(ctx context.Context, status pgtype.Text) (int64,
 	return count, err
 }
 
+const countStationsByIds = `-- name: CountStationsByIds :one
+SELECT count(*) FROM observations_station
+WHERE id = ANY($1::bigint[])
+`
+
+func (q *Queries) CountStationsByIds(ctx context.Context, stationIds []int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countStationsByIds, stationIds)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countStationsWithinBBox = `-- name: CountStationsWithinBBox :one
 SELECT count(*) FROM observations_station
 WHERE geom && ST_MakeEnvelope($1::real, $2::real, $3::real, $4::real, 4326)
@@ -274,6 +286,64 @@ type ListStationsParams struct {
 
 func (q *Queries) ListStations(ctx context.Context, arg ListStationsParams) ([]ObservationsStation, error) {
 	rows, err := q.db.Query(ctx, listStations, arg.Status, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ObservationsStation{}
+	for rows.Next() {
+		var i ObservationsStation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Lat,
+			&i.Lon,
+			&i.Elevation,
+			&i.DateInstalled,
+			&i.MoStationID,
+			&i.SmsSystemType,
+			&i.MobileNumber,
+			&i.StationType,
+			&i.StationType2,
+			&i.StationUrl,
+			&i.Status,
+			&i.LoggerVersion,
+			&i.PriorityLevel,
+			&i.ProviderID,
+			&i.Province,
+			&i.Region,
+			&i.Address,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Geom,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStationsByIds = `-- name: ListStationsByIds :many
+SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
+WHERE id = ANY($1::bigint[])
+ORDER BY id
+LIMIT $3
+OFFSET $2
+`
+
+type ListStationsByIdsParams struct {
+	StationIds []int64     `json:"station_ids"`
+	Offset     int32       `json:"offset"`
+	Limit      pgtype.Int4 `json:"limit"`
+}
+
+func (q *Queries) ListStationsByIds(ctx context.Context, arg ListStationsByIdsParams) ([]ObservationsStation, error) {
+	rows, err := q.db.Query(ctx, listStationsByIds, arg.StationIds, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
