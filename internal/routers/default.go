@@ -73,9 +73,12 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 	return &r
 }
 
+// addMiddleware returns a new group with the given middleware so that
+// registering one group's middleware never leaks into sibling groups
+// (gin's RouterGroup.Use mutates the group, accumulating on the parent).
 func addMiddleware(r *gin.RouterGroup, m ...gin.HandlerFunc) gin.IRoutes {
 	if gin.Mode() != gin.TestMode {
-		return r.Use(m...)
+		return r.Group("", m...)
 	}
 
 	return r
