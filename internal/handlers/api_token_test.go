@@ -208,7 +208,7 @@ func TestCreateAPIToken(t *testing.T) {
 
 			router := gin.Default()
 			router.POST("",
-				middlewares.AuthMiddleware(tokenMaker, false),
+				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.CreateAPIToken)
 
 			recorder := httptest.NewRecorder()
@@ -311,7 +311,7 @@ func TestListAPITokens(t *testing.T) {
 
 			router := gin.Default()
 			router.GET("",
-				middlewares.AuthMiddleware(tokenMaker, false),
+				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.ListAPITokens)
 
 			recorder := httptest.NewRecorder()
@@ -483,7 +483,7 @@ func TestDeleteAPIToken(t *testing.T) {
 
 			router := gin.Default()
 			router.DELETE(":token_id",
-				middlewares.AuthMiddleware(tokenMaker, false),
+				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.DeleteAPIToken)
 
 			recorder := httptest.NewRecorder()

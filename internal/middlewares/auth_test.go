@@ -15,6 +15,7 @@ import (
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -108,6 +109,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
+			store := mockdb.NewMockStore(t)
 
 			tc.buildStubs(tokenMaker)
 
@@ -115,7 +117,7 @@ func TestAuthMiddleware(t *testing.T) {
 			router := gin.Default()
 			router.GET(
 				authPath,
-				AuthMiddleware(tokenMaker, tc.permissive),
+				AuthMiddleware(tokenMaker, store, tc.permissive),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
 				},
@@ -177,6 +179,7 @@ func TestRoleMiddleware(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
+			store := mockdb.NewMockStore(t)
 
 			tc.buildStubs(tokenMaker)
 
@@ -184,7 +187,7 @@ func TestRoleMiddleware(t *testing.T) {
 			router := gin.Default()
 			router.GET(
 				authPath,
-				AuthMiddleware(tokenMaker, false),
+				AuthMiddleware(tokenMaker, store, false),
 				RoleMiddleware(tc.role),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
@@ -269,6 +272,7 @@ func TestAdminMiddleware(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			tokenMaker := mocktoken.NewMockMaker(t)
+			store := mockdb.NewMockStore(t)
 
 			router := gin.Default()
 
@@ -277,7 +281,7 @@ func TestAdminMiddleware(t *testing.T) {
 			authPath := "/auth"
 			router.GET(
 				authPath,
-				AuthMiddleware(tokenMaker, false),
+				AuthMiddleware(tokenMaker, store, false),
 				AdminMiddleware(),
 				func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{})
@@ -368,4 +372,65 @@ func addAuthorization(
 
 func addAccessTokenCookie(request *http.Request, token string) {
 	request.AddCookie(&http.Cookie{Name: models.AccessTokenCookieName, Value: token})
+}
+
+// TestAuthMiddlewareSessionRevocation verifies that a token bound to a session
+// stops authenticating once the session is gone (logged out), even though the
+// token itself is still unexpired.
+func TestAuthMiddlewareSessionRevocation(t *testing.T) {
+	testCases := []struct {
+		name       string
+		session    db.Session
+		sessionErr error
+		wantStatus int
+	}{
+		{
+			name:       "LiveSession",
+			session:    db.Session{IsBlocked: false, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true}},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "DeletedSession",
+			sessionErr: db.ErrRecordNotFound,
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name:       "BlockedSession",
+			session:    db.Session{IsBlocked: true, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true}},
+			wantStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			sessionID := uuid.New()
+			payload := token.Payload{SessionID: sessionID}
+
+			tokenMaker := mocktoken.NewMockMaker(t)
+			store := mockdb.NewMockStore(t)
+
+			tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&payload, nil)
+			store.EXPECT().GetSession(mock.Anything, sessionID).Return(tc.session, tc.sessionErr)
+
+			authPath := "/auth"
+			router := gin.Default()
+			router.GET(
+				authPath,
+				AuthMiddleware(tokenMaker, store, false),
+				func(ctx *gin.Context) {
+					ctx.JSON(http.StatusOK, gin.H{})
+				},
+			)
+
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodGet, authPath, nil)
+			require.NoError(t, err)
+			addAuthorization(request, AuthTypeBearer, util.RandomString(24))
+
+			router.ServeHTTP(recorder, request)
+			require.Equal(t, tc.wantStatus, recorder.Code)
+		})
+	}
 }

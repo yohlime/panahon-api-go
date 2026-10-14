@@ -14,7 +14,7 @@ func (r *DefaultRouter) observationRouter(gr *gin.RouterGroup) {
 		// The bulk list exposes whole stations, so it requires auth (admin or a
 		// validated, scoped API token).
 		gated := addMiddleware(observations,
-			mw.AuthMiddleware(r.tokenMaker, true),
+			mw.AuthMiddleware(r.tokenMaker, r.store, true),
 			mw.APITokenMiddleware(r.store, true),
 			mw.RequireAuthOrAPIToken(),
 		)

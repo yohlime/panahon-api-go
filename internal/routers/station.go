@@ -8,12 +8,12 @@ import (
 func (r *DefaultRouter) stationRouter(gr *gin.RouterGroup) {
 	stations := gr.Group("/stations")
 	{
-		stations.GET("", mw.AuthMiddleware(r.tokenMaker, true), r.handler.ListStations)
+		stations.GET("", mw.AuthMiddleware(r.tokenMaker, r.store, true), r.handler.ListStations)
 		stations.GET(":station_id", r.handler.GetStation)
 		stations.GET("/nearest/observations/latest", r.handler.GetNearestLatestStationObservation)
 
 		stnObs := stations.Group(":station_id/observations")
-		stnObsWithGuard := addMiddleware(stnObs, mw.AuthMiddleware(r.tokenMaker, true), mw.APITokenMiddleware(r.store, true), mw.StationMiddleware(""))
+		stnObsWithGuard := addMiddleware(stnObs, mw.AuthMiddleware(r.tokenMaker, r.store, true), mw.APITokenMiddleware(r.store, true), mw.StationMiddleware(""))
 		{
 			stnObsWithGuard.GET("", r.handler.ListStationObservations)
 			stnObsWithGuard.GET("/latest", r.handler.GetLatestStationObservation)
@@ -21,14 +21,14 @@ func (r *DefaultRouter) stationRouter(gr *gin.RouterGroup) {
 		}
 
 		stnAuth := addMiddleware(stations,
-			mw.AuthMiddleware(r.tokenMaker, false),
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
 			mw.AdminMiddleware())
 		stnAuth.POST("", r.handler.CreateStation)
 		stnAuth.PUT(":station_id", r.handler.UpdateStation)
 		stnAuth.DELETE(":station_id", r.handler.DeleteStation)
 
 		stnObsAuth := addMiddleware(stnObs,
-			mw.AuthMiddleware(r.tokenMaker, false),
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
 			mw.AdminMiddleware())
 		{
 			stnObsAuth.POST("", r.handler.CreateStationObservation)

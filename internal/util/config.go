@@ -56,6 +56,10 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("CookiePath", "/")
 	viper.SetDefault("LogDirectory", "./logs")
 	viper.SetDefault("LogFilename", "log")
+	// Access tokens are session-bound and revocable, so a short lifetime keeps
+	// the worst-case post-revocation window small.
+	viper.SetDefault("ACCESS_TOKEN_DURATION", 5*time.Minute)
+	viper.SetDefault("REFRESH_TOKEN_DURATION", 24*time.Hour)
 
 	viper.AutomaticEnv()
 

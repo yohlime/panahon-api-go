@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"strings"
 
+	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
+	"github.com/emiliogozo/panahon-api-go/internal/session"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func getAuthKey(tokenMaker token.Maker, ctx *gin.Context) (payload *token.Payload, err error) {
@@ -36,9 +39,20 @@ func getAuthKey(tokenMaker token.Maker, ctx *gin.Context) (payload *token.Payloa
 	return
 }
 
-func AuthMiddleware(tokenMaker token.Maker, permissive bool) gin.HandlerFunc {
+func AuthMiddleware(tokenMaker token.Maker, store db.Store, permissive bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		payload, err := getAuthKey(tokenMaker, ctx)
+
+		// A verified token bound to a session only authenticates while that
+		// session is alive (exists, not blocked, not expired). This is what
+		// makes logout revoke access tokens instead of waiting for expiry.
+		if err == nil && payload != nil && payload.SessionID != uuid.Nil {
+			if !session.Live(ctx, store, payload.SessionID) {
+				payload = nil
+				err = errors.New("session is no longer valid")
+			}
+		}
+
 		if !permissive && err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return

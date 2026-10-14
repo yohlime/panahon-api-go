@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/emiliogozo/panahon-api-go/internal/util"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +19,7 @@ func TestPasetoMaker(t *testing.T) {
 	issuedAt := time.Now()
 	expiresAt := issuedAt.Add(duration)
 
-	token, payload, err := maker.CreateToken(User{Username: username}, duration)
+	token, payload, err := maker.CreateToken(User{Username: username}, uuid.Nil, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 	require.NotEmpty(t, payload)
@@ -37,7 +38,7 @@ func TestExpiredPasetoToken(t *testing.T) {
 	maker, err := NewPasetoMaker(util.RandomString(32))
 	require.NoError(t, err)
 
-	token, payload, err := maker.CreateToken(User{Username: util.RandomString(12)}, -time.Minute)
+	token, payload, err := maker.CreateToken(User{Username: util.RandomString(12)}, uuid.Nil, -time.Minute)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 	require.NotEmpty(t, payload)

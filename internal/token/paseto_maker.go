@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"aidanwoods.dev/go-paseto"
+	"github.com/google/uuid"
 )
 
 // PasetoMaker is a PASETO Token maker
@@ -31,8 +32,8 @@ func NewPasetoMaker(symmetricKey string) (Maker, error) {
 }
 
 // CreateToken creates a new token for a specific username and duration
-func (maker *PasetoMaker) CreateToken(user User, duration time.Duration) (string, *Payload, error) {
-	payload, err := NewPayload(user, duration)
+func (maker *PasetoMaker) CreateToken(user User, sessionID uuid.UUID, duration time.Duration) (string, *Payload, error) {
+	payload, err := NewPayload(user, sessionID, duration)
 	if err != nil {
 		return "", payload, err
 	}

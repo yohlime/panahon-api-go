@@ -94,7 +94,7 @@ func (h *DefaultHandler) RenewAccessToken(ctx *gin.Context) {
 	}
 	payloadUser := token.User{Username: user.Username, Roles: roleNames}
 
-	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, h.config.AccessTokenDuration)
+	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, refreshPayload.ID, h.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

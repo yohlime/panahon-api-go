@@ -13,14 +13,14 @@ func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 		users.POST("/register", r.handler.RegisterUser)
 
 		// Self-service API token routes (for authenticated users)
-		me := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, false))
+		me := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false))
 		me.GET("/me/api-tokens", r.handler.ListAPITokens)
 		me.POST("/me/api-tokens", r.handler.CreateAPIToken)
 		me.DELETE("/me/api-tokens/:token_id", r.handler.DeleteAPIToken)
 
 		// Admin-only routes
 		admin := addMiddleware(users,
-			mw.AuthMiddleware(r.tokenMaker, false),
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
 			mw.AdminMiddleware())
 		admin.GET("", r.handler.ListUsers)
 		admin.GET(":id", r.handler.GetUser)
@@ -34,7 +34,7 @@ func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 		admin.DELETE(":id/api-tokens/:token_id", r.handler.DeleteUserAPIToken)
 
 		// Auth user endpoint (requires authentication)
-		auth := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, false))
+		auth := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false))
 		auth.GET("/auth", r.handler.GetAuthUser)
 	}
 }

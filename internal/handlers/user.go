@@ -8,9 +8,11 @@ import (
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
+	"github.com/emiliogozo/panahon-api-go/internal/session"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -416,13 +418,9 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		Roles:    roleNames,
 	}
 
-	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, h.config.AccessTokenDuration)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	refreshToken, refreshPayload, err := h.tokenMaker.CreateToken(payloadUser, h.config.RefreshTokenDuration)
+	// The refresh token defines the session; the access token is bound to it
+	// so that deleting the session (logout/block) revokes the access token too.
+	refreshToken, refreshPayload, err := h.tokenMaker.CreateToken(payloadUser, uuid.Nil, h.config.RefreshTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -437,6 +435,12 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		IsBlocked:    false,
 		ExpiresAt:    pgtype.Timestamptz{Time: refreshPayload.ExpiresAt, Valid: true},
 	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, refreshPayload.ID, h.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -461,6 +465,8 @@ func (h *DefaultHandler) LogoutUser(ctx *gin.Context) {
 
 	if refreshPayload, err := h.tokenMaker.VerifyToken(refreshToken); err == nil && refreshPayload != nil {
 		h.store.DeleteSession(ctx, refreshPayload.ID)
+		// Drop the cached liveness so the revocation is immediate.
+		session.Invalidate(refreshPayload.ID)
 	}
 
 	h.clearAuthCookie(ctx, models.AccessTokenCookieName)

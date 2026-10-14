@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/emiliogozo/panahon-api-go/internal/token"
+	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -48,8 +49,8 @@ func (_m *MockMaker) EXPECT() *MockMaker_Expecter {
 }
 
 // CreateToken provides a mock function for the type MockMaker
-func (_mock *MockMaker) CreateToken(user token.User, duration time.Duration) (string, *token.Payload, error) {
-	ret := _mock.Called(user, duration)
+func (_mock *MockMaker) CreateToken(user token.User, sessionID uuid.UUID, duration time.Duration) (string, *token.Payload, error) {
+	ret := _mock.Called(user, sessionID, duration)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateToken")
@@ -58,23 +59,23 @@ func (_mock *MockMaker) CreateToken(user token.User, duration time.Duration) (st
 	var r0 string
 	var r1 *token.Payload
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(token.User, time.Duration) (string, *token.Payload, error)); ok {
-		return returnFunc(user, duration)
+	if returnFunc, ok := ret.Get(0).(func(token.User, uuid.UUID, time.Duration) (string, *token.Payload, error)); ok {
+		return returnFunc(user, sessionID, duration)
 	}
-	if returnFunc, ok := ret.Get(0).(func(token.User, time.Duration) string); ok {
-		r0 = returnFunc(user, duration)
+	if returnFunc, ok := ret.Get(0).(func(token.User, uuid.UUID, time.Duration) string); ok {
+		r0 = returnFunc(user, sessionID, duration)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(token.User, time.Duration) *token.Payload); ok {
-		r1 = returnFunc(user, duration)
+	if returnFunc, ok := ret.Get(1).(func(token.User, uuid.UUID, time.Duration) *token.Payload); ok {
+		r1 = returnFunc(user, sessionID, duration)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*token.Payload)
 		}
 	}
-	if returnFunc, ok := ret.Get(2).(func(token.User, time.Duration) error); ok {
-		r2 = returnFunc(user, duration)
+	if returnFunc, ok := ret.Get(2).(func(token.User, uuid.UUID, time.Duration) error); ok {
+		r2 = returnFunc(user, sessionID, duration)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -88,24 +89,30 @@ type MockMaker_CreateToken_Call struct {
 
 // CreateToken is a helper method to define mock.On call
 //   - user token.User
+//   - sessionID uuid.UUID
 //   - duration time.Duration
-func (_e *MockMaker_Expecter) CreateToken(user any, duration any) *MockMaker_CreateToken_Call {
-	return &MockMaker_CreateToken_Call{Call: _e.mock.On("CreateToken", user, duration)}
+func (_e *MockMaker_Expecter) CreateToken(user any, sessionID any, duration any) *MockMaker_CreateToken_Call {
+	return &MockMaker_CreateToken_Call{Call: _e.mock.On("CreateToken", user, sessionID, duration)}
 }
 
-func (_c *MockMaker_CreateToken_Call) Run(run func(user token.User, duration time.Duration)) *MockMaker_CreateToken_Call {
+func (_c *MockMaker_CreateToken_Call) Run(run func(user token.User, sessionID uuid.UUID, duration time.Duration)) *MockMaker_CreateToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 token.User
 		if args[0] != nil {
 			arg0 = args[0].(token.User)
 		}
-		var arg1 time.Duration
+		var arg1 uuid.UUID
 		if args[1] != nil {
-			arg1 = args[1].(time.Duration)
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 time.Duration
+		if args[2] != nil {
+			arg2 = args[2].(time.Duration)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -116,7 +123,7 @@ func (_c *MockMaker_CreateToken_Call) Return(s string, payload *token.Payload, e
 	return _c
 }
 
-func (_c *MockMaker_CreateToken_Call) RunAndReturn(run func(user token.User, duration time.Duration) (string, *token.Payload, error)) *MockMaker_CreateToken_Call {
+func (_c *MockMaker_CreateToken_Call) RunAndReturn(run func(user token.User, sessionID uuid.UUID, duration time.Duration) (string, *token.Payload, error)) *MockMaker_CreateToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

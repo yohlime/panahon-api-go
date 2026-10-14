@@ -49,7 +49,7 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return([]string{"USER"}, nil)
-				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("time.Duration")).
+				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("uuid.UUID"), mock.AnythingOfType("time.Duration")).
 					Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
@@ -83,7 +83,7 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return([]string{"USER"}, nil)
-				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("time.Duration")).
+				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("uuid.UUID"), mock.AnythingOfType("time.Duration")).
 					Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
@@ -359,7 +359,7 @@ func TestRenewAccessToken(t *testing.T) {
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return([]string{"USER"}, nil)
-				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("time.Duration")).
+				tokenMaker.EXPECT().CreateToken(mock.AnythingOfType("token.User"), mock.AnythingOfType("uuid.UUID"), mock.AnythingOfType("time.Duration")).
 					Return("", &token.Payload{}, errors.New("error token create"))
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {

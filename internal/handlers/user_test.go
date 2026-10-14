@@ -829,7 +829,7 @@ func TestLoginUserAPI(t *testing.T) {
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]string{}, nil)
-				tokenMaker.EXPECT().CreateToken(mock.Anything, mock.Anything).Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil).Twice()
+				tokenMaker.EXPECT().CreateToken(mock.Anything, mock.Anything, mock.Anything).Return(tokenStr, &token.Payload{ExpiresAt: tokenExpiresAt}, nil).Twice()
 				store.EXPECT().CreateSession(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.Session{}, nil)
 			},
@@ -1202,7 +1202,7 @@ func TestGetAuthUserAPI(t *testing.T) {
 			url := "/testauth"
 			router.GET(
 				url,
-				middlewares.AuthMiddleware(tokenMaker, false),
+				middlewares.AuthMiddleware(tokenMaker, store, false),
 				handler.GetAuthUser,
 			)
 

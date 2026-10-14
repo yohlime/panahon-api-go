@@ -10,7 +10,7 @@ func (r *DefaultRouter) roleRouter(gr *gin.RouterGroup) {
 	roles := gr.Group("/roles")
 	{
 		rolesAuth := addMiddleware(roles,
-			mw.AuthMiddleware(r.tokenMaker, false),
+			mw.AuthMiddleware(r.tokenMaker, r.store, false),
 			mw.RoleMiddleware(string(models.SuperAdminRole)))
 		rolesAuth.GET("", r.handler.ListRoles)
 		rolesAuth.GET(":id", r.handler.GetRole)
