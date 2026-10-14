@@ -24,9 +24,9 @@ var DefaultAPITokenVariables = []string{"rain", "temp"}
 // APITokenAllVariables, when present in Variables, grants access to every variable.
 const APITokenAllVariables = "all"
 
-// Normalize validates and clamps token permissions in place:
+// Normalize validates token permissions in place:
 //   - variables: "all" -> nil (all), empty/unknown -> the default set
-//   - max_days_history: clamped to [1, DefaultMaxDaysHistory]
+//   - max_days_history: non-positive -> DefaultMaxDaysHistory (no upper cap)
 func (p *APITokenPermissions) Normalize() {
 	normalized := make([]string, 0, len(p.Variables))
 	all := false
@@ -49,7 +49,7 @@ func (p *APITokenPermissions) Normalize() {
 		p.Variables = normalized
 	}
 
-	if p.MaxDaysHistory <= 0 || p.MaxDaysHistory > DefaultMaxDaysHistory {
+	if p.MaxDaysHistory <= 0 {
 		p.MaxDaysHistory = DefaultMaxDaysHistory
 	}
 }

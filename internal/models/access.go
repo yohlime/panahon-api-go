@@ -279,7 +279,7 @@ func resolveAll(vars []string) []string {
 }
 
 func capHistory(days int) int {
-	if days <= 0 || days > DefaultMaxDaysHistory {
+	if days <= 0 {
 		return DefaultMaxDaysHistory
 	}
 	return days
