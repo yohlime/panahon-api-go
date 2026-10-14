@@ -171,7 +171,7 @@ func MergeRequest(current UserAccess, req CreateAccessRequestReq) UserAccess {
 	}
 
 	if req.MaxDaysHistory != nil {
-		res.MaxDaysHistory = capHistory(max(res.MaxDaysHistory, *req.MaxDaysHistory))
+		res.MaxDaysHistory = raiseHistory(res.MaxDaysHistory, *req.MaxDaysHistory)
 	}
 
 	return res
@@ -196,7 +196,7 @@ func ApplyReview(current UserAccess, req ReviewAccessRequestReq) UserAccess {
 	}
 
 	if req.MaxDaysHistory != nil {
-		res.MaxDaysHistory = capHistory(max(res.MaxDaysHistory, *req.MaxDaysHistory))
+		res.MaxDaysHistory = raiseHistory(res.MaxDaysHistory, *req.MaxDaysHistory)
 	}
 
 	return res
@@ -207,7 +207,7 @@ func IntersectPermissions(p APITokenPermissions, a UserAccess) APITokenPermissio
 	res := APITokenPermissions{
 		StationIDs:     intersectInt64Nullable(p.StationIDs, a.StationIDs),
 		Variables:      intersectStringsNullable(resolveAll(p.Variables), resolveAll(a.Variables)),
-		MaxDaysHistory: min(capHistory(p.MaxDaysHistory), capHistory(a.MaxDaysHistory)),
+		MaxDaysHistory: minHistory(p.MaxDaysHistory, a.MaxDaysHistory),
 	}
 
 	// Preserve "all" (nil) semantics produced by a nil-on-either-side intersection.
@@ -278,11 +278,38 @@ func resolveAll(vars []string) []string {
 	return vars
 }
 
+// capHistory maps 0 (unset) to the default; negatives (unlimited) pass through.
 func capHistory(days int) int {
-	if days <= 0 {
+	if days == 0 {
 		return DefaultMaxDaysHistory
 	}
 	return days
+}
+
+// raiseHistory merges a requested history value (raise-only; -1 = unlimited).
+func raiseHistory(current, requested int) int {
+	if current < 0 || requested < 0 {
+		return -1
+	}
+	if requested > current {
+		return requested
+	}
+	return current
+}
+
+// minHistory is the tighter of two history caps, where a negative means unlimited.
+func minHistory(a, b int) int {
+	a, b = capHistory(a), capHistory(b)
+	switch {
+	case a < 0:
+		return b
+	case b < 0:
+		return a
+	case a < b:
+		return a
+	default:
+		return b
+	}
 }
 
 // MarshalUserAccess encodes the nullable JSONB columns of an entitlement.

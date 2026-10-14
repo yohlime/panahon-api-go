@@ -137,7 +137,7 @@ func (h *DefaultHandler) resolveAccessibleVariables(ctx *gin.Context) []string {
 
 func (h *DefaultHandler) effectiveHistoryStart(ctx *gin.Context) (time.Time, bool) {
 	perm, restricted := h.effectivePermissions(ctx)
-	if !restricted {
+	if !restricted || perm.MaxDaysHistory < 0 {
 		return time.Time{}, false
 	}
 	return time.Now().AddDate(0, 0, -perm.MaxDaysHistory), true

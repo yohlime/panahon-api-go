@@ -26,7 +26,7 @@ const APITokenAllVariables = "all"
 
 // Normalize validates token permissions in place:
 //   - variables: "all" -> nil (all), empty/unknown -> the default set
-//   - max_days_history: non-positive -> DefaultMaxDaysHistory (no upper cap)
+//   - max_days_history: 0 -> DefaultMaxDaysHistory, negative -> unlimited, positive kept (no upper cap)
 func (p *APITokenPermissions) Normalize() {
 	normalized := make([]string, 0, len(p.Variables))
 	all := false
@@ -49,7 +49,7 @@ func (p *APITokenPermissions) Normalize() {
 		p.Variables = normalized
 	}
 
-	if p.MaxDaysHistory <= 0 {
+	if p.MaxDaysHistory == 0 {
 		p.MaxDaysHistory = DefaultMaxDaysHistory
 	}
 }
@@ -58,7 +58,7 @@ func (p *APITokenPermissions) Normalize() {
 type APITokenPermissions struct {
 	StationIDs     []int64  `json:"station_ids"`      // null means all stations
 	Variables      []string `json:"variables"`        // null means all variables
-	MaxDaysHistory int      `json:"max_days_history"` // 0 means unlimited
+	MaxDaysHistory int      `json:"max_days_history"` // -1 means unlimited, 0 means the default (365)
 }
 
 // APIToken represents an API token for programmatic access
