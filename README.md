@@ -15,6 +15,15 @@ devenv up
 `0.0.0.0:3000`.
 
 Configuration is read from `app.env` (viper), plus `app_conf.yaml` for cron jobs.
+Both are gitignored, so copy the examples first:
+
+```sh
+cp app.env.example app.env             # fill in DB creds + TOKEN_SYMMETRIC_KEY
+cp app_conf.yaml.example app_conf.yaml
+```
+
+Keep secrets out of the repo: `app.env` holds DB passwords, `TOKEN_SYMMETRIC_KEY`,
+and the Glabs keys.
 
 ## Seeding dev data
 
