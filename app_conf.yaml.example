@@ -1,0 +1,11 @@
+# Copy to app_conf.yaml. app_conf.yaml is gitignored; the app requires it and
+# will not start without it (see util.LoadConfig). Supplies background cron jobs.
+cron_jobs:
+  - name: "lufft"
+    schedule: "2-59/10 * * * *"
+  - name: "davisV1"
+    schedule: "0 */1 * * *"
+  - name: "davisDashboard"
+    schedule: "*/1 * * * *"
+  - name: "davisV2"
+    schedule: "*/5 * * * *"
