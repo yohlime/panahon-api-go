@@ -9,6 +9,7 @@ import (
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -75,7 +76,7 @@ func (h *DefaultHandler) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	if session.RefreshToken != refreshToken {
+	if session.RefreshToken != util.HashToken(refreshToken) {
 		err := fmt.Errorf("mismatched session token")
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return

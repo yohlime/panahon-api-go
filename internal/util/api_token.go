@@ -14,6 +14,14 @@ const (
 	APITokenCharset = "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
+// HashToken returns the SHA256 hex digest of a token. Tokens (API keys,
+// refresh tokens) are stored hashed so a database leak does not expose usable
+// secrets.
+func HashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
 // Maker is an interface for managing tokens
 type Maker interface {
 	// GetValue returns raw token
@@ -64,8 +72,7 @@ func (t APIToken) GetValue() string {
 
 // GetHash returns SHA256 hash of the token for storage
 func (t APIToken) GetHash() string {
-	hash := sha256.Sum256([]byte(t.token))
-	return hex.EncodeToString(hash[:])
+	return HashToken(t.token)
 }
 
 // GetPrefix extracts display prefix from full token (e.g., "mo-a3K9m")

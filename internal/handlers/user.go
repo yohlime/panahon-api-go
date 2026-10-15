@@ -439,7 +439,7 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 	_, err = h.store.CreateSession(ctx, db.CreateSessionParams{
 		ID:           refreshPayload.ID,
 		UserID:       user.ID,
-		RefreshToken: refreshToken,
+		RefreshToken: util.HashToken(refreshToken),
 		UserAgent:    ctx.Request.UserAgent(),
 		ClientIp:     ctx.ClientIP(),
 		IsBlocked:    false,

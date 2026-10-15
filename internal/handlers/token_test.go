@@ -16,6 +16,7 @@ import (
 	mocktoken "github.com/emiliogozo/panahon-api-go/internal/mocks/token"
 	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
+	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -44,7 +45,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: tokenExpiresAt, Valid: true}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: tokenExpiresAt, Valid: true}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
@@ -78,7 +79,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: tokenExpiresAt, Valid: true}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: tokenExpiresAt, Valid: true}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
@@ -188,7 +189,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, IsBlocked: true, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), IsBlocked: true, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				store.AssertExpectations(t)
@@ -214,7 +215,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(db.User{}, pgx.ErrNoRows)
 			},
@@ -242,7 +243,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(db.User{}, sql.ErrConnDone)
 			},
@@ -270,7 +271,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(db.User{Username: "mismatched"}, nil)
 			},
@@ -326,7 +327,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * -6)}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * -6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
 			},
@@ -354,7 +355,7 @@ func TestRenewAccessToken(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
 				tokenMaker.EXPECT().VerifyToken(mock.Anything).Return(&refreshPayload, nil)
 				store.EXPECT().GetSession(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("uuid.UUID")).
-					Return(db.Session{RefreshToken: tokenStr, ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
+					Return(db.Session{RefreshToken: util.HashToken(tokenStr), ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 6)}}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
 					Return(user, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("int64")).
