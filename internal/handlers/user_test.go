@@ -1286,6 +1286,35 @@ func TestUpdateUserAdminCannotGrantSuperAdmin(t *testing.T) {
 	store.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
 }
 
+func TestUpdateUserAdminCannotChangeSuperAdminRoles(t *testing.T) {
+	user, _, _ := randomUser(t)
+
+	store := mockdb.NewMockStore(t)
+	store.EXPECT().ListUserRoles(mock.Anything, user.ID).Return([]string{string(models.SuperAdminRole)}, nil)
+
+	handler := newTestHandler(store, nil)
+
+	router := gin.Default()
+	router.PUT(":id", authAsCaller([]string{string(models.AdminRole)}), handler.UpdateUser)
+
+	body := gin.H{
+		"id":        user.ID,
+		"full_name": user.FullName,
+		"roles":     []string{"USER"},
+	}
+	data, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/%d", user.ID), bytes.NewReader(data))
+	require.NoError(t, err)
+
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusForbidden, recorder.Code)
+	store.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
+}
+
 func randomUser(t *testing.T) (user db.User, password string, roleNames []string) {
 	password = gofakeit.Password(true, true, false, false, false, 12)
 	hashedPassword, err := util.HashPassword(password)

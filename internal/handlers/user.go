@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -230,6 +231,25 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 		passwordChangedAt.Valid = true
 	}
 
+	// Pre-flight the role change: authorize before mutating the user so a
+	// rejected request never partially applies.
+	var currentRoleNames []string
+	if len(req.Roles) > 0 {
+		roles, err := h.store.ListUserRoles(ctx, uri.ID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		currentRoleNames = roles
+
+		// A non-superadmin may not touch a superadmin's roles at all (this also
+		// stops them from stripping the SUPERADMIN role).
+		if !isSuperAdminSession(ctx) && slices.Contains(currentRoleNames, string(models.SuperAdminRole)) {
+			ctx.JSON(http.StatusForbidden, errorResponse(errors.New("only a superadmin can change a superadmin's roles")))
+			return
+		}
+	}
+
 	arg := db.UpdateUserParams{
 		ID:                uri.ID,
 		Password:          newPassword,
@@ -259,36 +279,33 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 
 	var updatedRoleNames []string
 	if len(req.Roles) > 0 {
-		roleNames, err := h.store.ListUserRoles(ctx, uri.ID)
-		if err == nil {
-			reqRoleNames := make([]string, len(req.Roles))
-			for r, roleName := range req.Roles {
-				reqRoleNames[r] = strings.ToUpper(roleName)
-			}
-
-			updatedRoleNames = append(updatedRoleNames, util.SetIntersection(roleNames, reqRoleNames)...)
-
-			var createUserRolesArgs []db.UserRolesParams
-			for _, roleName := range util.SetDifference(reqRoleNames, roleNames) {
-				createUserRolesArgs = append(createUserRolesArgs, db.UserRolesParams{
-					RoleName: roleName,
-					Username: user.Username,
-				})
-			}
-			createdUserRoles, _ := h.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
-			for _, userRole := range createdUserRoles {
-				updatedRoleNames = append(updatedRoleNames, userRole.RoleName)
-			}
-
-			var deleteUserRolesArgs []db.UserRolesParams
-			for _, roleName := range util.SetDifference(roleNames, reqRoleNames) {
-				deleteUserRolesArgs = append(deleteUserRolesArgs, db.UserRolesParams{
-					RoleName: roleName,
-					Username: user.Username,
-				})
-			}
-			h.store.BulkDeleteUserRoles(ctx, deleteUserRolesArgs)
+		reqRoleNames := make([]string, len(req.Roles))
+		for r, roleName := range req.Roles {
+			reqRoleNames[r] = strings.ToUpper(roleName)
 		}
+
+		updatedRoleNames = append(updatedRoleNames, util.SetIntersection(currentRoleNames, reqRoleNames)...)
+
+		var createUserRolesArgs []db.UserRolesParams
+		for _, roleName := range util.SetDifference(reqRoleNames, currentRoleNames) {
+			createUserRolesArgs = append(createUserRolesArgs, db.UserRolesParams{
+				RoleName: roleName,
+				Username: user.Username,
+			})
+		}
+		createdUserRoles, _ := h.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
+		for _, userRole := range createdUserRoles {
+			updatedRoleNames = append(updatedRoleNames, userRole.RoleName)
+		}
+
+		var deleteUserRolesArgs []db.UserRolesParams
+		for _, roleName := range util.SetDifference(currentRoleNames, reqRoleNames) {
+			deleteUserRolesArgs = append(deleteUserRolesArgs, db.UserRolesParams{
+				RoleName: roleName,
+				Username: user.Username,
+			})
+		}
+		h.store.BulkDeleteUserRoles(ctx, deleteUserRolesArgs)
 	}
 
 	ctx.JSON(http.StatusOK, models.NewUser(user, updatedRoleNames))
