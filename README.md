@@ -25,6 +25,18 @@ cp app_conf.yaml.example app_conf.yaml
 Keep secrets out of the repo: `app.env` holds DB passwords, `TOKEN_SYMMETRIC_KEY`,
 and the Glabs keys.
 
+## Authorization
+
+- The web app authenticates with an httpOnly cookie **session** (`/users/login`);
+  external clients use a query `api_key` API token.
+- Reads are scoped by the user's `user_access` **entitlement** (stations,
+  variables, max days of history); admins are unrestricted.
+- **API tokens default to, and are capped at, their owner's entitlement**:
+  omitted `permissions` copy the entitlement, and provided permissions are
+  intersected with it before being stored (so a key can never exceed its owner).
+  The same intersection is applied at read time, so narrowing an entitlement
+  narrows existing tokens — but widening it does not widen keys created earlier.
+
 ## Seeding dev data
 
 Dev data lives in `scripts/seed/` (stations, weather observations). All commands
