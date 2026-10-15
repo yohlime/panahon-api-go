@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -33,21 +34,57 @@ func TestCreateAPIToken(t *testing.T) {
 		Name:      "Test Token",
 		TokenHash: apiTok.GetHash(),
 	}
-	apiToken := models.APITokenWithSecret{
-		APIToken: models.NewAPIToken(dbAPITok),
-		Token:    apiTok.GetValue(),
-	}
 
 	authUser := token.User{
 		Username: user.Username,
 	}
 
-	nStn := 5
-	stationIDs := make([]int64, nStn)
-	for s := range stationIDs {
-		stationIDs[s] = gofakeit.Int64()
+	// The owner's entitlement: 2 stations, 2 variables, 730 days.
+	entPerms := models.APITokenPermissions{
+		StationIDs:     []int64{11, 22},
+		Variables:      []string{"rh", "temp"},
+		MaxDaysHistory: 730,
 	}
-	varNames := []string{"rain", "temp"}
+	entStations, entVariables := models.MarshalUserAccess(models.UserAccess{
+		UserID:         user.ID,
+		StationIDs:     entPerms.StationIDs,
+		Variables:      entPerms.Variables,
+		MaxDaysHistory: entPerms.MaxDaysHistory,
+	})
+	dbAccess := db.UserAccess{
+		UserID:         user.ID,
+		StationIds:     entStations,
+		Variables:      entVariables,
+		MaxDaysHistory: 730,
+	}
+
+	// Requested scope exceeds the entitlement, so it is clamped to it:
+	// stations [11,33] ∩ [11,22] = [11]; variables [rain,temp] ∩ [rh,temp] = [temp].
+	clampedPerms := models.APITokenPermissions{
+		StationIDs:     []int64{11},
+		Variables:      []string{"temp"},
+		MaxDaysHistory: 365,
+	}
+
+	mustJSON := func(v any) []byte {
+		b, err := json.Marshal(v)
+		require.NoError(t, err)
+		return b
+	}
+
+	dbAPITokEntitled := dbAPITok
+	dbAPITokEntitled.Permissions = mustJSON(entPerms)
+	apiTokenEntitled := models.APITokenWithSecret{
+		APIToken: models.NewAPIToken(dbAPITokEntitled),
+		Token:    apiTok.GetValue(),
+	}
+
+	dbAPITokClamped := dbAPITok
+	dbAPITokClamped.Permissions = mustJSON(clampedPerms)
+	apiTokenClamped := models.APITokenWithSecret{
+		APIToken: models.NewAPIToken(dbAPITokClamped),
+		Token:    apiTok.GetValue(),
+	}
 
 	testCases := []struct {
 		name          string
@@ -57,7 +94,7 @@ func TestCreateAPIToken(t *testing.T) {
 		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
-			name: "Default",
+			name: "DefaultUsesEntitlement",
 			body: gin.H{
 				"name": dbAPITok.Name,
 			},
@@ -68,64 +105,53 @@ func TestCreateAPIToken(t *testing.T) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(dbAccess, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
 					var permissions models.APITokenPermissions
-					err := json.Unmarshal(arg.Permissions, &permissions)
-					if err != nil {
+					if err := json.Unmarshal(arg.Permissions, &permissions); err != nil {
 						return false
 					}
-					return arg.UserID == user.ID && !arg.ExpiresAt.Valid && permissions.MaxDaysHistory == models.DefaultMaxDaysHistory && len(permissions.StationIDs) == 0 && len(permissions.Variables) == len(models.DefaultAPITokenVariables)
-				})).Return(dbAPITok, nil)
+					return arg.UserID == user.ID && !arg.ExpiresAt.Valid && reflect.DeepEqual(permissions, entPerms)
+				})).Return(dbAPITokEntitled, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
-				requireBodyMatchAPIToken(t, recorder.Body, apiToken)
+				requireBodyMatchAPIToken(t, recorder.Body, apiTokenEntitled)
 			},
 		},
 		{
-			name: "WithPermissions",
+			name: "WithPermissionsClamped",
 			body: gin.H{
 				"name": dbAPITok.Name,
 				"permissions": gin.H{
-					"variables":   varNames,
-					"station_ids": stationIDs,
+					"variables":        []string{"rain", "temp"},
+					"station_ids":      []int64{11, 33},
+					"max_days_history": 365,
 				},
 			},
 			setupAuth: func(request *http.Request) {
 				addAuthorization(request, AuthTypeBearer, tokenStr)
 			},
 			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
-				newDBAPITok := dbAPITok
-				perm, err := json.Marshal(models.APITokenPermissions{
-					StationIDs:     stationIDs,
-					Variables:      varNames,
-					MaxDaysHistory: 365,
-				})
-				require.NoError(t, err)
-				newDBAPITok.Permissions = perm
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(dbAccess, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
 					var permissions models.APITokenPermissions
-					err := json.Unmarshal(arg.Permissions, &permissions)
-					if err != nil {
+					if err := json.Unmarshal(arg.Permissions, &permissions); err != nil {
 						return false
 					}
-					return !arg.ExpiresAt.Valid && permissions.MaxDaysHistory == models.DefaultMaxDaysHistory && len(permissions.StationIDs) == nStn && len(permissions.Variables) == len(varNames)
-				})).Return(newDBAPITok, nil)
+					return !arg.ExpiresAt.Valid && reflect.DeepEqual(permissions, clampedPerms)
+				})).Return(dbAPITokClamped, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
-				newAPIToken := apiToken
-				newAPIToken.Permissions = models.APITokenPermissions{
-					StationIDs:     stationIDs,
-					Variables:      varNames,
-					MaxDaysHistory: 365,
-				}
-				requireBodyMatchAPIToken(t, recorder.Body, newAPIToken)
+				requireBodyMatchAPIToken(t, recorder.Body, apiTokenClamped)
 			},
 		},
 		{
@@ -176,10 +202,6 @@ func TestCreateAPIToken(t *testing.T) {
 			name: "StoreTokenError",
 			body: gin.H{
 				"name": dbAPITok.Name,
-				"permissions": gin.H{
-					"variables":   varNames,
-					"station_ids": stationIDs,
-				},
 			},
 			setupAuth: func(request *http.Request) {
 				addAuthorization(request, AuthTypeBearer, tokenStr)
@@ -188,6 +210,8 @@ func TestCreateAPIToken(t *testing.T) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(dbAccess, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CreateAPITokenParams")).
 					Return(db.APIToken{}, sql.ErrConnDone)
 			},
@@ -201,6 +225,9 @@ func TestCreateAPIToken(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
+			// The entitlement is cached process-wide; drop it so each case loads it.
+			userAccessCache.del(user.ID)
+
 			store := mockdb.NewMockStore(t)
 			tokenMaker := mocktoken.NewMockMaker(t)
 			tc.buildStubs(tokenMaker, store)

@@ -45,9 +45,20 @@ func (h *DefaultHandler) CreateAPIToken(ctx *gin.Context) {
 		return
 	}
 
-	req.Permissions.Normalize()
+	// The token may never exceed its owner's entitlement: default to it when
+	// permissions are omitted, otherwise clamp the requested scope to it.
+	access := h.getUserAccess(ctx, uri.ID)
 
-	permissionsJSON, err := json.Marshal(req.Permissions)
+	var perms models.APITokenPermissions
+	if req.Permissions == nil {
+		perms = access.Permissions()
+	} else {
+		requested := *req.Permissions
+		requested.Normalize()
+		perms = models.IntersectPermissions(requested, access)
+	}
+
+	permissionsJSON, err := json.Marshal(perms)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

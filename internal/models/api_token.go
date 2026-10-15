@@ -78,11 +78,13 @@ type APITokenWithSecret struct {
 	Token string `json:"token"`
 }
 
-// CreateAPITokenReq is the request body for creating an API token
+// CreateAPITokenReq is the request body for creating an API token.
+// A nil Permissions defaults the token to the owner's entitlement; provided
+// permissions are clamped to (never exceed) the owner's entitlement.
 type CreateAPITokenReq struct {
-	Name        string              `json:"name" binding:"required"`
-	ExpiresAt   *time.Time          `json:"expires_at,omitempty"`
-	Permissions APITokenPermissions `json:"permissions"`
+	Name        string               `json:"name" binding:"required"`
+	ExpiresAt   *time.Time           `json:"expires_at,omitempty"`
+	Permissions *APITokenPermissions `json:"permissions"`
 }
 
 // NewAPIToken creates model from db type
