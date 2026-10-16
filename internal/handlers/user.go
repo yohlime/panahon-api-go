@@ -127,10 +127,28 @@ func (h *DefaultHandler) ListUsers(ctx *gin.Context) {
 		return
 	}
 
+	// Roles are fetched in one query for the whole page.
+	userIDs := make([]int64, len(users))
+	for i, user := range users {
+		userIDs[i] = user.ID
+	}
+
+	rolesByUser := make(map[int64][]string)
+	if len(userIDs) > 0 {
+		roleRows, err := h.store.ListUserRolesByUserIDs(ctx, userIDs)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		for _, row := range roleRows {
+			rolesByUser[row.UserID] = append(rolesByUser[row.UserID], row.RoleName)
+		}
+	}
+
 	numUsers := len(users)
 	items := make([]models.User, numUsers)
 	for i, user := range users {
-		items[i] = models.NewUser(user, nil)
+		items[i] = models.NewUser(user, rolesByUser[user.ID])
 	}
 
 	count, err := h.store.CountUsers(ctx, util.ToPgText(req.Status))

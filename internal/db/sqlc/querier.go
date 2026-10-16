@@ -94,6 +94,7 @@ type Querier interface {
 	ListStationsWithinBBox(ctx context.Context, arg ListStationsWithinBBoxParams) ([]ObservationsStation, error)
 	ListStationsWithinRadius(ctx context.Context, arg ListStationsWithinRadiusParams) ([]ObservationsStation, error)
 	ListUserRoles(ctx context.Context, userID int64) ([]string, error)
+	ListUserRolesByUserIDs(ctx context.Context, userIds []int64) ([]ListUserRolesByUserIDsRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	ListWeatherlinkStations(ctx context.Context, arg ListWeatherlinkStationsParams) ([]Weatherlink, error)
 	ReviewUser(ctx context.Context, arg ReviewUserParams) (User, error)

@@ -5608,6 +5608,74 @@ func (_c *MockStore_ListUserRoles_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
+// ListUserRolesByUserIDs provides a mock function for the type MockStore
+func (_mock *MockStore) ListUserRolesByUserIDs(ctx context.Context, userIds []int64) ([]db.ListUserRolesByUserIDsRow, error) {
+	ret := _mock.Called(ctx, userIds)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListUserRolesByUserIDs")
+	}
+
+	var r0 []db.ListUserRolesByUserIDsRow
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) ([]db.ListUserRolesByUserIDsRow, error)); ok {
+		return returnFunc(ctx, userIds)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) []db.ListUserRolesByUserIDsRow); ok {
+		r0 = returnFunc(ctx, userIds)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.ListUserRolesByUserIDsRow)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []int64) error); ok {
+		r1 = returnFunc(ctx, userIds)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ListUserRolesByUserIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListUserRolesByUserIDs'
+type MockStore_ListUserRolesByUserIDs_Call struct {
+	*mock.Call
+}
+
+// ListUserRolesByUserIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIds []int64
+func (_e *MockStore_Expecter) ListUserRolesByUserIDs(ctx any, userIds any) *MockStore_ListUserRolesByUserIDs_Call {
+	return &MockStore_ListUserRolesByUserIDs_Call{Call: _e.mock.On("ListUserRolesByUserIDs", ctx, userIds)}
+}
+
+func (_c *MockStore_ListUserRolesByUserIDs_Call) Run(run func(ctx context.Context, userIds []int64)) *MockStore_ListUserRolesByUserIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []int64
+		if args[1] != nil {
+			arg1 = args[1].([]int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ListUserRolesByUserIDs_Call) Return(listUserRolesByUserIDsRows []db.ListUserRolesByUserIDsRow, err error) *MockStore_ListUserRolesByUserIDs_Call {
+	_c.Call.Return(listUserRolesByUserIDsRows, err)
+	return _c
+}
+
+func (_c *MockStore_ListUserRolesByUserIDs_Call) RunAndReturn(run func(ctx context.Context, userIds []int64) ([]db.ListUserRolesByUserIDsRow, error)) *MockStore_ListUserRolesByUserIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListUsers provides a mock function for the type MockStore
 func (_mock *MockStore) ListUsers(ctx context.Context, arg db.ListUsersParams) ([]db.User, error) {
 	ret := _mock.Called(ctx, arg)

@@ -15,6 +15,13 @@ JOIN roles r ON r.id = ru.role_id
 WHERE user_id = $1
 GROUP BY user_id;
 
+-- name: ListUserRolesByUserIDs :many
+SELECT ru.user_id, r.name AS role_name
+FROM role_user ru
+JOIN roles r ON r.id = ru.role_id
+WHERE ru.user_id = ANY(@user_ids::bigint[])
+ORDER BY ru.user_id;
+
 -- name: BatchDeleteUserRoles :batchexec
 DELETE FROM role_user AS ru
 USING

@@ -22,3 +22,36 @@ func (q *Queries) ListUserRoles(ctx context.Context, userID int64) ([]string, er
 	err := row.Scan(&role_names)
 	return role_names, err
 }
+
+const listUserRolesByUserIDs = `-- name: ListUserRolesByUserIDs :many
+SELECT ru.user_id, r.name AS role_name
+FROM role_user ru
+JOIN roles r ON r.id = ru.role_id
+WHERE ru.user_id = ANY($1::bigint[])
+ORDER BY ru.user_id
+`
+
+type ListUserRolesByUserIDsRow struct {
+	UserID   int64  `json:"user_id"`
+	RoleName string `json:"role_name"`
+}
+
+func (q *Queries) ListUserRolesByUserIDs(ctx context.Context, userIds []int64) ([]ListUserRolesByUserIDsRow, error) {
+	rows, err := q.db.Query(ctx, listUserRolesByUserIDs, userIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserRolesByUserIDsRow{}
+	for rows.Next() {
+		var i ListUserRolesByUserIDsRow
+		if err := rows.Scan(&i.UserID, &i.RoleName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -53,6 +53,8 @@ func TestListUsersAPI(t *testing.T) {
 				store.EXPECT().ListUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(users, nil)
 				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
+				store.EXPECT().ListUserRolesByUserIDs(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return([]db.ListUserRolesByUserIDsRow{}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
