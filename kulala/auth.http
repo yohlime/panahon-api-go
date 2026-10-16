@@ -1,0 +1,24 @@
+### login
+
+# @name login
+POST {{BASE_URL}}/users/login
+
+{
+  "username": "{{ADMIN_USER}}",
+  "password": "{{ADMIN_PASSWORD}}"
+}
+
+### current user
+
+GET {{BASE_URL}}/users/auth
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### renew access token
+
+POST {{BASE_URL}}/tokens/renew
+Cookie: refresh_token={{login.response.cookies.refresh_token.value}}
+
+### logout
+
+POST {{BASE_URL}}/users/logout
+Cookie: refresh_token={{login.response.cookies.refresh_token.value}}

@@ -1,0 +1,32 @@
+### list a user's API tokens (self or admin)
+
+GET {{BASE_URL}}/users/{{USER_ID}}/api-tokens
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### create an API token (defaults to the owner's entitlement)
+
+POST {{BASE_URL}}/users/{{USER_ID}}/api-tokens
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "name": "panahon"
+}
+
+### create a scoped API token (clamped to the owner's entitlement)
+
+POST {{BASE_URL}}/users/{{USER_ID}}/api-tokens
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "name": "rain-only",
+  "permissions": {
+    "station_ids": [1],
+    "variables": ["rain", "temp"],
+    "max_days_history": 365
+  }
+}
+
+### delete an API token
+
+DELETE {{BASE_URL}}/users/{{USER_ID}}/api-tokens/1
+Authorization: Bearer {{login.response.cookies.access_token.value}}

@@ -1,0 +1,38 @@
+### list users (admin)
+
+GET {{BASE_URL}}/users?page=1&per_page=10
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### get user (admin)
+
+GET {{BASE_URL}}/users/{{USER_ID}}
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### create user (admin)
+
+POST {{BASE_URL}}/users
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "username": "jdoe",
+  "password": "password",
+  "full_name": "John Doe",
+  "email": "jdoe@example.com",
+  "roles": ["USER"]
+}
+
+### update user (admin)
+
+PUT {{BASE_URL}}/users/{{USER_ID}}
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "full_name": "John Doe",
+  "email": "jdoe@example.com",
+  "roles": ["USER"]
+}
+
+### delete user (admin)
+
+DELETE {{BASE_URL}}/users/{{USER_ID}}
+Authorization: Bearer {{login.response.cookies.access_token.value}}

@@ -1,0 +1,12 @@
+### poteka_get_station
+GET {{POTEKA_URL}}/station
+  ?access-token={{POTEKA_API_KEY}}
+
+
+### poteka_get_latest_weather
+GET {{POTEKA_URL}}/weather/latest
+  ?access-token={{POTEKA_API_KEY}}
+
+### poteka_get_lightning
+GET {{POTEKA_URL}}/lightning/00181275
+  ?access-token={{POTEKA_API_KEY}}

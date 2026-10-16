@@ -1,0 +1,12 @@
+### latest observations (public)
+
+GET {{BASE_URL}}/observations/latest
+
+### bulk observations (admin or scoped API token)
+
+GET {{BASE_URL}}/observations?page=1&per_page=100&station_ids={{STATION_ID}}
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### bulk observations (API key)
+
+GET {{BASE_URL}}/observations?page=1&per_page=100&api_key={{API_KEY}}

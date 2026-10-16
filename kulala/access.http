@@ -1,0 +1,62 @@
+### get a user's entitlement (self or admin)
+
+GET {{BASE_URL}}/users/{{USER_ID}}/access
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### set a user's entitlement (admin)
+
+PUT {{BASE_URL}}/users/{{USER_ID}}/access
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "station_ids": [1],
+  "all_stations": false,
+  "variables": ["rain", "temp"],
+  "all_variables": false,
+  "max_days_history": 365
+}
+
+### list a user's access requests (self or admin)
+
+GET {{BASE_URL}}/users/{{USER_ID}}/access-requests
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### request additional access
+
+POST {{BASE_URL}}/users/{{USER_ID}}/access-requests
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "station_ids": [2],
+  "variables": ["rh"],
+  "max_days_history": 730,
+  "reason": "Need RH for station 2."
+}
+
+### cancel a pending request
+
+DELETE {{BASE_URL}}/users/{{USER_ID}}/access-requests/1
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### list all requests (admin)
+
+GET {{BASE_URL}}/access-requests?status=pending
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+### approve a request (admin)
+
+POST {{BASE_URL}}/access-requests/1/approve
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "note": "Approved."
+}
+
+### deny a request (admin)
+
+POST {{BASE_URL}}/access-requests/1/deny
+Authorization: Bearer {{login.response.cookies.access_token.value}}
+
+{
+  "note": "Not needed."
+}
