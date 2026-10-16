@@ -20,8 +20,6 @@
     sqlc
   ];
 
-  env.DOCKER_HOST = "unix://$XDG_RUNTIME_DIR/podman/podman.sock";
-
   languages.go.enable = true;
 
   services.postgres = {
@@ -54,11 +52,15 @@
     after = [ "devenv:processes:postgres" "db:seed" ];
   };
 
+  # testcontainers needs the podman socket. Set DOCKER_HOST in the shell so
+  # $XDG_RUNTIME_DIR is expanded (a Nix string would keep it literal).
   enterShell = ''
+    export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
     go version
   '';
 
   enterTest = ''
+    export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
     echo "Running tests"
     make test
   '';
