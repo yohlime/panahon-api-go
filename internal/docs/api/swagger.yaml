@@ -278,6 +278,11 @@ definitions:
           type: string
         type: array
     type: object
+  ReviewUserParams:
+    properties:
+      note:
+        type: string
+    type: object
   Role:
     properties:
       created_at:
@@ -511,10 +516,18 @@ definitions:
         type: integer
       password_changed_at:
         type: string
+      review_note:
+        type: string
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: integer
       roles:
         items:
           type: string
         type: array
+      status:
+        type: string
       username:
         type: string
     type: object
@@ -1365,6 +1378,13 @@ paths:
         minimum: 1
         name: per_page
         type: integer
+      - enum:
+        - pending
+        - active
+        - rejected
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
@@ -1662,6 +1682,60 @@ paths:
       summary: Delete a user's API token (self or admin)
       tags:
       - api-tokens
+  /users/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Review note
+        in: body
+        name: req
+        schema:
+          $ref: '#/definitions/ReviewUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+      security:
+      - BearerAuth: []
+      summary: Approve a pending registration
+      tags:
+      - users
+  /users/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Review note
+        in: body
+        name: req
+        schema:
+          $ref: '#/definitions/ReviewUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+      security:
+      - BearerAuth: []
+      summary: Reject a pending registration
+      tags:
+      - users
   /users/auth:
     get:
       consumes:

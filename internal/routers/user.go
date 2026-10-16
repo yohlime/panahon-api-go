@@ -29,6 +29,8 @@ func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 		admin.POST("", r.handler.CreateUser)
 		admin.PUT(":id", r.handler.UpdateUser)
 		admin.DELETE(":id", r.handler.DeleteUser)
+		admin.POST(":id/approve", r.handler.ApproveUser)
+		admin.POST(":id/reject", r.handler.RejectUser)
 
 		// Auth user endpoint (requires authentication).
 		auth := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false))

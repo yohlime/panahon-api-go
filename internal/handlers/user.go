@@ -58,6 +58,7 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 		Password: hashedPassword,
 		FullName: req.FullName,
 		Email:    req.Email,
+		Status:   models.UserStatusActive,
 	}
 
 	user, err := h.store.CreateUser(ctx, arg)
@@ -90,8 +91,9 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 }
 
 type listUsersReq struct {
-	Page    int32 `form:"page,default=1" binding:"omitempty,min=1"`
-	PerPage int32 `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
+	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"`
+	PerPage int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
+	Status  string `form:"status" binding:"omitempty,oneof=pending active rejected"`
 } //@name ListUsersParams
 
 type paginatedUsers = util.PaginatedList[models.User] //@name PaginatedUsers
@@ -117,6 +119,7 @@ func (h *DefaultHandler) ListUsers(ctx *gin.Context) {
 	arg := db.ListUsersParams{
 		Limit:  req.PerPage,
 		Offset: offset,
+		Status: util.ToPgText(req.Status),
 	}
 	users, err := h.store.ListUsers(ctx, arg)
 	if err != nil {
@@ -130,7 +133,7 @@ func (h *DefaultHandler) ListUsers(ctx *gin.Context) {
 		items[i] = models.NewUser(user, nil)
 	}
 
-	count, err := h.store.CountUsers(ctx)
+	count, err := h.store.CountUsers(ctx, util.ToPgText(req.Status))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -341,6 +344,89 @@ func (h *DefaultHandler) DeleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusNoContent, nil)
 }
 
+type reviewUserUri struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
+}
+
+type reviewUserReq struct {
+	Note string `json:"note"`
+} //@name ReviewUserParams
+
+// ApproveUser
+//
+//	@Summary	Approve a pending registration
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int				true	"User ID"
+//	@Param		req	body	reviewUserReq	false	"Review note"
+//	@Security	BearerAuth
+//	@Success	200	{object}	models.User
+//	@Router		/users/{id}/approve [post]
+func (h *DefaultHandler) ApproveUser(ctx *gin.Context) {
+	h.reviewUser(ctx, models.UserStatusActive)
+}
+
+// RejectUser
+//
+//	@Summary	Reject a pending registration
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int				true	"User ID"
+//	@Param		req	body	reviewUserReq	false	"Review note"
+//	@Security	BearerAuth
+//	@Success	200	{object}	models.User
+//	@Router		/users/{id}/reject [post]
+func (h *DefaultHandler) RejectUser(ctx *gin.Context) {
+	h.reviewUser(ctx, models.UserStatusRejected)
+}
+
+func (h *DefaultHandler) reviewUser(ctx *gin.Context, status string) {
+	var uri reviewUserUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req reviewUserReq
+	_ = ctx.ShouldBindJSON(&req)
+
+	reviewer, ok := h.authUser(ctx)
+	if !ok {
+		return
+	}
+
+	user, err := h.store.GetUser(ctx, uri.ID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if user.Status != models.UserStatusPending {
+		ctx.JSON(http.StatusConflict, errorResponse(errors.New("user is not pending approval")))
+		return
+	}
+
+	row, err := h.store.ReviewUser(ctx, db.ReviewUserParams{
+		ID:         uri.ID,
+		Status:     status,
+		ReviewedBy: pgtype.Int8{Int64: reviewer.ID, Valid: true},
+		ReviewNote: util.ToPgText(req.Note),
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	roleNames, _ := h.store.ListUserRoles(ctx, row.ID)
+	ctx.JSON(http.StatusOK, models.NewUser(row, roleNames))
+}
+
 type registerUserReq struct {
 	Username        string `json:"username" binding:"required,alphanum"`
 	Password        string `json:"password" binding:"required,min=6,eqfield=ConfirmPassword"`
@@ -376,6 +462,7 @@ func (h *DefaultHandler) RegisterUser(ctx *gin.Context) {
 		Password: hashedPassword,
 		FullName: req.FullName,
 		Email:    req.Email,
+		Status:   models.UserStatusPending,
 	}
 
 	user, err := h.store.CreateUser(ctx, arg)
@@ -435,6 +522,19 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 	err = util.CheckPassword(req.Password, user.Password)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	// Self-registered users must be approved before they can log in.
+	if user.Status != models.UserStatusActive {
+		msg := "account is not active"
+		switch user.Status {
+		case models.UserStatusPending:
+			msg = "account is pending approval"
+		case models.UserStatusRejected:
+			msg = "account registration was rejected"
+		}
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New(msg)))
 		return
 	}
 

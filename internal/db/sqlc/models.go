@@ -233,6 +233,10 @@ type User struct {
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	Status            string             `json:"status"`
+	ReviewedBy        pgtype.Int8        `json:"reviewed_by"`
+	ReviewedAt        pgtype.Timestamptz `json:"reviewed_at"`
+	ReviewNote        pgtype.Text        `json:"review_note"`
 }
 
 type UserAccess struct {

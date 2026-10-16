@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
+	"github.com/emiliogozo/panahon-api-go/internal/models"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/rs/zerolog"
 )
@@ -50,6 +51,7 @@ func CreateUser(ctx context.Context, store db.Store, spec UserSpec) (db.User, bo
 		Password: hashedPassword,
 		FullName: spec.FullName,
 		Email:    spec.Email,
+		Status:   models.UserStatusActive,
 	})
 	if err != nil {
 		return db.User{}, false, err

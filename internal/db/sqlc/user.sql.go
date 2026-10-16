@@ -13,10 +13,11 @@ import (
 
 const countUsers = `-- name: CountUsers :one
 SELECT count(*) FROM users
+WHERE ($1::text IS NULL OR status = $1)
 `
 
-func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsers)
+func (q *Queries) CountUsers(ctx context.Context, status pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsers, status)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -27,10 +28,11 @@ INSERT INTO users (
   username,
   password,
   full_name,
-  email
+  email,
+  status
 ) VALUES (
-  $1, $2, $3, $4
-) RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at
+  $1, $2, $3, $4, $5
+) RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note
 `
 
 type CreateUserParams struct {
@@ -38,6 +40,7 @@ type CreateUserParams struct {
 	Password string `json:"password"`
 	FullName string `json:"full_name"`
 	Email    string `json:"email"`
+	Status   string `json:"status"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -46,6 +49,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Password,
 		arg.FullName,
 		arg.Email,
+		arg.Status,
 	)
 	var i User
 	err := row.Scan(
@@ -58,6 +62,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
 	)
 	return i, err
 }
@@ -72,7 +80,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at FROM users
+SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -89,12 +97,16 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at FROM users
+SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -111,12 +123,16 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at FROM users
+SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -133,24 +149,30 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at FROM users
+SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note FROM users
+WHERE ($3::text IS NULL OR status = $3)
 ORDER BY id
 LIMIT $1
 OFFSET $2
 `
 
 type ListUsersParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	Status pgtype.Text `json:"status"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset, arg.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +190,10 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.PasswordChangedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Status,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
+			&i.ReviewNote,
 		); err != nil {
 			return nil, err
 		}
@@ -177,6 +203,51 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const reviewUser = `-- name: ReviewUser :one
+UPDATE users
+SET
+  status = $1,
+  reviewed_by = $2,
+  review_note = $3,
+  reviewed_at = now(),
+  updated_at = now()
+WHERE id = $4
+RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note
+`
+
+type ReviewUserParams struct {
+	Status     string      `json:"status"`
+	ReviewedBy pgtype.Int8 `json:"reviewed_by"`
+	ReviewNote pgtype.Text `json:"review_note"`
+	ID         int64       `json:"id"`
+}
+
+func (q *Queries) ReviewUser(ctx context.Context, arg ReviewUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, reviewUser,
+		arg.Status,
+		arg.ReviewedBy,
+		arg.ReviewNote,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.FullName,
+		&i.Email,
+		&i.Password,
+		&i.EmailVerifiedAt,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
+	)
+	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one
@@ -189,7 +260,7 @@ SET
   updated_at = now()
 WHERE
   id = $5
-RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at
+RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note
 `
 
 type UpdateUserParams struct {
@@ -219,6 +290,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
 	)
 	return i, err
 }

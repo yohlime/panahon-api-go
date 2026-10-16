@@ -71,7 +71,7 @@ func (ts *UserTestSuite) TestCountUsers() {
 		createRandomUser(t)
 	}
 
-	numUsers, err := testStore.CountUsers(context.Background())
+	numUsers, err := testStore.CountUsers(context.Background(), pgtype.Text{})
 	require.NoError(t, err)
 	require.Equal(t, numUsers, int64(n))
 }
@@ -226,6 +226,7 @@ func createRandomUser(t *testing.T) User {
 		Password: hashedPassword,
 		FullName: util.RandomString(12),
 		Email:    util.RandomEmail(),
+		Status:   "active",
 	}
 
 	user, err := testStore.CreateUser(context.Background(), arg)

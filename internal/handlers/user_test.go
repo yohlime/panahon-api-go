@@ -52,7 +52,7 @@ func TestListUsersAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(users, nil)
-				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context")).Return(int64(n), nil)
+				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -110,7 +110,7 @@ func TestListUsersAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.User{}, nil)
-				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context")).Return(int64(n), nil)
+				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -127,7 +127,7 @@ func TestListUsersAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().ListUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.User{}, nil)
-				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context")).Return(0, sql.ErrConnDone)
+				store.EXPECT().CountUsers(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(0, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
@@ -665,8 +665,9 @@ func TestRegisterUserAPI(t *testing.T) {
 				"email":            user.Email,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(user, nil)
+				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateUserParams) bool {
+					return arg.Status == models.UserStatusPending
+				})).Return(user, nil)
 				store.EXPECT().BulkCreateUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.UserRolesParams{}, nil)
 			},
@@ -852,6 +853,40 @@ func TestLoginUserAPI(t *testing.T) {
 					}
 				}
 				require.Equal(t, 2, foundCookieCount)
+			},
+		},
+		{
+			name: "PendingUser",
+			body: gin.H{
+				"username": user.Username,
+				"password": password,
+			},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				pending := user
+				pending.Status = models.UserStatusPending
+				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
+					Return(pending, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "RejectedUser",
+			body: gin.H{
+				"username": user.Username,
+				"password": password,
+			},
+			buildStubs: func(store *mockdb.MockStore, tokenMaker *mocktoken.MockMaker) {
+				rejected := user
+				rejected.Status = models.UserStatusRejected
+				store.EXPECT().GetUserByUsername(mock.AnythingOfType("*gin.Context"), user.Username).
+					Return(rejected, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
 		},
 		{
@@ -1315,6 +1350,95 @@ func TestUpdateUserAdminCannotChangeSuperAdminRoles(t *testing.T) {
 	store.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
 }
 
+func TestReviewUserAPI(t *testing.T) {
+	reviewer := db.User{ID: 42, Username: "caller"}
+	pending := db.User{ID: 7, Username: "newbie", Status: models.UserStatusPending}
+	active := pending
+	active.Status = models.UserStatusActive
+
+	testCases := []struct {
+		name       string
+		path       string
+		url        string
+		fn         func(*DefaultHandler) gin.HandlerFunc
+		buildStubs func(store *mockdb.MockStore)
+		wantStatus int
+	}{
+		{
+			name: "Approve",
+			path: "/users/:id/approve",
+			url:  "/users/7/approve",
+			fn:   func(h *DefaultHandler) gin.HandlerFunc { return h.ApproveUser },
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, reviewer.Username).Return(reviewer, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), pending.ID).Return(pending, nil)
+				store.EXPECT().ReviewUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ReviewUserParams) bool {
+					return arg.Status == models.UserStatusActive && arg.ReviewedBy.Int64 == reviewer.ID
+				})).Return(active, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), pending.ID).Return([]string{"USER"}, nil)
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name: "Reject",
+			path: "/users/:id/reject",
+			url:  "/users/7/reject",
+			fn:   func(h *DefaultHandler) gin.HandlerFunc { return h.RejectUser },
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, reviewer.Username).Return(reviewer, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), pending.ID).Return(pending, nil)
+				store.EXPECT().ReviewUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ReviewUserParams) bool {
+					return arg.Status == models.UserStatusRejected
+				})).Return(active, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), pending.ID).Return([]string{"USER"}, nil)
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name: "NotPending",
+			path: "/users/:id/approve",
+			url:  "/users/7/approve",
+			fn:   func(h *DefaultHandler) gin.HandlerFunc { return h.ApproveUser },
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, reviewer.Username).Return(reviewer, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), pending.ID).Return(active, nil)
+			},
+			wantStatus: http.StatusConflict,
+		},
+		{
+			name: "NotFound",
+			path: "/users/:id/approve",
+			url:  "/users/7/approve",
+			fn:   func(h *DefaultHandler) gin.HandlerFunc { return h.ApproveUser },
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, reviewer.Username).Return(reviewer, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), pending.ID).Return(db.User{}, db.ErrRecordNotFound)
+			},
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.POST(tc.path, authAsCaller([]string{string(models.AdminRole)}), tc.fn(handler))
+
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodPost, tc.url, nil)
+			require.NoError(t, err)
+
+			router.ServeHTTP(recorder, request)
+			require.Equal(t, tc.wantStatus, recorder.Code)
+		})
+	}
+}
+
 func randomUser(t *testing.T) (user db.User, password string, roleNames []string) {
 	password = gofakeit.Password(true, true, false, false, false, 12)
 	hashedPassword, err := util.HashPassword(password)
@@ -1330,6 +1454,7 @@ func randomUser(t *testing.T) (user db.User, password string, roleNames []string
 		Password: hashedPassword,
 		FullName: u.FullName,
 		Email:    u.Email,
+		Status:   models.UserStatusActive,
 	}
 	roleNames = u.Roles
 	return

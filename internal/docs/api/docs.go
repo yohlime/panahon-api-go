@@ -1185,6 +1185,16 @@ const docTemplate = `{
                         "type": "integer",
                         "name": "per_page",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "active",
+                            "rejected"
+                        ],
+                        "type": "string",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1762,6 +1772,94 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Approve a pending registration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Review note",
+                        "name": "req",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reject a pending registration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Review note",
+                        "name": "req",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2185,6 +2283,14 @@ const docTemplate = `{
                 }
             }
         },
+        "ReviewUserParams": {
+            "type": "object",
+            "properties": {
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
         "Role": {
             "type": "object",
             "properties": {
@@ -2538,11 +2644,23 @@ const docTemplate = `{
                 "password_changed_at": {
                     "type": "string"
                 },
+                "review_note": {
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "reviewed_by": {
+                    "type": "integer"
+                },
                 "roles": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "status": {
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"

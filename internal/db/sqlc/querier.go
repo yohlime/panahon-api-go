@@ -27,7 +27,7 @@ type Querier interface {
 	CountStationsByIds(ctx context.Context, stationIds []int64) (int64, error)
 	CountStationsWithinBBox(ctx context.Context, arg CountStationsWithinBBoxParams) (int64, error)
 	CountStationsWithinRadius(ctx context.Context, arg CountStationsWithinRadiusParams) (int64, error)
-	CountUsers(ctx context.Context) (int64, error)
+	CountUsers(ctx context.Context, status pgtype.Text) (int64, error)
 	CreateAPIToken(ctx context.Context, arg CreateAPITokenParams) (APIToken, error)
 	CreateAccessRequest(ctx context.Context, arg CreateAccessRequestParams) (AccessRequest, error)
 	CreateCurrentObservation(ctx context.Context, arg CreateCurrentObservationParams) (ObservationsCurrent, error)
@@ -96,6 +96,7 @@ type Querier interface {
 	ListUserRoles(ctx context.Context, userID int64) ([]string, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	ListWeatherlinkStations(ctx context.Context, arg ListWeatherlinkStationsParams) ([]Weatherlink, error)
+	ReviewUser(ctx context.Context, arg ReviewUserParams) (User, error)
 	UpdateAPITokenLastUsedAt(ctx context.Context, id int64) error
 	UpdateAccessRequestStatus(ctx context.Context, arg UpdateAccessRequestStatusParams) (AccessRequest, error)
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)

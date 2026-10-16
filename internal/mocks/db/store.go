@@ -1143,8 +1143,8 @@ func (_c *MockStore_CountStationsWithinRadius_Call) RunAndReturn(run func(ctx co
 }
 
 // CountUsers provides a mock function for the type MockStore
-func (_mock *MockStore) CountUsers(ctx context.Context) (int64, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockStore) CountUsers(ctx context.Context, status pgtype.Text) (int64, error) {
+	ret := _mock.Called(ctx, status)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CountUsers")
@@ -1152,16 +1152,16 @@ func (_mock *MockStore) CountUsers(ctx context.Context) (int64, error) {
 
 	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, pgtype.Text) (int64, error)); ok {
+		return returnFunc(ctx, status)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, pgtype.Text) int64); ok {
+		r0 = returnFunc(ctx, status)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, pgtype.Text) error); ok {
+		r1 = returnFunc(ctx, status)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1175,18 +1175,24 @@ type MockStore_CountUsers_Call struct {
 
 // CountUsers is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) CountUsers(ctx any) *MockStore_CountUsers_Call {
-	return &MockStore_CountUsers_Call{Call: _e.mock.On("CountUsers", ctx)}
+//   - status pgtype.Text
+func (_e *MockStore_Expecter) CountUsers(ctx any, status any) *MockStore_CountUsers_Call {
+	return &MockStore_CountUsers_Call{Call: _e.mock.On("CountUsers", ctx, status)}
 }
 
-func (_c *MockStore_CountUsers_Call) Run(run func(ctx context.Context)) *MockStore_CountUsers_Call {
+func (_c *MockStore_CountUsers_Call) Run(run func(ctx context.Context, status pgtype.Text)) *MockStore_CountUsers_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 pgtype.Text
+		if args[1] != nil {
+			arg1 = args[1].(pgtype.Text)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1197,7 +1203,7 @@ func (_c *MockStore_CountUsers_Call) Return(n int64, err error) *MockStore_Count
 	return _c
 }
 
-func (_c *MockStore_CountUsers_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockStore_CountUsers_Call {
+func (_c *MockStore_CountUsers_Call) RunAndReturn(run func(ctx context.Context, status pgtype.Text) (int64, error)) *MockStore_CountUsers_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5734,6 +5740,72 @@ func (_c *MockStore_ListWeatherlinkStations_Call) Return(weatherlinks []db.Weath
 }
 
 func (_c *MockStore_ListWeatherlinkStations_Call) RunAndReturn(run func(ctx context.Context, arg db.ListWeatherlinkStationsParams) ([]db.Weatherlink, error)) *MockStore_ListWeatherlinkStations_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ReviewUser provides a mock function for the type MockStore
+func (_mock *MockStore) ReviewUser(ctx context.Context, arg db.ReviewUserParams) (db.User, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReviewUser")
+	}
+
+	var r0 db.User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ReviewUserParams) (db.User, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ReviewUserParams) db.User); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.User)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.ReviewUserParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ReviewUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReviewUser'
+type MockStore_ReviewUser_Call struct {
+	*mock.Call
+}
+
+// ReviewUser is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.ReviewUserParams
+func (_e *MockStore_Expecter) ReviewUser(ctx any, arg any) *MockStore_ReviewUser_Call {
+	return &MockStore_ReviewUser_Call{Call: _e.mock.On("ReviewUser", ctx, arg)}
+}
+
+func (_c *MockStore_ReviewUser_Call) Run(run func(ctx context.Context, arg db.ReviewUserParams)) *MockStore_ReviewUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.ReviewUserParams
+		if args[1] != nil {
+			arg1 = args[1].(db.ReviewUserParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ReviewUser_Call) Return(user db.User, err error) *MockStore_ReviewUser_Call {
+	_c.Call.Return(user, err)
+	return _c
+}
+
+func (_c *MockStore_ReviewUser_Call) RunAndReturn(run func(ctx context.Context, arg db.ReviewUserParams) (db.User, error)) *MockStore_ReviewUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
