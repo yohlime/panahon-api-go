@@ -903,7 +903,7 @@ func TestLoginUserAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 				cookies := recorder.Result().Cookies()
 				var foundCookies []*http.Cookie

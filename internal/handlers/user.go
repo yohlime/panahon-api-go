@@ -527,19 +527,20 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		return
 	}
 
+	const invalidCredentials = "invalid username or password"
+
 	user, err := h.store.GetUserByUsername(ctx, req.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New(invalidCredentials)))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	err = util.CheckPassword(req.Password, user.Password)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+	if err := util.CheckPassword(req.Password, user.Password); err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New(invalidCredentials)))
 		return
 	}
 
