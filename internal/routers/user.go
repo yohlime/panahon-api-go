@@ -20,6 +20,10 @@ func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 		tokens.POST(":id/api-tokens", r.handler.CreateAPIToken)
 		tokens.DELETE(":id/api-tokens/:token_id", r.handler.DeleteAPIToken)
 
+		// Self-service profile update; the handler requires the current password.
+		profile := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false))
+		profile.PUT(":id/profile", r.handler.UpdateProfile)
+
 		// Admin-only user management.
 		admin := addMiddleware(users,
 			mw.AuthMiddleware(r.tokenMaker, r.store, false),

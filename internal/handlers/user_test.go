@@ -1441,6 +1441,107 @@ func TestReviewUserAPI(t *testing.T) {
 	}
 }
 
+func TestUpdateProfileAPI(t *testing.T) {
+	user, password, _ := randomUser(t)
+
+	testCases := []struct {
+		name       string
+		userID     int64
+		body       gin.H
+		buildStubs func(store *mockdb.MockStore)
+		wantStatus int
+	}{
+		{
+			name:   "OK",
+			userID: user.ID,
+			body: gin.H{
+				"current_password": password,
+				"email":            "updated@example.com",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				updated := user
+				updated.Email = "updated@example.com"
+				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(user, nil)
+				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.UpdateUserParams) bool {
+					return arg.Email.Valid && arg.Email.String == "updated@example.com"
+				})).Return(updated, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).Return([]string{"USER"}, nil)
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:   "WrongCurrentPassword",
+			userID: user.ID,
+			body: gin.H{
+				"current_password": "wrongpass",
+				"email":            "updated@example.com",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(user, nil)
+			},
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name:   "CannotEditOtherUser",
+			userID: user.ID + 1,
+			body: gin.H{
+				"current_password": password,
+				"email":            "updated@example.com",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(user, nil)
+			},
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name:   "UsernameChanged",
+			userID: user.ID,
+			body: gin.H{
+				"current_password": password,
+				"username":         "newcaller",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				updated := user
+				updated.Username = "newcaller"
+				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(user, nil)
+				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.UpdateUserParams) bool {
+					return arg.Username.Valid && arg.Username.String == "newcaller"
+				})).Return(updated, nil)
+				store.EXPECT().DeleteSessionsByUserID(mock.AnythingOfType("*gin.Context"), user.ID).Return(nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).Return([]string{"USER"}, nil)
+			},
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			store := mockdb.NewMockStore(t)
+			tc.buildStubs(store)
+			handler := newTestHandler(store, nil)
+
+			router := gin.Default()
+			router.PUT("/users/:id/profile", authAsCaller([]string{"USER"}), handler.UpdateProfile)
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/users/%d/profile", tc.userID), bytes.NewReader(data))
+			require.NoError(t, err)
+
+			router.ServeHTTP(recorder, request)
+			require.Equal(t, tc.wantStatus, recorder.Code)
+
+			if tc.name == "UsernameChanged" {
+				require.Len(t, recorder.Result().Cookies(), 2)
+			}
+		})
+	}
+}
+
 func randomUser(t *testing.T) (user db.User, password string, roleNames []string) {
 	password = gofakeit.Password(true, true, false, false, false, 12)
 	hashedPassword, err := util.HashPassword(password)

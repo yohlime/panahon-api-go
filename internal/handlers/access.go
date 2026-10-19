@@ -176,6 +176,10 @@ func (h *DefaultHandler) authUser(ctx *gin.Context) (db.User, bool) {
 
 	user, err := h.store.GetUserByUsername(ctx, authPayload.User.Username)
 	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user not found")))
+			return db.User{}, false
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return db.User{}, false
 	}

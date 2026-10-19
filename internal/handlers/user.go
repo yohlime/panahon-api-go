@@ -332,6 +332,100 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewUser(user, updatedRoleNames))
 }
 
+type updateProfileReq struct {
+	CurrentPassword string `json:"current_password" binding:"required,min=6"`
+	Username        string `json:"username" binding:"omitempty,alphanum"`
+	Email           string `json:"email" binding:"omitempty,email"`
+	Password        string `json:"password" binding:"omitempty,min=6"`
+} //@name UpdateProfileParams
+
+// UpdateProfile
+//
+//	@Summary	Update my profile (requires current password)
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		id	path	int					true	"User ID"
+//	@Param		req	body	updateProfileReq	true	"Profile update parameters"
+//	@Security	BearerAuth
+//	@Success	200	{object}	models.User
+//	@Router		/users/{id}/profile [put]
+func (h *DefaultHandler) UpdateProfile(ctx *gin.Context) {
+	var uri updateUserUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req updateProfileReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	caller, ok := h.authUser(ctx)
+	if !ok {
+		return
+	}
+	if caller.ID != uri.ID {
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("cannot edit another user's profile")))
+		return
+	}
+
+	// Any profile change requires the current password.
+	if err := util.CheckPassword(req.CurrentPassword, caller.Password); err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("current password is incorrect")))
+		return
+	}
+
+	var newPassword pgtype.Text
+	var passwordChangedAt pgtype.Timestamptz
+	if len(req.Password) > 0 {
+		hashedPassword, err := util.HashPassword(req.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		newPassword.String = hashedPassword
+		newPassword.Valid = true
+		passwordChangedAt.Time = time.Now()
+		passwordChangedAt.Valid = true
+	}
+
+	arg := db.UpdateUserParams{
+		ID:                uri.ID,
+		Username:          pgtype.Text{String: req.Username, Valid: len(req.Username) > 0},
+		Password:          newPassword,
+		PasswordChangedAt: passwordChangedAt,
+		Email:             pgtype.Text{String: req.Email, Valid: len(req.Email) > 0},
+	}
+
+	user, err := h.store.UpdateUser(ctx, arg)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
+			return
+		}
+		if db.ErrorCode(err) == db.UniqueViolation {
+			ctx.JSON(http.StatusForbidden, errorResponse(errors.New("username or email is already taken")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if len(req.Username) > 0 && req.Username != caller.Username {
+		// Session tokens carry the username; changing it requires re-login.
+		_ = h.store.DeleteSessionsByUserID(ctx, caller.ID)
+		session.Clear()
+		h.clearAuthCookie(ctx, models.AccessTokenCookieName)
+		h.clearAuthCookie(ctx, models.RefreshTokenCookieName)
+	}
+
+	roleNames, _ := h.store.ListUserRoles(ctx, caller.ID)
+	ctx.JSON(http.StatusOK, models.NewUser(user, roleNames))
+}
+
 type deleteUserReq struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
@@ -636,6 +730,10 @@ func (h *DefaultHandler) GetAuthUser(ctx *gin.Context) {
 
 	user, err := h.store.GetUserByUsername(ctx, authPayload.User.Username)
 	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user not found")))
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

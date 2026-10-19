@@ -2549,6 +2549,63 @@ func (_c *MockStore_DeleteSession_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
+// DeleteSessionsByUserID provides a mock function for the type MockStore
+func (_mock *MockStore) DeleteSessionsByUserID(ctx context.Context, userID int64) error {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteSessionsByUserID")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int64) error); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockStore_DeleteSessionsByUserID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteSessionsByUserID'
+type MockStore_DeleteSessionsByUserID_Call struct {
+	*mock.Call
+}
+
+// DeleteSessionsByUserID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID int64
+func (_e *MockStore_Expecter) DeleteSessionsByUserID(ctx any, userID any) *MockStore_DeleteSessionsByUserID_Call {
+	return &MockStore_DeleteSessionsByUserID_Call{Call: _e.mock.On("DeleteSessionsByUserID", ctx, userID)}
+}
+
+func (_c *MockStore_DeleteSessionsByUserID_Call) Run(run func(ctx context.Context, userID int64)) *MockStore_DeleteSessionsByUserID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_DeleteSessionsByUserID_Call) Return(err error) *MockStore_DeleteSessionsByUserID_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockStore_DeleteSessionsByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int64) error) *MockStore_DeleteSessionsByUserID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteSimAccessToken provides a mock function for the type MockStore
 func (_mock *MockStore) DeleteSimAccessToken(ctx context.Context, accessToken string) error {
 	ret := _mock.Called(ctx, accessToken)

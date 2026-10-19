@@ -399,6 +399,21 @@ definitions:
       wspdx:
         type: number
     type: object
+  UpdateProfileParams:
+    properties:
+      current_password:
+        minLength: 6
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - current_password
+    type: object
   UpdateRoleParams:
     properties:
       description:
@@ -1707,6 +1722,34 @@ paths:
       security:
       - BearerAuth: []
       summary: Approve a pending registration
+      tags:
+      - users
+  /users/{id}/profile:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Profile update parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateProfileParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+      security:
+      - BearerAuth: []
+      summary: Update my profile (requires current password)
       tags:
       - users
   /users/{id}/reject:

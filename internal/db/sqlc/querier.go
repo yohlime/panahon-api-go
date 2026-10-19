@@ -48,6 +48,7 @@ type Querier interface {
 	DeleteMisolStation(ctx context.Context, id int64) error
 	DeleteRole(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id uuid.UUID) error
+	DeleteSessionsByUserID(ctx context.Context, userID int64) error
 	DeleteSimAccessToken(ctx context.Context, accessToken string) error
 	DeleteStation(ctx context.Context, id int64) error
 	DeleteStationHealth(ctx context.Context, arg DeleteStationHealthParams) error

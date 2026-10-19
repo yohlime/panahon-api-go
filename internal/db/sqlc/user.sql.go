@@ -253,17 +253,19 @@ func (q *Queries) ReviewUser(ctx context.Context, arg ReviewUserParams) (User, e
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
-  password = COALESCE($1, password),
-  password_changed_at = COALESCE($2, password_changed_at),
-  full_name = COALESCE($3, full_name),
-  email = COALESCE($4, email),
+  username = COALESCE($1, username),
+  password = COALESCE($2, password),
+  password_changed_at = COALESCE($3, password_changed_at),
+  full_name = COALESCE($4, full_name),
+  email = COALESCE($5, email),
   updated_at = now()
 WHERE
-  id = $5
+  id = $6
 RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note
 `
 
 type UpdateUserParams struct {
+	Username          pgtype.Text        `json:"username"`
 	Password          pgtype.Text        `json:"password"`
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	FullName          pgtype.Text        `json:"full_name"`
@@ -273,6 +275,7 @@ type UpdateUserParams struct {
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
+		arg.Username,
 		arg.Password,
 		arg.PasswordChangedAt,
 		arg.FullName,

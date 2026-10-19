@@ -51,6 +51,12 @@ func (c *cache) del(id uuid.UUID) {
 	delete(c.m, id)
 }
 
+func (c *cache) clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.m = make(map[uuid.UUID]entry)
+}
+
 var liveness = newCache()
 
 // Live reports whether the session still exists and is neither blocked nor
@@ -80,4 +86,10 @@ func Live(ctx context.Context, store db.Store, id uuid.UUID) bool {
 // takes effect immediately instead of after the cache TTL.
 func Invalidate(id uuid.UUID) {
 	liveness.del(id)
+}
+
+// Clear drops every cached liveness entry. Used when many sessions are removed
+// at once (e.g. all of a user's sessions after a username change).
+func Clear() {
+	liveness.clear()
 }

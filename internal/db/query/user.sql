@@ -35,6 +35,7 @@ WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status'));
 -- name: UpdateUser :one
 UPDATE users
 SET
+  username = COALESCE(sqlc.narg(username), username),
   password = COALESCE(sqlc.narg(password), password),
   password_changed_at = COALESCE(sqlc.narg(password_changed_at), password_changed_at),
   full_name = COALESCE(sqlc.narg(full_name), full_name),
