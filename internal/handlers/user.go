@@ -64,7 +64,7 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 	user, err := h.store.CreateUser(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusForbidden, errorResponse(errors.New("username or email is already taken")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -291,7 +291,7 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
 			return
 		} else if db.ErrorCode(err) == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusForbidden, errorResponse(errors.New("email is already taken")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -486,7 +486,7 @@ func (h *DefaultHandler) RegisterUser(ctx *gin.Context) {
 	user, err := h.store.CreateUser(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusForbidden, errorResponse(errors.New("username or email is already taken")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
