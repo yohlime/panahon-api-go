@@ -70,3 +70,42 @@ make migrateup / migratedown / migratenew name=<name>
 ```
 
 Generated directories are never hand-edited.
+
+## Deployment
+
+### Build
+
+```sh
+./deploy-docker.sh                       # local: panahon-api:latest + :<git-rev>
+./deploy-docker.sh -U yohlime -p         # build and push to ghcr.io/yohlime/panahon-api
+```
+
+### Runtime configuration
+
+The image does **not** contain `app.env` or `app_conf.yaml`; mount them read-only
+into `/app` (see `docker-compose.yaml`). Create them from the `.example`
+templates first. Required production values:
+
+| Key | Notes |
+|-----|-------|
+| `ENVIRONMENT` | `production` (enables `Secure` cookies) |
+| `TOKEN_SYMMETRIC_KEY` | exactly 32 random characters |
+| `DB_SOURCE` | `postgresql://…` connection string |
+| `ACCESS_TOKEN_DURATION` / `REFRESH_TOKEN_DURATION` | e.g. `5m` / `24h` |
+| `CORS_ALLOW_ORIGINS` | comma-separated origins (empty = same-origin only) |
+| `COOKIE_DOMAIN` | cookie domain (host-only when empty) |
+
+Migrations run automatically on start; the target database must already exist
+with PostGIS. For file logging, `LOG_DIRECTORY` must be writable in the
+container, or set `ENABLE_FILE_LOGGING=0` (console only).
+
+### Frontend
+
+```sh
+cd ../panahon-data-web
+./deploy-docker.sh -U yohlime -p
+```
+
+`PUBLIC_PANAHON_API` in `.env.production` must point at this API
+(same-origin `/data/api/v1` today); `BACKEND_URL` (in `.env.development`) is
+only used by the dev proxy.

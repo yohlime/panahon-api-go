@@ -3,12 +3,11 @@ WORKDIR /app
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -a -o server ./cmd/server/
 
+# Config (app.env, app_conf.yaml) is mounted at runtime, not baked in.
 FROM alpine:3.23
-RUN apk add --no-cache tzdata
+RUN apk add --no-cache tzdata ca-certificates
 WORKDIR /app
 COPY --from=builder /app/server .
-COPY app.env .
-COPY app_conf.yaml .
 COPY --chmod=0755 start.sh .
 COPY internal/db/migration ./internal/db/migration
 

@@ -1,0 +1,22 @@
+.git
+.gitignore
+.github
+.devenv*
+devenv.local.nix
+.direnv
+.pre-commit-config.yaml
+dist/
+tmp/
+*.tgz
+*.tar.gz
+
+# Secrets and local config — mounted at runtime, never baked into the image.
+*.env
+app_conf.yaml
+
+AGENTS.md
+.lazy.lua
+kulala/
+.opencode/
+docker-compose.yaml
+deploy-docker.sh
