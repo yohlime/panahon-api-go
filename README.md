@@ -76,8 +76,8 @@ Generated directories are never hand-edited.
 ### Build
 
 ```sh
-./deploy-docker.sh                       # local: panahon-api:latest + :<git-rev>
-./deploy-docker.sh -U yohlime -p         # build and push to ghcr.io/yohlime/panahon-api
+./scripts/deploy-container.sh                       # local: panahon-api:latest + :<git-rev>
+./scripts/deploy-container.sh -U yohlime -p         # build and push to ghcr.io/yohlime/panahon-api
 ```
 
 ### Runtime configuration
@@ -103,7 +103,7 @@ container, or set `ENABLE_FILE_LOGGING=0` (console only).
 
 ```sh
 cd ../panahon-data-web
-./deploy-docker.sh -U yohlime -p
+./scripts/deploy-container.sh -U yohlime -p
 ```
 
 `PUBLIC_PANAHON_API` in `.env.production` must point at this API

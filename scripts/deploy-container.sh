@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Build (and optionally push) the panahon-api container image.
-# Usage: ./deploy-docker.sh -U yohlime -p
+# Usage: ./scripts/deploy-container.sh -U yohlime -p
 
 ENGINE="podman"
 REGISTRY="ghcr.io"
@@ -35,9 +35,9 @@ Options:
   -h, --help              Show this help and exit
 
 Examples:
-  ./deploy-docker.sh                          # local build
-  ./deploy-docker.sh -U yohlime -p            # build and push
-  ./deploy-docker.sh -U yohlime --arch=arm64 -p
+  ./scripts/deploy-container.sh                          # local build
+  ./scripts/deploy-container.sh -U yohlime -p            # build and push
+  ./scripts/deploy-container.sh -U yohlime --arch=arm64 -p
 EOF
   exit 1
 }
