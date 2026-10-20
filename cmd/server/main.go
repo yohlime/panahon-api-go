@@ -27,6 +27,9 @@ var interruptSignals = []os.Signal{
 	syscall.SIGINT,
 }
 
+// version is set at build time via -ldflags "-X main.version=...".
+var version = "dev"
+
 // PanahonAPI
 //
 //	@title						Panahon API
@@ -49,6 +52,7 @@ func main() {
 	}
 
 	logger := util.NewLogger(config)
+	logger.Info().Str("version", version).Msg("starting panahon api")
 
 	apiDocs.SwaggerInfo.BasePath = config.SwagAPIBasePath
 

@@ -76,9 +76,13 @@ Generated directories are never hand-edited.
 ### Build
 
 ```sh
-./scripts/deploy-container.sh                       # local: panahon-api:latest + :<git-rev>
+./scripts/deploy-container.sh                       # local: panahon-api:latest + :<version>-<git-rev>
 ./scripts/deploy-container.sh -U yohlime -p         # build and push to ghcr.io/yohlime/panahon-api
 ```
+
+Bump the version in `VERSION` with `./scripts/bump-version.sh patch|minor|major`
+(add `--commit` to commit unsigned, `--tag` to also create `vX.Y.Z`). The
+version is injected into the binary and logged at startup.
 
 ### Runtime configuration
 

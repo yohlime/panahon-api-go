@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine3.23 AS builder
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -a -o server ./cmd/server/
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X main.version=$(cat VERSION)" -trimpath -a -o server ./cmd/server/
 
 # Config (app.env, app_conf.yaml) is mounted at runtime, not baked in.
 FROM alpine:3.23
