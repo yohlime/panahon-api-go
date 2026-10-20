@@ -96,6 +96,20 @@ func (h *DefaultHandler) setUserAccess(ctx context.Context, userID int64, access
 	return nil
 }
 
+// isAdminUser reports whether the given user currently holds an admin role.
+func (h *DefaultHandler) isAdminUser(ctx context.Context, userID int64) bool {
+	roles, err := h.store.ListUserRoles(ctx, userID)
+	if err != nil {
+		return false
+	}
+	for _, role := range roles {
+		if models.IsAdminRole(role) {
+			return true
+		}
+	}
+	return false
+}
+
 // effectivePermissions returns the scope a request may read. restricted is
 // false only for admin sessions (unrestricted). API-token requests are capped
 // by the token permissions; other authenticated sessions are scoped by the
@@ -105,6 +119,11 @@ func (h *DefaultHandler) effectivePermissions(ctx *gin.Context) (models.APIToken
 		var perm models.APITokenPermissions
 		if err := json.Unmarshal(dbToken.Permissions, &perm); err != nil {
 			perm = models.APITokenPermissions{}
+		}
+		// Admin-owned tokens are not capped by the owner's entitlement; the
+		// token's own permissions still apply, so an admin can scope a key.
+		if h.isAdminUser(ctx, dbToken.UserID) {
+			return perm, true
 		}
 		return models.IntersectPermissions(perm, h.getUserAccess(ctx, dbToken.UserID)), true
 	}

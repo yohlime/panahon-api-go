@@ -45,17 +45,26 @@ func (h *DefaultHandler) CreateAPIToken(ctx *gin.Context) {
 		return
 	}
 
-	// The token may never exceed its owner's entitlement: default to it when
-	// permissions are omitted, otherwise clamp the requested scope to it.
-	access := h.getUserAccess(ctx, uri.ID)
+	// Admin-owned tokens are not capped by the owner's entitlement: default to
+	// everything when omitted, and honor an explicit (possibly narrower) scope.
+	// Non-admin tokens default to, and are clamped to, the owner's entitlement.
+	admin := h.isAdminUser(ctx, uri.ID)
 
 	var perms models.APITokenPermissions
 	if req.Permissions == nil {
-		perms = access.Permissions()
+		if admin {
+			perms = models.APITokenPermissions{MaxDaysHistory: -1}
+		} else {
+			perms = h.getUserAccess(ctx, uri.ID).Permissions()
+		}
 	} else {
 		requested := *req.Permissions
 		requested.Normalize()
-		perms = models.IntersectPermissions(requested, access)
+		if admin {
+			perms = requested
+		} else {
+			perms = models.IntersectPermissions(requested, h.getUserAccess(ctx, uri.ID))
+		}
 	}
 
 	permissionsJSON, err := json.Marshal(perms)

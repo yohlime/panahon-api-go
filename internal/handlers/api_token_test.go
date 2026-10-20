@@ -86,6 +86,28 @@ func TestCreateAPIToken(t *testing.T) {
 		Token:    apiTok.GetValue(),
 	}
 
+	// Admin-owned tokens: default to everything (all stations/variables, no
+	// history limit) and never clamp an explicit scope.
+	adminAllPerms := models.APITokenPermissions{MaxDaysHistory: -1}
+	dbAPITokAdminAll := dbAPITok
+	dbAPITokAdminAll.Permissions = mustJSON(adminAllPerms)
+	apiTokenAdminAll := models.APITokenWithSecret{
+		APIToken: models.NewAPIToken(dbAPITokAdminAll),
+		Token:    apiTok.GetValue(),
+	}
+
+	adminScopedPerms := models.APITokenPermissions{
+		StationIDs:     []int64{5},
+		Variables:      []string{"rain"},
+		MaxDaysHistory: 1825,
+	}
+	dbAPITokAdminScoped := dbAPITok
+	dbAPITokAdminScoped.Permissions = mustJSON(adminScopedPerms)
+	apiTokenAdminScoped := models.APITokenWithSecret{
+		APIToken: models.NewAPIToken(dbAPITokAdminScoped),
+		Token:    apiTok.GetValue(),
+	}
+
 	testCases := []struct {
 		name          string
 		body          gin.H
@@ -105,6 +127,8 @@ func TestCreateAPIToken(t *testing.T) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
 				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(dbAccess, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
@@ -138,6 +162,8 @@ func TestCreateAPIToken(t *testing.T) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
 				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(dbAccess, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
@@ -152,6 +178,67 @@ func TestCreateAPIToken(t *testing.T) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
 				requireBodyMatchAPIToken(t, recorder.Body, apiTokenClamped)
+			},
+		},
+		{
+			name: "AdminDefaultsToAll",
+			body: gin.H{
+				"name": dbAPITok.Name,
+			},
+			setupAuth: func(request *http.Request) {
+				addAuthorization(request, AuthTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"ADMIN"}, nil)
+				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
+					var permissions models.APITokenPermissions
+					if err := json.Unmarshal(arg.Permissions, &permissions); err != nil {
+						return false
+					}
+					return reflect.DeepEqual(permissions, adminAllPerms)
+				})).Return(dbAPITokAdminAll, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				requireBodyMatchAPIToken(t, recorder.Body, apiTokenAdminAll)
+			},
+		},
+		{
+			name: "AdminExplicitScopeIsNotClamped",
+			body: gin.H{
+				"name": dbAPITok.Name,
+				"permissions": gin.H{
+					"variables":        []string{"rain"},
+					"station_ids":      []int64{5},
+					"max_days_history": 1825,
+				},
+			},
+			setupAuth: func(request *http.Request) {
+				addAuthorization(request, AuthTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"SUPERADMIN"}, nil)
+				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
+					var permissions models.APITokenPermissions
+					if err := json.Unmarshal(arg.Permissions, &permissions); err != nil {
+						return false
+					}
+					return reflect.DeepEqual(permissions, adminScopedPerms)
+				})).Return(dbAPITokAdminScoped, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				requireBodyMatchAPIToken(t, recorder.Body, apiTokenAdminScoped)
 			},
 		},
 		{
@@ -210,6 +297,8 @@ func TestCreateAPIToken(t *testing.T) {
 				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
 				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
 				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
 					Return(dbAccess, nil)
 				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.CreateAPITokenParams")).
