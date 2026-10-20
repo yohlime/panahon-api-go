@@ -71,6 +71,8 @@ ARCH_SUFFIX=""
 if [[ "$MULTIARCH" == false ]]; then
   if [[ -n "$ARCH" ]]; then
     if [[ "$ARCH" == */* ]]; then PLATFORM="$ARCH"; else PLATFORM="linux/${ARCH}"; fi
+    # Only suffix the tags for an explicit cross-build so `:latest` isn't clobbered.
+    ARCH_SUFFIX="${PLATFORM//\//-}"
   else
     case "$(uname -m)" in
     x86_64 | amd64) PLATFORM="linux/amd64" ;;
@@ -78,7 +80,6 @@ if [[ "$MULTIARCH" == false ]]; then
     *) PLATFORM="" ;;
     esac
   fi
-  [[ -n "$PLATFORM" ]] && ARCH_SUFFIX="${PLATFORM//\//-}"
 fi
 
 BASE_TAG="${REGISTRY}/${USERNAME:-yohlime}/${IMG_NAME}"
