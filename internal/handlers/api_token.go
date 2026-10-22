@@ -22,6 +22,8 @@ import (
 //	@Param		req	body	models.CreateAPITokenReq	true	"Create API token parameters"
 //	@Security	BearerAuth
 //	@Success	201	{object}	models.APITokenWithSecret
+//	@Failure	400	"token scope has no stations"
+//	@Failure	403	"owner has no station access"
 //	@Router		/users/{id}/api-tokens [post]
 func (h *DefaultHandler) CreateAPIToken(ctx *gin.Context) {
 	var uri getUserReq
@@ -50,12 +52,22 @@ func (h *DefaultHandler) CreateAPIToken(ctx *gin.Context) {
 	// Non-admin tokens default to, and are clamped to, the owner's entitlement.
 	admin := h.isAdminUser(ctx, uri.ID)
 
+	var access models.UserAccess
+	if !admin {
+		access = h.getUserAccess(ctx, uri.ID)
+		// nil stations means "all"; an empty list means no stations were granted.
+		if access.StationIDs != nil && len(access.StationIDs) == 0 {
+			ctx.JSON(http.StatusForbidden, errorResponse(errors.New("no station access; request access first")))
+			return
+		}
+	}
+
 	var perms models.APITokenPermissions
 	if req.Permissions == nil {
 		if admin {
 			perms = models.APITokenPermissions{MaxDaysHistory: -1}
 		} else {
-			perms = h.getUserAccess(ctx, uri.ID).Permissions()
+			perms = access.Permissions()
 		}
 	} else {
 		requested := *req.Permissions
@@ -63,8 +75,13 @@ func (h *DefaultHandler) CreateAPIToken(ctx *gin.Context) {
 		if admin {
 			perms = requested
 		} else {
-			perms = models.IntersectPermissions(requested, h.getUserAccess(ctx, uri.ID))
+			perms = models.IntersectPermissions(requested, access)
 		}
+	}
+
+	if !admin && perms.StationIDs != nil && len(perms.StationIDs) == 0 {
+		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("token must grant at least one station")))
+		return
 	}
 
 	permissionsJSON, err := json.Marshal(perms)

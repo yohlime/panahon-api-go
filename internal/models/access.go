@@ -12,6 +12,10 @@ const (
 	AccessRequestPending  = "pending"
 	AccessRequestApproved = "approved"
 	AccessRequestDenied   = "denied"
+
+	// AccessRequestCooldown is how long a user must wait after a denial
+	// before submitting another request.
+	AccessRequestCooldown = 24 * time.Hour
 )
 
 // UserAccess is a user's maximum allowed scope (the ceiling for their tokens).

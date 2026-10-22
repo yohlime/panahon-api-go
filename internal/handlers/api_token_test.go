@@ -72,6 +72,25 @@ func TestCreateAPIToken(t *testing.T) {
 		return b
 	}
 
+	// Entitlements with no stations vs. all stations (nil means all).
+	dbAccessEmpty := db.UserAccess{
+		UserID:         user.ID,
+		StationIds:     []byte("[]"),
+		Variables:      entVariables,
+		MaxDaysHistory: 730,
+	}
+	dbAccessAll := db.UserAccess{
+		UserID:         user.ID,
+		MaxDaysHistory: 730,
+	}
+	allPerms := models.APITokenPermissions{MaxDaysHistory: 730}
+	dbAPITokAll := dbAPITok
+	dbAPITokAll.Permissions = mustJSON(allPerms)
+	apiTokenAll := models.APITokenWithSecret{
+		APIToken: models.NewAPIToken(dbAPITokAll),
+		Token:    apiTok.GetValue(),
+	}
+
 	dbAPITokEntitled := dbAPITok
 	dbAPITokEntitled.Permissions = mustJSON(entPerms)
 	apiTokenEntitled := models.APITokenWithSecret{
@@ -239,6 +258,106 @@ func TestCreateAPIToken(t *testing.T) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusCreated, recorder.Code)
 				requireBodyMatchAPIToken(t, recorder.Body, apiTokenAdminScoped)
+			},
+		},
+		{
+			name: "NoStationAccess",
+			body: gin.H{
+				"name": dbAPITok.Name,
+			},
+			setupAuth: func(request *http.Request) {
+				addAuthorization(request, AuthTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(db.UserAccess{}, db.ErrRecordNotFound)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "EmptyStationGrant",
+			body: gin.H{
+				"name": dbAPITok.Name,
+			},
+			setupAuth: func(request *http.Request) {
+				addAuthorization(request, AuthTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(dbAccessEmpty, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "NoStationsRequested",
+			body: gin.H{
+				"name": dbAPITok.Name,
+				"permissions": gin.H{
+					"station_ids": []int64{},
+					"variables":   []string{"temp"},
+				},
+			},
+			setupAuth: func(request *http.Request) {
+				addAuthorization(request, AuthTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(dbAccess, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "AllStationsGrant",
+			body: gin.H{
+				"name": dbAPITok.Name,
+			},
+			setupAuth: func(request *http.Request) {
+				addAuthorization(request, AuthTypeBearer, tokenStr)
+			},
+			buildStubs: func(tokenMaker *mocktoken.MockMaker, store *mockdb.MockStore) {
+				tokenMaker.EXPECT().VerifyToken(mock.AnythingOfType("string")).Return(&token.Payload{User: authUser}, nil)
+				store.EXPECT().GetUser(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(user, nil)
+				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return([]string{"USER"}, nil)
+				store.EXPECT().GetUserAccess(mock.AnythingOfType("*gin.Context"), user.ID).
+					Return(dbAccessAll, nil)
+				store.EXPECT().CreateAPIToken(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateAPITokenParams) bool {
+					var permissions models.APITokenPermissions
+					if err := json.Unmarshal(arg.Permissions, &permissions); err != nil {
+						return false
+					}
+					return reflect.DeepEqual(permissions, allPerms)
+				})).Return(dbAPITokAll, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusCreated, recorder.Code)
+				requireBodyMatchAPIToken(t, recorder.Body, apiTokenAll)
 			},
 		},
 		{

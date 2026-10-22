@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -254,6 +255,8 @@ func (h *DefaultHandler) GetUserAccess(ctx *gin.Context) {
 //	@Param		req	body	models.CreateAccessRequestReq	true	"Access request parameters"
 //	@Security	BearerAuth
 //	@Success	201	{object}	models.AccessRequest
+//	@Failure	409	"a pending request already exists"
+//	@Failure	429	"denied recently; retry after the cooldown"
 //	@Router		/users/{id}/access-requests [post]
 func (h *DefaultHandler) CreateUserAccessRequest(ctx *gin.Context) {
 	var uri getUserAccessUri
@@ -266,6 +269,36 @@ func (h *DefaultHandler) CreateUserAccessRequest(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
+	}
+
+	rows, err := h.store.ListAccessRequestsByUser(ctx, uri.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// Rows are ordered by creation, not review; find the latest denial.
+	var latestDenied *models.AccessRequest
+	for i := range rows {
+		r := models.NewAccessRequest(rows[i])
+		switch r.Status {
+		case models.AccessRequestPending:
+			ctx.JSON(http.StatusConflict, errorResponse(errors.New("you already have a pending access request")))
+			return
+		case models.AccessRequestDenied:
+			if r.ReviewedAt != nil && (latestDenied == nil || r.ReviewedAt.After(*latestDenied.ReviewedAt)) {
+				latestDenied = &r
+			}
+		}
+	}
+	if latestDenied != nil && latestDenied.ReviewedAt != nil {
+		retryAfter := latestDenied.ReviewedAt.Add(models.AccessRequestCooldown)
+		if time.Now().Before(retryAfter) {
+			ctx.JSON(http.StatusTooManyRequests, errorResponse(
+				fmt.Errorf("access request denied recently; try again after %s", retryAfter.UTC().Format(time.RFC3339)),
+			))
+			return
+		}
 	}
 
 	row, err := h.store.CreateAccessRequest(ctx, db.CreateAccessRequestParams{
