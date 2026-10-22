@@ -399,6 +399,17 @@ definitions:
       wspdx:
         type: number
     type: object
+  StationStats:
+    properties:
+      offline:
+        type: integer
+      online:
+        type: integer
+      reporting:
+        type: integer
+      total:
+        type: integer
+    type: object
   UpdateProfileParams:
     properties:
       current_password:
@@ -1360,6 +1371,23 @@ paths:
       summary: Get nearest latest station observation
       tags:
       - observations
+  /stations/stats:
+    get:
+      parameters:
+      - description: Restrict to the caller's entitled stations
+        in: query
+        name: accessible
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/StationStats'
+      summary: Station counts
+      tags:
+      - stations
   /tokens/renew:
     post:
       consumes:
@@ -1593,6 +1621,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/AccessRequest'
+        "409":
+          description: a pending request already exists
+        "429":
+          description: denied recently; retry after the cooldown
       security:
       - BearerAuth: []
       summary: Request additional access for a user (self or admin)
@@ -1667,6 +1699,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.APITokenWithSecret'
+        "400":
+          description: token scope has no stations
+        "403":
+          description: owner has no station access
       security:
       - BearerAuth: []
       summary: Create an API token for a user (self or admin)

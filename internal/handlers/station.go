@@ -335,3 +335,59 @@ func (h *DefaultHandler) DeleteStation(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusNoContent, nil)
 }
+
+type getStationStatsReq struct {
+	Accessible bool `form:"accessible" binding:"omitempty"`
+}
+
+// GetStationStats
+//
+//	@Summary	Station counts
+//	@Tags		stations
+//	@Produce	json
+//	@Param		accessible	query		bool	false	"Restrict to the caller's entitled stations"
+//	@Success	200			{object}	models.StationStats
+//	@Router		/stations/stats [get]
+func (h *DefaultHandler) GetStationStats(ctx *gin.Context) {
+	var req getStationStatsReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var restrictedIDs []int64
+	if req.Accessible {
+		if perm, restricted := h.effectivePermissions(ctx); restricted && perm.StationIDs != nil {
+			restrictedIDs = perm.StationIDs
+		}
+	}
+
+	var stats models.StationStats
+	if restrictedIDs == nil {
+		row, err := h.store.GetStationStats(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		stats = models.StationStats{
+			Total:     row.Total,
+			Online:    row.Online,
+			Offline:   row.Offline,
+			Reporting: row.Reporting,
+		}
+	} else {
+		row, err := h.store.GetStationStatsByIds(ctx, restrictedIDs)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		stats = models.StationStats{
+			Total:     row.Total,
+			Online:    row.Online,
+			Offline:   row.Offline,
+			Reporting: row.Reporting,
+		}
+	}
+
+	ctx.JSON(http.StatusOK, stats)
+}

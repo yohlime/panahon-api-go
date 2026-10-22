@@ -112,3 +112,30 @@ RETURNING *;
 
 -- name: DeleteStation :exec
 DELETE FROM observations_station WHERE id = $1;
+
+-- name: GetStationStats :one
+SELECT
+  COUNT(*)::bigint AS total,
+  COUNT(*) FILTER (WHERE s.status = 'ONLINE')::bigint AS online,
+  COUNT(*) FILTER (WHERE s.status IS DISTINCT FROM 'ONLINE')::bigint AS offline,
+  COUNT(*) FILTER (
+    WHERE EXISTS (
+      SELECT 1 FROM observations_current o
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+    )
+  )::bigint AS reporting
+FROM observations_station s;
+
+-- name: GetStationStatsByIds :one
+SELECT
+  COUNT(*)::bigint AS total,
+  COUNT(*) FILTER (WHERE s.status = 'ONLINE')::bigint AS online,
+  COUNT(*) FILTER (WHERE s.status IS DISTINCT FROM 'ONLINE')::bigint AS offline,
+  COUNT(*) FILTER (
+    WHERE EXISTS (
+      SELECT 1 FROM observations_current o
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+    )
+  )::bigint AS reporting
+FROM observations_station s
+WHERE s.id = ANY(@station_ids::bigint[]);

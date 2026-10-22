@@ -4127,6 +4127,132 @@ func (_c *MockStore_GetStationObservation_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// GetStationStats provides a mock function for the type MockStore
+func (_mock *MockStore) GetStationStats(ctx context.Context) (db.GetStationStatsRow, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetStationStats")
+	}
+
+	var r0 db.GetStationStatsRow
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (db.GetStationStatsRow, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) db.GetStationStatsRow); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(db.GetStationStatsRow)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_GetStationStats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStationStats'
+type MockStore_GetStationStats_Call struct {
+	*mock.Call
+}
+
+// GetStationStats is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockStore_Expecter) GetStationStats(ctx any) *MockStore_GetStationStats_Call {
+	return &MockStore_GetStationStats_Call{Call: _e.mock.On("GetStationStats", ctx)}
+}
+
+func (_c *MockStore_GetStationStats_Call) Run(run func(ctx context.Context)) *MockStore_GetStationStats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_GetStationStats_Call) Return(getStationStatsRow db.GetStationStatsRow, err error) *MockStore_GetStationStats_Call {
+	_c.Call.Return(getStationStatsRow, err)
+	return _c
+}
+
+func (_c *MockStore_GetStationStats_Call) RunAndReturn(run func(ctx context.Context) (db.GetStationStatsRow, error)) *MockStore_GetStationStats_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetStationStatsByIds provides a mock function for the type MockStore
+func (_mock *MockStore) GetStationStatsByIds(ctx context.Context, stationIds []int64) (db.GetStationStatsByIdsRow, error) {
+	ret := _mock.Called(ctx, stationIds)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetStationStatsByIds")
+	}
+
+	var r0 db.GetStationStatsByIdsRow
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) (db.GetStationStatsByIdsRow, error)); ok {
+		return returnFunc(ctx, stationIds)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) db.GetStationStatsByIdsRow); ok {
+		r0 = returnFunc(ctx, stationIds)
+	} else {
+		r0 = ret.Get(0).(db.GetStationStatsByIdsRow)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []int64) error); ok {
+		r1 = returnFunc(ctx, stationIds)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_GetStationStatsByIds_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStationStatsByIds'
+type MockStore_GetStationStatsByIds_Call struct {
+	*mock.Call
+}
+
+// GetStationStatsByIds is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stationIds []int64
+func (_e *MockStore_Expecter) GetStationStatsByIds(ctx any, stationIds any) *MockStore_GetStationStatsByIds_Call {
+	return &MockStore_GetStationStatsByIds_Call{Call: _e.mock.On("GetStationStatsByIds", ctx, stationIds)}
+}
+
+func (_c *MockStore_GetStationStatsByIds_Call) Run(run func(ctx context.Context, stationIds []int64)) *MockStore_GetStationStatsByIds_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []int64
+		if args[1] != nil {
+			arg1 = args[1].([]int64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_GetStationStatsByIds_Call) Return(getStationStatsByIdsRow db.GetStationStatsByIdsRow, err error) *MockStore_GetStationStatsByIds_Call {
+	_c.Call.Return(getStationStatsByIdsRow, err)
+	return _c
+}
+
+func (_c *MockStore_GetStationStatsByIds_Call) RunAndReturn(run func(ctx context.Context, stationIds []int64) (db.GetStationStatsByIdsRow, error)) *MockStore_GetStationStatsByIds_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUser provides a mock function for the type MockStore
 func (_mock *MockStore) GetUser(ctx context.Context, id int64) (db.User, error) {
 	ret := _mock.Called(ctx, id)

@@ -269,6 +269,73 @@ func (q *Queries) GetStationByMobileNumber(ctx context.Context, mobileNumber pgt
 	return i, err
 }
 
+const getStationStats = `-- name: GetStationStats :one
+SELECT
+  COUNT(*)::bigint AS total,
+  COUNT(*) FILTER (WHERE s.status = 'ONLINE')::bigint AS online,
+  COUNT(*) FILTER (WHERE s.status IS DISTINCT FROM 'ONLINE')::bigint AS offline,
+  COUNT(*) FILTER (
+    WHERE EXISTS (
+      SELECT 1 FROM observations_current o
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+    )
+  )::bigint AS reporting
+FROM observations_station s
+`
+
+type GetStationStatsRow struct {
+	Total     int64 `json:"total"`
+	Online    int64 `json:"online"`
+	Offline   int64 `json:"offline"`
+	Reporting int64 `json:"reporting"`
+}
+
+func (q *Queries) GetStationStats(ctx context.Context) (GetStationStatsRow, error) {
+	row := q.db.QueryRow(ctx, getStationStats)
+	var i GetStationStatsRow
+	err := row.Scan(
+		&i.Total,
+		&i.Online,
+		&i.Offline,
+		&i.Reporting,
+	)
+	return i, err
+}
+
+const getStationStatsByIds = `-- name: GetStationStatsByIds :one
+SELECT
+  COUNT(*)::bigint AS total,
+  COUNT(*) FILTER (WHERE s.status = 'ONLINE')::bigint AS online,
+  COUNT(*) FILTER (WHERE s.status IS DISTINCT FROM 'ONLINE')::bigint AS offline,
+  COUNT(*) FILTER (
+    WHERE EXISTS (
+      SELECT 1 FROM observations_current o
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+    )
+  )::bigint AS reporting
+FROM observations_station s
+WHERE s.id = ANY($1::bigint[])
+`
+
+type GetStationStatsByIdsRow struct {
+	Total     int64 `json:"total"`
+	Online    int64 `json:"online"`
+	Offline   int64 `json:"offline"`
+	Reporting int64 `json:"reporting"`
+}
+
+func (q *Queries) GetStationStatsByIds(ctx context.Context, stationIds []int64) (GetStationStatsByIdsRow, error) {
+	row := q.db.QueryRow(ctx, getStationStatsByIds, stationIds)
+	var i GetStationStatsByIdsRow
+	err := row.Scan(
+		&i.Total,
+		&i.Online,
+		&i.Offline,
+		&i.Reporting,
+	)
+	return i, err
+}
+
 const listStations = `-- name: ListStations :many
 SELECT id, name, lat, lon, elevation, date_installed, mo_station_id, sms_system_type, mobile_number, station_type, station_type2, station_url, status, logger_version, priority_level, provider_id, province, region, address, created_at, updated_at, deleted_at, geom FROM observations_station
 WHERE

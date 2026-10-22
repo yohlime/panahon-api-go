@@ -72,6 +72,8 @@ type Querier interface {
 	GetStationHealth(ctx context.Context, arg GetStationHealthParams) (ObservationsStationhealth, error)
 	GetStationMOObservation(ctx context.Context, arg GetStationMOObservationParams) (ObservationsMoObservation, error)
 	GetStationObservation(ctx context.Context, arg GetStationObservationParams) (ObservationsObservation, error)
+	GetStationStats(ctx context.Context) (GetStationStatsRow, error)
+	GetStationStatsByIds(ctx context.Context, stationIds []int64) (GetStationStatsByIdsRow, error)
 	GetUser(ctx context.Context, id int64) (User, error)
 	GetUserAccess(ctx context.Context, userID int64) (UserAccess, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)

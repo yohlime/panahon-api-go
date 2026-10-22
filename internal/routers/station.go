@@ -9,6 +9,7 @@ func (r *DefaultRouter) stationRouter(gr *gin.RouterGroup) {
 	stations := gr.Group("/stations")
 	{
 		stations.GET("", mw.AuthMiddleware(r.tokenMaker, r.store, true), r.handler.ListStations)
+		stations.GET("/stats", mw.AuthMiddleware(r.tokenMaker, r.store, true), r.handler.GetStationStats)
 		stations.GET(":station_id", r.handler.GetStation)
 		stations.GET("/nearest/observations/latest", r.handler.GetNearestLatestStationObservation)
 

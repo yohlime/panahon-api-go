@@ -744,6 +744,33 @@ const docTemplate = `{
                 }
             }
         },
+        "/stations/stats": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stations"
+                ],
+                "summary": "Station counts",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Restrict to the caller's entitled stations",
+                        "name": "accessible",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StationStats"
+                        }
+                    }
+                }
+            }
+        },
         "/stations/{station_id}": {
             "get": {
                 "consumes": [
@@ -1610,6 +1637,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/AccessRequest"
                         }
+                    },
+                    "409": {
+                        "description": "a pending request already exists"
+                    },
+                    "429": {
+                        "description": "denied recently; retry after the cooldown"
                     }
                 }
             }
@@ -1729,6 +1762,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.APITokenWithSecret"
                         }
+                    },
+                    "400": {
+                        "description": "token scope has no stations"
+                    },
+                    "403": {
+                        "description": "owner has no station access"
                     }
                 }
             }
@@ -2509,6 +2548,23 @@ const docTemplate = `{
                 },
                 "wspdx": {
                     "type": "number"
+                }
+            }
+        },
+        "StationStats": {
+            "type": "object",
+            "properties": {
+                "offline": {
+                    "type": "integer"
+                },
+                "online": {
+                    "type": "integer"
+                },
+                "reporting": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
