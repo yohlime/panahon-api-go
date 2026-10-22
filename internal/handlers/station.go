@@ -362,30 +362,36 @@ func (h *DefaultHandler) GetStationStats(ctx *gin.Context) {
 		}
 	}
 
+	window := h.stationOnlineThreshold().Seconds()
 	var stats models.StationStats
 	if restrictedIDs == nil {
-		row, err := h.store.GetStationStats(ctx)
+		row, err := h.store.GetStationStats(ctx, window)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
 		stats = models.StationStats{
-			Total:     row.Total,
-			Online:    row.Online,
-			Offline:   row.Offline,
-			Reporting: row.Reporting,
+			Total:         row.Total,
+			Online:        row.Online,
+			Offline:       row.Offline,
+			Reporting:     row.Reporting,
+			WindowSeconds: int64(window),
 		}
 	} else {
-		row, err := h.store.GetStationStatsByIds(ctx, restrictedIDs)
+		row, err := h.store.GetStationStatsByIds(ctx, db.GetStationStatsByIdsParams{
+			StationIds:    restrictedIDs,
+			WindowSeconds: window,
+		})
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
 		stats = models.StationStats{
-			Total:     row.Total,
-			Online:    row.Online,
-			Offline:   row.Offline,
-			Reporting: row.Reporting,
+			Total:         row.Total,
+			Online:        row.Online,
+			Offline:       row.Offline,
+			Reporting:     row.Reporting,
+			WindowSeconds: int64(window),
 		}
 	}
 

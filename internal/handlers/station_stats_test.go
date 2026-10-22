@@ -28,31 +28,31 @@ func TestGetStationStatsAPI(t *testing.T) {
 			query: "",
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					GetStationStats(mock.AnythingOfType("*gin.Context")).
+					GetStationStats(mock.AnythingOfType("*gin.Context"), 3600.0).
 					Return(db.GetStationStatsRow{Total: 10, Online: 7, Offline: 3, Reporting: 6}, nil)
 			},
 			expectedCode: http.StatusOK,
-			expected:     models.StationStats{Total: 10, Online: 7, Offline: 3, Reporting: 6},
+			expected:     models.StationStats{Total: 10, Online: 7, Offline: 3, Reporting: 6, WindowSeconds: 3600},
 		},
 		{
 			name:  "AccessibleWithoutAuth",
 			query: "?accessible=true",
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					GetStationStatsByIds(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(ids []int64) bool {
-						return ids != nil && len(ids) == 0
+					GetStationStatsByIds(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.GetStationStatsByIdsParams) bool {
+						return arg.WindowSeconds == 3600.0 && arg.StationIds != nil && len(arg.StationIds) == 0
 					})).
 					Return(db.GetStationStatsByIdsRow{}, nil)
 			},
 			expectedCode: http.StatusOK,
-			expected:     models.StationStats{},
+			expected:     models.StationStats{WindowSeconds: 3600},
 		},
 		{
 			name:  "StoreError",
 			query: "",
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					GetStationStats(mock.AnythingOfType("*gin.Context")).
+					GetStationStats(mock.AnythingOfType("*gin.Context"), 3600.0).
 					Return(db.GetStationStatsRow{}, sql.ErrConnDone)
 			},
 			expectedCode: http.StatusInternalServerError,

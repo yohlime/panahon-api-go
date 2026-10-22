@@ -23,6 +23,7 @@ func newTestHandler(store db.Store, tokenMaker token.Maker) *DefaultHandler {
 		TokenSymmetricKey:   util.RandomString(32),
 		AccessTokenDuration: time.Minute,
 		EnableFileLogging:   false,
+		StationStatus:       util.StationStatusConfig{OnlineThreshold: time.Hour},
 	}
 
 	logger := util.NewLogger(config)

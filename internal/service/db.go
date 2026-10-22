@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func InsertCurrentObservations(ctx context.Context, store db.Store, logger *zerolog.Logger) error {
+func InsertCurrentObservations(ctx context.Context, store db.Store, logger *zerolog.Logger, onlineThreshold time.Duration) error {
 	serviceName := "InsertCurrentObservations"
 	obs, err := store.InsertCurrentObservations(ctx)
 	if err != nil {
@@ -30,12 +30,11 @@ func InsertCurrentObservations(ctx context.Context, store db.Store, logger *zero
 	count := len(obs)
 	countOnline := 0
 	for _, o := range obs {
-		statusStr := "OFFLINE"
-		if time.Since(o.Timestamp.Time) < time.Hour {
-			statusStr = "ONLINE"
+		statusStr := stationStatus(o.Timestamp.Time, onlineThreshold)
+		if statusStr == "ONLINE" {
 			countOnline++
 		}
-		if _, err := store.UpdateStation(ctx, db.UpdateStationParams{
+		if _, err := store.SetStationStatus(ctx, db.SetStationStatusParams{
 			ID:     o.StationID,
 			Status: pgtype.Text{String: statusStr, Valid: true},
 		}); err != nil {
@@ -46,7 +45,7 @@ func InsertCurrentObservations(ctx context.Context, store db.Store, logger *zero
 	return nil
 }
 
-func InsertCurrentDavisObservations(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger) error {
+func InsertCurrentDavisObservations(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger, onlineThreshold time.Duration) error {
 	serviceName := "InsertCurrentDavisObservations"
 	stations, err := store.ListStations(ctx, db.ListStationsParams{})
 	if err != nil {
@@ -105,12 +104,9 @@ func InsertCurrentDavisObservations(ctx context.Context, davisFactory sensor.Dav
 			continue
 		}
 		countSuccess++
-		statusStr := "OFFLINE"
-		if time.Since(davisObs[0].Timestamp.Time) < time.Hour {
-			statusStr = "ONLINE"
-		}
+		statusStr := stationStatus(davisObs[0].Timestamp.Time, onlineThreshold)
 
-		_, err = store.UpdateStation(ctx, db.UpdateStationParams{
+		_, err = store.SetStationStatus(ctx, db.SetStationStatusParams{
 			ID:     stn.ID,
 			Status: pgtype.Text{String: statusStr, Valid: true},
 		})
@@ -128,7 +124,7 @@ func InsertCurrentDavisObservations(ctx context.Context, davisFactory sensor.Dav
 	return nil
 }
 
-func InsertCurrentDavisObservationsV2(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger) error {
+func InsertCurrentDavisObservationsV2(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger, onlineThreshold time.Duration) error {
 	serviceName := "InsertCurrentDavisObservationsV2"
 	stations, err := store.ListWeatherlinkStations(ctx, db.ListWeatherlinkStationsParams{})
 	if err != nil {
@@ -184,24 +180,19 @@ func InsertCurrentDavisObservationsV2(ctx context.Context, davisFactory sensor.D
 			continue
 		}
 		countSuccess++
-		// statusStr := "OFFLINE"
-		// if time.Since(davisObs[0].Timestamp.Time) < time.Hour {
-		// 	statusStr = "ONLINE"
-		// }
-		//
-		// _, err = store.UpdateStation(ctx, db.UpdateStationParams{
-		// 	ID:     stn.ID,
-		// 	Status: pgtype.Text{String: statusStr, Valid: true},
-		// })
-		// if err != nil {
-		// 	logger.Error().Err(err).Str("service", serviceName).Msg("update status error")
-		// }
+		statusStr := stationStatus(davisObs[0].Timestamp.Time, onlineThreshold)
+		if _, err := store.SetStationStatus(ctx, db.SetStationStatusParams{
+			ID:     stn.ID,
+			Status: pgtype.Text{String: statusStr, Valid: true},
+		}); err != nil {
+			logger.Error().Err(err).Str("service", serviceName).Msg("update status error")
+		}
 	}
 	logger.Info().Str("service", serviceName).Str("success", fmt.Sprintf("%d/%d", countSuccess, count)).Msg("insert data successful")
 	return nil
 }
 
-func InsertCurrentDavisObservationsDashboard(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger) error {
+func InsertCurrentDavisObservationsDashboard(ctx context.Context, davisFactory sensor.DavisFactory, store db.Store, logger *zerolog.Logger, onlineThreshold time.Duration) error {
 	serviceName := "InsertCurrentDavisObservationsDashboard"
 	stations, err := store.ListWeatherlinkStations(ctx, db.ListWeatherlinkStationsParams{})
 	if err != nil {
@@ -257,18 +248,13 @@ func InsertCurrentDavisObservationsDashboard(ctx context.Context, davisFactory s
 			continue
 		}
 		countSuccess++
-		// statusStr := "OFFLINE"
-		// if time.Since(davisObs[0].Timestamp.Time) < time.Hour {
-		// 	statusStr = "ONLINE"
-		// }
-		//
-		// _, err = store.UpdateStation(ctx, db.UpdateStationParams{
-		// 	ID:     stn.ID,
-		// 	Status: pgtype.Text{String: statusStr, Valid: true},
-		// })
-		// if err != nil {
-		// 	logger.Error().Err(err).Str("service", serviceName).Msg("update status error")
-		// }
+		statusStr := stationStatus(davisObs[0].Timestamp.Time, onlineThreshold)
+		if _, err := store.SetStationStatus(ctx, db.SetStationStatusParams{
+			ID:     stn.ID,
+			Status: pgtype.Text{String: statusStr, Valid: true},
+		}); err != nil {
+			logger.Error().Err(err).Str("service", serviceName).Msg("update status error")
+		}
 	}
 	logger.Info().
 		Str("service", serviceName).
@@ -325,4 +311,24 @@ func getQueryParamInsensitive(u *url.URL, key string) string {
 		}
 	}
 	return ""
+}
+
+// stationStatus returns the online state for an observation timestamp.
+func stationStatus(ts time.Time, onlineThreshold time.Duration) string {
+	if time.Since(ts) < onlineThreshold {
+		return "ONLINE"
+	}
+	return "OFFLINE"
+}
+
+// RefreshStationStatus marks ONLINE stations with no fresh observation OFFLINE.
+func RefreshStationStatus(ctx context.Context, store db.Store, logger *zerolog.Logger, onlineThreshold time.Duration) error {
+	serviceName := "RefreshStationStatus"
+	n, err := store.MarkStaleStationsOffline(ctx, onlineThreshold.Seconds())
+	if err != nil {
+		logger.Error().Err(err).Str("service", serviceName).Msg("database error")
+		return err
+	}
+	logger.Info().Str("service", serviceName).Int64("offline", n).Msg("station status refreshed")
+	return nil
 }

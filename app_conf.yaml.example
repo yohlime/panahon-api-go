@@ -1,5 +1,8 @@
 # Copy to app_conf.yaml. app_conf.yaml is gitignored; the app requires it and
 # will not start without it (see util.LoadConfig). Supplies background cron jobs.
+station_status:
+  online_threshold: "1h"
+
 cron_jobs:
   - name: "lufft"
     schedule: "2-59/10 * * * *"
@@ -9,3 +12,5 @@ cron_jobs:
     schedule: "*/1 * * * *"
   - name: "davisV2"
     schedule: "*/5 * * * *"
+  - name: "stationStatus"
+    schedule: "*/15 * * * *"

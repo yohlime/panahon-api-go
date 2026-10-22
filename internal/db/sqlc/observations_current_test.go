@@ -85,8 +85,9 @@ func (ts *CurrentObservationTestSuite) TestGetNearestLatestStationObservation() 
 	stnObs, err := testStore.GetNearestLatestStationObservation(
 		ctx,
 		GetNearestLatestStationObservationParams{
-			Lat: station.Lat.Float32,
-			Lon: station.Lon.Float32,
+			Lat:           station.Lat.Float32,
+			Lon:           station.Lon.Float32,
+			WindowSeconds: 3600,
 		})
 	require.NoError(t, err)
 	require.Equal(t, obs.Temp, stnObs.Temp)

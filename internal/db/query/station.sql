@@ -121,7 +121,7 @@ SELECT
   COUNT(*) FILTER (
     WHERE EXISTS (
       SELECT 1 FROM observations_current o
-      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - make_interval(secs => @window_seconds::double precision)
     )
   )::bigint AS reporting
 FROM observations_station s;
@@ -134,8 +134,25 @@ SELECT
   COUNT(*) FILTER (
     WHERE EXISTS (
       SELECT 1 FROM observations_current o
-      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - make_interval(secs => @window_seconds::double precision)
     )
   )::bigint AS reporting
 FROM observations_station s
 WHERE s.id = ANY(@station_ids::bigint[]);
+
+-- name: MarkStaleStationsOffline :execrows
+UPDATE observations_station s
+SET status = 'OFFLINE', updated_at = NOW()
+WHERE s.status = 'ONLINE'
+  AND NOT EXISTS (
+    SELECT 1 FROM observations_current o
+    WHERE o.station_id = s.id
+      AND o.timestamp > NOW() - make_interval(secs => @stale_after_seconds::double precision)
+  );
+
+-- name: SetStationStatus :execrows
+UPDATE observations_station
+SET status = @status, updated_at = NOW()
+WHERE id = @id
+  AND status IS DISTINCT FROM 'INACTIVE'
+  AND status IS DISTINCT FROM 'ERROR';

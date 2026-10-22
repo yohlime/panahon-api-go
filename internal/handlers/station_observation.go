@@ -607,7 +607,7 @@ func filterLatestObservationVariables(res latestObservationRes, vars []string) l
 //	@Success	200	{array}	latestObservationRes
 //	@Router		/observations/latest [get]
 func (h *DefaultHandler) ListLatestObservations(ctx *gin.Context) {
-	_obsSlice, err := h.store.ListLatestObservations(ctx)
+	_obsSlice, err := h.store.ListLatestObservations(ctx, h.stationOnlineThreshold().Seconds())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -700,8 +700,9 @@ func (h *DefaultHandler) GetNearestLatestStationObservation(ctx *gin.Context) {
 	}
 
 	obs, err := h.store.GetNearestLatestStationObservation(ctx, db.GetNearestLatestStationObservationParams{
-		Lon: float32(lon),
-		Lat: float32(lat),
+		Lon:           float32(lon),
+		Lat:           float32(lat),
+		WindowSeconds: h.stationOnlineThreshold().Seconds(),
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {

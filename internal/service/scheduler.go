@@ -17,6 +17,11 @@ func ScheduleJobs(ctx context.Context, store db.Store, conf util.Config, logger 
 		logger.Fatal().Err(err).Str("service", "Initialization").Msg("error scheduling job")
 	}
 
+	onlineThreshold := conf.StationStatus.OnlineThreshold
+	if onlineThreshold <= 0 {
+		onlineThreshold = time.Hour
+	}
+
 	for _, job := range conf.CronJobs {
 		var (
 			jobFunc   any
@@ -33,22 +38,27 @@ func ScheduleJobs(ctx context.Context, store db.Store, conf util.Config, logger 
 			jobName = job.Name
 			cronSched = job.Schedule
 			jobFunc = InsertCurrentObservations
-			jobParams = []any{ctx, store, logger}
+			jobParams = []any{ctx, store, logger, onlineThreshold}
 		case "davisV1":
 			jobName = job.Name
 			cronSched = job.Schedule
 			jobFunc = InsertCurrentDavisObservations
-			jobParams = []any{ctx, davisFactory, store, logger}
+			jobParams = []any{ctx, davisFactory, store, logger, onlineThreshold}
 		case "davisV2":
 			jobName = job.Name
 			cronSched = job.Schedule
 			jobFunc = InsertCurrentDavisObservationsV2
-			jobParams = []any{ctx, davisFactory, store, logger}
+			jobParams = []any{ctx, davisFactory, store, logger, onlineThreshold}
 		case "davisDashboard":
 			jobName = job.Name
 			cronSched = job.Schedule
 			jobFunc = InsertCurrentDavisObservationsDashboard
-			jobParams = []any{ctx, davisFactory, store, logger}
+			jobParams = []any{ctx, davisFactory, store, logger, onlineThreshold}
+		case "stationStatus":
+			jobName = job.Name
+			cronSched = job.Schedule
+			jobFunc = RefreshStationStatus
+			jobParams = []any{ctx, store, logger, onlineThreshold}
 		default:
 			logger.Warn().Str("service", job.Name).Msg("cron job not supported")
 			continue

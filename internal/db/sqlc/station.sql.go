@@ -277,7 +277,7 @@ SELECT
   COUNT(*) FILTER (
     WHERE EXISTS (
       SELECT 1 FROM observations_current o
-      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - make_interval(secs => $1::double precision)
     )
   )::bigint AS reporting
 FROM observations_station s
@@ -290,8 +290,8 @@ type GetStationStatsRow struct {
 	Reporting int64 `json:"reporting"`
 }
 
-func (q *Queries) GetStationStats(ctx context.Context) (GetStationStatsRow, error) {
-	row := q.db.QueryRow(ctx, getStationStats)
+func (q *Queries) GetStationStats(ctx context.Context, windowSeconds float64) (GetStationStatsRow, error) {
+	row := q.db.QueryRow(ctx, getStationStats, windowSeconds)
 	var i GetStationStatsRow
 	err := row.Scan(
 		&i.Total,
@@ -310,12 +310,17 @@ SELECT
   COUNT(*) FILTER (
     WHERE EXISTS (
       SELECT 1 FROM observations_current o
-      WHERE o.station_id = s.id AND o.timestamp > NOW() - INTERVAL '1 hour'
+      WHERE o.station_id = s.id AND o.timestamp > NOW() - make_interval(secs => $1::double precision)
     )
   )::bigint AS reporting
 FROM observations_station s
-WHERE s.id = ANY($1::bigint[])
+WHERE s.id = ANY($2::bigint[])
 `
+
+type GetStationStatsByIdsParams struct {
+	WindowSeconds float64 `json:"window_seconds"`
+	StationIds    []int64 `json:"station_ids"`
+}
 
 type GetStationStatsByIdsRow struct {
 	Total     int64 `json:"total"`
@@ -324,8 +329,8 @@ type GetStationStatsByIdsRow struct {
 	Reporting int64 `json:"reporting"`
 }
 
-func (q *Queries) GetStationStatsByIds(ctx context.Context, stationIds []int64) (GetStationStatsByIdsRow, error) {
-	row := q.db.QueryRow(ctx, getStationStatsByIds, stationIds)
+func (q *Queries) GetStationStatsByIds(ctx context.Context, arg GetStationStatsByIdsParams) (GetStationStatsByIdsRow, error) {
+	row := q.db.QueryRow(ctx, getStationStatsByIds, arg.WindowSeconds, arg.StationIds)
 	var i GetStationStatsByIdsRow
 	err := row.Scan(
 		&i.Total,
@@ -591,6 +596,46 @@ func (q *Queries) ListStationsWithinRadius(ctx context.Context, arg ListStations
 		return nil, err
 	}
 	return items, nil
+}
+
+const markStaleStationsOffline = `-- name: MarkStaleStationsOffline :execrows
+UPDATE observations_station s
+SET status = 'OFFLINE', updated_at = NOW()
+WHERE s.status = 'ONLINE'
+  AND NOT EXISTS (
+    SELECT 1 FROM observations_current o
+    WHERE o.station_id = s.id
+      AND o.timestamp > NOW() - make_interval(secs => $1::double precision)
+  )
+`
+
+func (q *Queries) MarkStaleStationsOffline(ctx context.Context, staleAfterSeconds float64) (int64, error) {
+	result, err := q.db.Exec(ctx, markStaleStationsOffline, staleAfterSeconds)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setStationStatus = `-- name: SetStationStatus :execrows
+UPDATE observations_station
+SET status = $1, updated_at = NOW()
+WHERE id = $2
+  AND status IS DISTINCT FROM 'INACTIVE'
+  AND status IS DISTINCT FROM 'ERROR'
+`
+
+type SetStationStatusParams struct {
+	Status pgtype.Text `json:"status"`
+	ID     int64       `json:"id"`
+}
+
+func (q *Queries) SetStationStatus(ctx context.Context, arg SetStationStatusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setStationStatus, arg.Status, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateStation = `-- name: UpdateStation :one

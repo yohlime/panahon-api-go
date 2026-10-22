@@ -23,10 +23,11 @@ type BaseStation struct {
 
 // StationStats is an aggregate over a station scope.
 type StationStats struct {
-	Total     int64 `json:"total"`
-	Online    int64 `json:"online"`
-	Offline   int64 `json:"offline"`
-	Reporting int64 `json:"reporting"`
+	Total         int64 `json:"total"`
+	Online        int64 `json:"online"`
+	Offline       int64 `json:"offline"`
+	Reporting     int64 `json:"reporting"`
+	WindowSeconds int64 `json:"window_seconds"`
 } //@name StationStats
 
 type Station struct {

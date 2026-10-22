@@ -466,3 +466,92 @@ func getRandomCoordsFromCircle(arg getRandomCoordsFromCircleParams) (lon, lat fl
 	lat = arg.cY + d*float32(math.Sin(theta))
 	return
 }
+
+func createCurrentForStation(t *testing.T, stationID int64, ts time.Time) ObservationsCurrent {
+	arg := CreateCurrentObservationParams{
+		StationID:     stationID,
+		Timestamp:     pgtype.Timestamptz{Time: ts, Valid: true},
+		Temp:          pgtype.Float4{Float32: 25, Valid: true},
+		Tn:            pgtype.Float4{Float32: 20, Valid: true},
+		Tx:            pgtype.Float4{Float32: 30, Valid: true},
+		TnTimestamp:   pgtype.Timestamptz{Time: ts, Valid: true},
+		TxTimestamp:   pgtype.Timestamptz{Time: ts, Valid: true},
+		GustTimestamp: pgtype.Timestamptz{Time: ts, Valid: true},
+	}
+	obs, err := testStore.CreateCurrentObservation(context.Background(), arg)
+	require.NoError(t, err)
+	return obs
+}
+
+func (ts *StationTestSuite) TestMarkStaleStationsOffline() {
+	t := ts.T()
+	ctx := context.Background()
+
+	stale := createRandomStation(t, false)
+	fresh := createRandomStation(t, false)
+	inactive := createRandomStation(t, false)
+
+	for _, stn := range []ObservationsStation{stale, fresh, inactive} {
+		_, err := testStore.UpdateStation(ctx, UpdateStationParams{
+			ID:     stn.ID,
+			Status: pgtype.Text{String: "ONLINE", Valid: true},
+		})
+		require.NoError(t, err)
+	}
+	_, err := testStore.UpdateStation(ctx, UpdateStationParams{
+		ID:     inactive.ID,
+		Status: pgtype.Text{String: "INACTIVE", Valid: true},
+	})
+	require.NoError(t, err)
+
+	createCurrentForStation(t, stale.ID, time.Now().Add(-2*time.Hour))
+	createCurrentForStation(t, fresh.ID, time.Now())
+	createCurrentForStation(t, inactive.ID, time.Now().Add(-2*time.Hour))
+
+	n, err := testStore.MarkStaleStationsOffline(ctx, 3600)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), n)
+
+	got, err := testStore.GetStation(ctx, stale.ID)
+	require.NoError(t, err)
+	require.Equal(t, "OFFLINE", got.Status.String)
+
+	got, err = testStore.GetStation(ctx, fresh.ID)
+	require.NoError(t, err)
+	require.Equal(t, "ONLINE", got.Status.String)
+
+	got, err = testStore.GetStation(ctx, inactive.ID)
+	require.NoError(t, err)
+	require.Equal(t, "INACTIVE", got.Status.String)
+}
+
+func (ts *StationTestSuite) TestSetStationStatusPreservesInactive() {
+	t := ts.T()
+	ctx := context.Background()
+
+	active := createRandomStation(t, false)
+	inactive := createRandomStation(t, false)
+	_, err := testStore.UpdateStation(ctx, UpdateStationParams{
+		ID:     inactive.ID,
+		Status: pgtype.Text{String: "INACTIVE", Valid: true},
+	})
+	require.NoError(t, err)
+
+	n, err := testStore.SetStationStatus(ctx, SetStationStatusParams{
+		ID:     active.ID,
+		Status: pgtype.Text{String: "OFFLINE", Valid: true},
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), n)
+
+	n, err = testStore.SetStationStatus(ctx, SetStationStatusParams{
+		ID:     inactive.ID,
+		Status: pgtype.Text{String: "ONLINE", Valid: true},
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(0), n)
+
+	got, err := testStore.GetStation(ctx, inactive.ID)
+	require.NoError(t, err)
+	require.Equal(t, "INACTIVE", got.Status.String)
+}

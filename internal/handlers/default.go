@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"time"
+
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
@@ -35,4 +37,12 @@ func NewDefaultHandler(config util.Config, store db.Store, tokenMaker token.Make
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+// stationOnlineThreshold is the configured freshness window for ONLINE status.
+func (h *DefaultHandler) stationOnlineThreshold() time.Duration {
+	if d := h.config.StationStatus.OnlineThreshold; d > 0 {
+		return d
+	}
+	return time.Hour
 }

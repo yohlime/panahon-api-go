@@ -2565,6 +2565,9 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                },
+                "window_seconds": {
+                    "type": "integer"
                 }
             }
         },

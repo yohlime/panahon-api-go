@@ -94,11 +94,11 @@ func TestInsertCurrentDavisObservations(t *testing.T) {
 							require.InDelta(t, dObs.Rr.Float32, arg.Rain.Float32, 0.01)
 						}).
 						Return(db.ObservationsCurrent{}, nil).Once()
-					store.EXPECT().UpdateStation(mock.AnythingOfType("backgroundCtx"), mock.AnythingOfType("db.UpdateStationParams")).
-						Run(func(ctx context.Context, arg db.UpdateStationParams) {
+					store.EXPECT().SetStationStatus(mock.AnythingOfType("backgroundCtx"), mock.AnythingOfType("db.SetStationStatusParams")).
+						Run(func(ctx context.Context, arg db.SetStationStatusParams) {
 							require.Equal(t, stnStatus[i], arg.Status.String)
 						}).
-						Return(db.ObservationsStation{}, nil).Once()
+						Return(int64(1), nil).Once()
 				}
 			},
 			checkResponse: func(davisSensor *mocksensor.MockDavisSensor, store *mockdb.MockStore) {
@@ -125,7 +125,7 @@ func TestInsertCurrentDavisObservations(t *testing.T) {
 			logger := util.NewLogger(config)
 
 			ctx := context.Background()
-			InsertCurrentDavisObservations(ctx, sensorFactory, store, logger)
+			InsertCurrentDavisObservations(ctx, sensorFactory, store, logger, time.Hour)
 			tc.checkResponse(davisSensor, store)
 		})
 	}
@@ -227,11 +227,11 @@ func TestInsertCurrentDavisObservationsV2(t *testing.T) {
 							require.InDelta(t, dObs.Rr.Float32, arg.Rr.Float32, 0.01)
 						}).
 						Return(db.ObservationsMoObservation{}, nil).Once()
-					// store.EXPECT().UpdateStation(mock.AnythingOfType("backgroundCtx"), mock.AnythingOfType("db.UpdateStationParams")).
-					// 	Run(func(ctx context.Context, arg db.UpdateStationParams) {
-					// 		require.Equal(t, stnStatus[i], arg.Status.String)
-					// 	}).
-					// 	Return(db.ObservationsStation{}, nil).Once()
+					store.EXPECT().SetStationStatus(mock.AnythingOfType("backgroundCtx"), mock.AnythingOfType("db.SetStationStatusParams")).
+						Run(func(ctx context.Context, arg db.SetStationStatusParams) {
+							require.Equal(t, stnStatus[i], arg.Status.String)
+						}).
+						Return(int64(1), nil).Once()
 				}
 			},
 			checkResponse: func(davisSensor *mocksensor.MockDavisSensor, store *mockdb.MockStore) {
@@ -258,7 +258,7 @@ func TestInsertCurrentDavisObservationsV2(t *testing.T) {
 			logger := util.NewLogger(config)
 
 			ctx := context.Background()
-			InsertCurrentDavisObservationsV2(ctx, sensorFactory, store, logger)
+			InsertCurrentDavisObservationsV2(ctx, sensorFactory, store, logger, time.Hour)
 			tc.checkResponse(davisSensor, store)
 		})
 	}
@@ -350,11 +350,11 @@ func TestInsertCurrentDavisObservationsDashboard(t *testing.T) {
 							require.InDelta(t, dObs.Rr.Float32, arg.Rr.Float32, 0.01)
 						}).
 						Return(db.ObservationsMoObservation{}, nil).Once()
-					// store.EXPECT().UpdateStation(mock.AnythingOfType("backgroundCtx"), mock.AnythingOfType("db.UpdateStationParams")).
-					// 	Run(func(ctx context.Context, arg db.UpdateStationParams) {
-					// 		require.Equal(t, stnStatus[i], arg.Status.String)
-					// 	}).
-					// 	Return(db.ObservationsStation{}, nil).Once()
+					store.EXPECT().SetStationStatus(mock.AnythingOfType("backgroundCtx"), mock.AnythingOfType("db.SetStationStatusParams")).
+						Run(func(ctx context.Context, arg db.SetStationStatusParams) {
+							require.Equal(t, stnStatus[i], arg.Status.String)
+						}).
+						Return(int64(1), nil).Once()
 				}
 			},
 			checkResponse: func(davisSensor *mocksensor.MockDavisSensor, store *mockdb.MockStore) {
@@ -381,8 +381,23 @@ func TestInsertCurrentDavisObservationsDashboard(t *testing.T) {
 			logger := util.NewLogger(config)
 
 			ctx := context.Background()
-			InsertCurrentDavisObservationsDashboard(ctx, sensorFactory, store, logger)
+			InsertCurrentDavisObservationsDashboard(ctx, sensorFactory, store, logger, time.Hour)
 			tc.checkResponse(davisSensor, store)
 		})
 	}
+}
+
+func TestRefreshStationStatus(t *testing.T) {
+	store := mockdb.NewMockStore(t)
+	store.EXPECT().
+		MarkStaleStationsOffline(mock.AnythingOfType("backgroundCtx"), 3600.0).
+		Return(int64(2), nil).
+		Once()
+
+	config := util.Config{EnableFileLogging: false}
+	logger := util.NewLogger(config)
+
+	err := RefreshStationStatus(context.Background(), store, logger, time.Hour)
+	require.NoError(t, err)
+	store.AssertExpectations(t)
 }

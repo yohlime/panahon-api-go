@@ -152,7 +152,7 @@ WITH RankedRows AS (
     ) AS distance
   FROM observations_station stn
     JOIN observations_current obs ON stn.id = obs.station_id
-  WHERE obs.timestamp > NOW() - INTERVAL '1 hour'
+  WHERE obs.timestamp > NOW() - make_interval(secs => $3::double precision)
 )
 SELECT
   id, name, lat, lon, elevation, address,
@@ -166,8 +166,9 @@ LIMIT 1
 `
 
 type GetNearestLatestStationObservationParams struct {
-	Lon float32 `json:"lon"`
-	Lat float32 `json:"lat"`
+	Lon           float32 `json:"lon"`
+	Lat           float32 `json:"lat"`
+	WindowSeconds float64 `json:"window_seconds"`
 }
 
 type GetNearestLatestStationObservationRow struct {
@@ -195,7 +196,7 @@ type GetNearestLatestStationObservationRow struct {
 }
 
 func (q *Queries) GetNearestLatestStationObservation(ctx context.Context, arg GetNearestLatestStationObservationParams) (GetNearestLatestStationObservationRow, error) {
-	row := q.db.QueryRow(ctx, getNearestLatestStationObservation, arg.Lon, arg.Lat)
+	row := q.db.QueryRow(ctx, getNearestLatestStationObservation, arg.Lon, arg.Lat, arg.WindowSeconds)
 	var i GetNearestLatestStationObservationRow
 	err := row.Scan(
 		&i.ID,
@@ -423,7 +424,7 @@ WITH RankedRows AS (
   FROM observations_station stn 
     JOIN observations_current obs 
     ON stn.id = obs.station_id
-  WHERE obs.timestamp > NOW() - INTERVAL '1 hour'
+  WHERE obs.timestamp > NOW() - make_interval(secs => $1::double precision)
 )
 SELECT id, name, lat, lon, elevation, address, rain, temp, rh, wdir, wspd, srad, mslp, tn, tx, gust, rain_accum, tn_timestamp, tx_timestamp, gust_timestamp, timestamp, rn
 FROM RankedRows
@@ -455,8 +456,8 @@ type ListLatestObservationsRow struct {
 	Rn            int64              `json:"rn"`
 }
 
-func (q *Queries) ListLatestObservations(ctx context.Context) ([]ListLatestObservationsRow, error) {
-	rows, err := q.db.Query(ctx, listLatestObservations)
+func (q *Queries) ListLatestObservations(ctx context.Context, windowSeconds float64) ([]ListLatestObservationsRow, error) {
+	rows, err := q.db.Query(ctx, listLatestObservations, windowSeconds)
 	if err != nil {
 		return nil, err
 	}

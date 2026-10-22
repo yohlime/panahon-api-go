@@ -4128,8 +4128,8 @@ func (_c *MockStore_GetStationObservation_Call) RunAndReturn(run func(ctx contex
 }
 
 // GetStationStats provides a mock function for the type MockStore
-func (_mock *MockStore) GetStationStats(ctx context.Context) (db.GetStationStatsRow, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockStore) GetStationStats(ctx context.Context, windowSeconds float64) (db.GetStationStatsRow, error) {
+	ret := _mock.Called(ctx, windowSeconds)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetStationStats")
@@ -4137,16 +4137,16 @@ func (_mock *MockStore) GetStationStats(ctx context.Context) (db.GetStationStats
 
 	var r0 db.GetStationStatsRow
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (db.GetStationStatsRow, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, float64) (db.GetStationStatsRow, error)); ok {
+		return returnFunc(ctx, windowSeconds)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) db.GetStationStatsRow); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, float64) db.GetStationStatsRow); ok {
+		r0 = returnFunc(ctx, windowSeconds)
 	} else {
 		r0 = ret.Get(0).(db.GetStationStatsRow)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, float64) error); ok {
+		r1 = returnFunc(ctx, windowSeconds)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4160,18 +4160,24 @@ type MockStore_GetStationStats_Call struct {
 
 // GetStationStats is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) GetStationStats(ctx any) *MockStore_GetStationStats_Call {
-	return &MockStore_GetStationStats_Call{Call: _e.mock.On("GetStationStats", ctx)}
+//   - windowSeconds float64
+func (_e *MockStore_Expecter) GetStationStats(ctx any, windowSeconds any) *MockStore_GetStationStats_Call {
+	return &MockStore_GetStationStats_Call{Call: _e.mock.On("GetStationStats", ctx, windowSeconds)}
 }
 
-func (_c *MockStore_GetStationStats_Call) Run(run func(ctx context.Context)) *MockStore_GetStationStats_Call {
+func (_c *MockStore_GetStationStats_Call) Run(run func(ctx context.Context, windowSeconds float64)) *MockStore_GetStationStats_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 float64
+		if args[1] != nil {
+			arg1 = args[1].(float64)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -4182,14 +4188,14 @@ func (_c *MockStore_GetStationStats_Call) Return(getStationStatsRow db.GetStatio
 	return _c
 }
 
-func (_c *MockStore_GetStationStats_Call) RunAndReturn(run func(ctx context.Context) (db.GetStationStatsRow, error)) *MockStore_GetStationStats_Call {
+func (_c *MockStore_GetStationStats_Call) RunAndReturn(run func(ctx context.Context, windowSeconds float64) (db.GetStationStatsRow, error)) *MockStore_GetStationStats_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetStationStatsByIds provides a mock function for the type MockStore
-func (_mock *MockStore) GetStationStatsByIds(ctx context.Context, stationIds []int64) (db.GetStationStatsByIdsRow, error) {
-	ret := _mock.Called(ctx, stationIds)
+func (_mock *MockStore) GetStationStatsByIds(ctx context.Context, arg db.GetStationStatsByIdsParams) (db.GetStationStatsByIdsRow, error) {
+	ret := _mock.Called(ctx, arg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetStationStatsByIds")
@@ -4197,16 +4203,16 @@ func (_mock *MockStore) GetStationStatsByIds(ctx context.Context, stationIds []i
 
 	var r0 db.GetStationStatsByIdsRow
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) (db.GetStationStatsByIdsRow, error)); ok {
-		return returnFunc(ctx, stationIds)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.GetStationStatsByIdsParams) (db.GetStationStatsByIdsRow, error)); ok {
+		return returnFunc(ctx, arg)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []int64) db.GetStationStatsByIdsRow); ok {
-		r0 = returnFunc(ctx, stationIds)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.GetStationStatsByIdsParams) db.GetStationStatsByIdsRow); ok {
+		r0 = returnFunc(ctx, arg)
 	} else {
 		r0 = ret.Get(0).(db.GetStationStatsByIdsRow)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []int64) error); ok {
-		r1 = returnFunc(ctx, stationIds)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.GetStationStatsByIdsParams) error); ok {
+		r1 = returnFunc(ctx, arg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4220,20 +4226,20 @@ type MockStore_GetStationStatsByIds_Call struct {
 
 // GetStationStatsByIds is a helper method to define mock.On call
 //   - ctx context.Context
-//   - stationIds []int64
-func (_e *MockStore_Expecter) GetStationStatsByIds(ctx any, stationIds any) *MockStore_GetStationStatsByIds_Call {
-	return &MockStore_GetStationStatsByIds_Call{Call: _e.mock.On("GetStationStatsByIds", ctx, stationIds)}
+//   - arg db.GetStationStatsByIdsParams
+func (_e *MockStore_Expecter) GetStationStatsByIds(ctx any, arg any) *MockStore_GetStationStatsByIds_Call {
+	return &MockStore_GetStationStatsByIds_Call{Call: _e.mock.On("GetStationStatsByIds", ctx, arg)}
 }
 
-func (_c *MockStore_GetStationStatsByIds_Call) Run(run func(ctx context.Context, stationIds []int64)) *MockStore_GetStationStatsByIds_Call {
+func (_c *MockStore_GetStationStatsByIds_Call) Run(run func(ctx context.Context, arg db.GetStationStatsByIdsParams)) *MockStore_GetStationStatsByIds_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []int64
+		var arg1 db.GetStationStatsByIdsParams
 		if args[1] != nil {
-			arg1 = args[1].([]int64)
+			arg1 = args[1].(db.GetStationStatsByIdsParams)
 		}
 		run(
 			arg0,
@@ -4248,7 +4254,7 @@ func (_c *MockStore_GetStationStatsByIds_Call) Return(getStationStatsByIdsRow db
 	return _c
 }
 
-func (_c *MockStore_GetStationStatsByIds_Call) RunAndReturn(run func(ctx context.Context, stationIds []int64) (db.GetStationStatsByIdsRow, error)) *MockStore_GetStationStatsByIds_Call {
+func (_c *MockStore_GetStationStatsByIds_Call) RunAndReturn(run func(ctx context.Context, arg db.GetStationStatsByIdsParams) (db.GetStationStatsByIdsRow, error)) *MockStore_GetStationStatsByIds_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4914,8 +4920,8 @@ func (_c *MockStore_ListAccessRequestsByUser_Call) RunAndReturn(run func(ctx con
 }
 
 // ListLatestObservations provides a mock function for the type MockStore
-func (_mock *MockStore) ListLatestObservations(ctx context.Context) ([]db.ListLatestObservationsRow, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockStore) ListLatestObservations(ctx context.Context, windowSeconds float64) ([]db.ListLatestObservationsRow, error) {
+	ret := _mock.Called(ctx, windowSeconds)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListLatestObservations")
@@ -4923,18 +4929,18 @@ func (_mock *MockStore) ListLatestObservations(ctx context.Context) ([]db.ListLa
 
 	var r0 []db.ListLatestObservationsRow
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]db.ListLatestObservationsRow, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, float64) ([]db.ListLatestObservationsRow, error)); ok {
+		return returnFunc(ctx, windowSeconds)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []db.ListLatestObservationsRow); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, float64) []db.ListLatestObservationsRow); ok {
+		r0 = returnFunc(ctx, windowSeconds)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]db.ListLatestObservationsRow)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, float64) error); ok {
+		r1 = returnFunc(ctx, windowSeconds)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4948,18 +4954,24 @@ type MockStore_ListLatestObservations_Call struct {
 
 // ListLatestObservations is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockStore_Expecter) ListLatestObservations(ctx any) *MockStore_ListLatestObservations_Call {
-	return &MockStore_ListLatestObservations_Call{Call: _e.mock.On("ListLatestObservations", ctx)}
+//   - windowSeconds float64
+func (_e *MockStore_Expecter) ListLatestObservations(ctx any, windowSeconds any) *MockStore_ListLatestObservations_Call {
+	return &MockStore_ListLatestObservations_Call{Call: _e.mock.On("ListLatestObservations", ctx, windowSeconds)}
 }
 
-func (_c *MockStore_ListLatestObservations_Call) Run(run func(ctx context.Context)) *MockStore_ListLatestObservations_Call {
+func (_c *MockStore_ListLatestObservations_Call) Run(run func(ctx context.Context, windowSeconds float64)) *MockStore_ListLatestObservations_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 float64
+		if args[1] != nil {
+			arg1 = args[1].(float64)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -4970,7 +4982,7 @@ func (_c *MockStore_ListLatestObservations_Call) Return(listLatestObservationsRo
 	return _c
 }
 
-func (_c *MockStore_ListLatestObservations_Call) RunAndReturn(run func(ctx context.Context) ([]db.ListLatestObservationsRow, error)) *MockStore_ListLatestObservations_Call {
+func (_c *MockStore_ListLatestObservations_Call) RunAndReturn(run func(ctx context.Context, windowSeconds float64) ([]db.ListLatestObservationsRow, error)) *MockStore_ListLatestObservations_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5995,6 +6007,72 @@ func (_c *MockStore_ListWeatherlinkStations_Call) RunAndReturn(run func(ctx cont
 	return _c
 }
 
+// MarkStaleStationsOffline provides a mock function for the type MockStore
+func (_mock *MockStore) MarkStaleStationsOffline(ctx context.Context, staleAfterSeconds float64) (int64, error) {
+	ret := _mock.Called(ctx, staleAfterSeconds)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkStaleStationsOffline")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, float64) (int64, error)); ok {
+		return returnFunc(ctx, staleAfterSeconds)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, float64) int64); ok {
+		r0 = returnFunc(ctx, staleAfterSeconds)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, float64) error); ok {
+		r1 = returnFunc(ctx, staleAfterSeconds)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_MarkStaleStationsOffline_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkStaleStationsOffline'
+type MockStore_MarkStaleStationsOffline_Call struct {
+	*mock.Call
+}
+
+// MarkStaleStationsOffline is a helper method to define mock.On call
+//   - ctx context.Context
+//   - staleAfterSeconds float64
+func (_e *MockStore_Expecter) MarkStaleStationsOffline(ctx any, staleAfterSeconds any) *MockStore_MarkStaleStationsOffline_Call {
+	return &MockStore_MarkStaleStationsOffline_Call{Call: _e.mock.On("MarkStaleStationsOffline", ctx, staleAfterSeconds)}
+}
+
+func (_c *MockStore_MarkStaleStationsOffline_Call) Run(run func(ctx context.Context, staleAfterSeconds float64)) *MockStore_MarkStaleStationsOffline_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 float64
+		if args[1] != nil {
+			arg1 = args[1].(float64)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_MarkStaleStationsOffline_Call) Return(n int64, err error) *MockStore_MarkStaleStationsOffline_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockStore_MarkStaleStationsOffline_Call) RunAndReturn(run func(ctx context.Context, staleAfterSeconds float64) (int64, error)) *MockStore_MarkStaleStationsOffline_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ReviewUser provides a mock function for the type MockStore
 func (_mock *MockStore) ReviewUser(ctx context.Context, arg db.ReviewUserParams) (db.User, error) {
 	ret := _mock.Called(ctx, arg)
@@ -6057,6 +6135,72 @@ func (_c *MockStore_ReviewUser_Call) Return(user db.User, err error) *MockStore_
 }
 
 func (_c *MockStore_ReviewUser_Call) RunAndReturn(run func(ctx context.Context, arg db.ReviewUserParams) (db.User, error)) *MockStore_ReviewUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetStationStatus provides a mock function for the type MockStore
+func (_mock *MockStore) SetStationStatus(ctx context.Context, arg db.SetStationStatusParams) (int64, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetStationStatus")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.SetStationStatusParams) (int64, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.SetStationStatusParams) int64); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.SetStationStatusParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_SetStationStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetStationStatus'
+type MockStore_SetStationStatus_Call struct {
+	*mock.Call
+}
+
+// SetStationStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.SetStationStatusParams
+func (_e *MockStore_Expecter) SetStationStatus(ctx any, arg any) *MockStore_SetStationStatus_Call {
+	return &MockStore_SetStationStatus_Call{Call: _e.mock.On("SetStationStatus", ctx, arg)}
+}
+
+func (_c *MockStore_SetStationStatus_Call) Run(run func(ctx context.Context, arg db.SetStationStatusParams)) *MockStore_SetStationStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.SetStationStatusParams
+		if args[1] != nil {
+			arg1 = args[1].(db.SetStationStatusParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_SetStationStatus_Call) Return(n int64, err error) *MockStore_SetStationStatus_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockStore_SetStationStatus_Call) RunAndReturn(run func(ctx context.Context, arg db.SetStationStatusParams) (int64, error)) *MockStore_SetStationStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -10,7 +10,7 @@ WITH RankedRows AS (
   FROM observations_station stn 
     JOIN observations_current obs 
     ON stn.id = obs.station_id
-  WHERE obs.timestamp > NOW() - INTERVAL '1 hour'
+  WHERE obs.timestamp > NOW() - make_interval(secs => @window_seconds::double precision)
 )
 SELECT *
 FROM RankedRows
@@ -43,7 +43,7 @@ WITH RankedRows AS (
     ) AS distance
   FROM observations_station stn
     JOIN observations_current obs ON stn.id = obs.station_id
-  WHERE obs.timestamp > NOW() - INTERVAL '1 hour'
+  WHERE obs.timestamp > NOW() - make_interval(secs => @window_seconds::double precision)
 )
 SELECT
   id, name, lat, lon, elevation, address,
