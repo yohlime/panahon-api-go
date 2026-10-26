@@ -14,6 +14,8 @@ import (
 type Querier interface {
 	BatchCreateUserRoles(ctx context.Context, arg []BatchCreateUserRolesParams) *BatchCreateUserRolesBatchResults
 	BatchDeleteUserRoles(ctx context.Context, arg []BatchDeleteUserRolesParams) *BatchDeleteUserRolesBatchResults
+	CompleteUserRegistration(ctx context.Context, arg CompleteUserRegistrationParams) (User, error)
+	ConsumeUserToken(ctx context.Context, arg ConsumeUserTokenParams) (UserToken, error)
 	CountAPITokensByUser(ctx context.Context, userID int64) (int64, error)
 	CountAccessRequests(ctx context.Context) (int64, error)
 	CountAccessRequestsByStatus(ctx context.Context, status string) (int64, error)
@@ -42,6 +44,7 @@ type Querier interface {
 	CreateStationMOObservation(ctx context.Context, arg CreateStationMOObservationParams) (ObservationsMoObservation, error)
 	CreateStationObservation(ctx context.Context, arg CreateStationObservationParams) (ObservationsObservation, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateUserToken(ctx context.Context, arg CreateUserTokenParams) (UserToken, error)
 	CreateWeatherlinkStation(ctx context.Context, arg CreateWeatherlinkStationParams) (Weatherlink, error)
 	DeleteAPIToken(ctx context.Context, id int64) error
 	DeleteAccessRequest(ctx context.Context, id int64) error
@@ -76,10 +79,12 @@ type Querier interface {
 	GetStationStatsByIds(ctx context.Context, arg GetStationStatsByIdsParams) (GetStationStatsByIdsRow, error)
 	GetUser(ctx context.Context, id int64) (User, error)
 	GetUserAccess(ctx context.Context, userID int64) (UserAccess, error)
-	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByEmail(ctx context.Context, lower string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetUserTokenByHash(ctx context.Context, arg GetUserTokenByHashParams) (UserToken, error)
 	InsertCurrentMOObservations(ctx context.Context) ([]ObservationsCurrent, error)
 	InsertCurrentObservations(ctx context.Context) ([]ObservationsCurrent, error)
+	InvalidateUserTokens(ctx context.Context, arg InvalidateUserTokensParams) error
 	ListAPITokensByUser(ctx context.Context, userID int64) ([]APIToken, error)
 	ListAccessRequests(ctx context.Context, arg ListAccessRequestsParams) ([]AccessRequest, error)
 	ListAccessRequestsByStatus(ctx context.Context, arg ListAccessRequestsByStatusParams) ([]AccessRequest, error)

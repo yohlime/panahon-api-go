@@ -227,7 +227,7 @@ type User struct {
 	ID                int64              `json:"id"`
 	Username          string             `json:"username"`
 	FullName          string             `json:"full_name"`
-	Email             string             `json:"email"`
+	Email             pgtype.Text        `json:"email"`
 	Password          string             `json:"password"`
 	EmailVerifiedAt   pgtype.Timestamptz `json:"email_verified_at"`
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
@@ -246,6 +246,17 @@ type UserAccess struct {
 	MaxDaysHistory int32              `json:"max_days_history"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserToken struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	Purpose   string             `json:"purpose"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedBy pgtype.Int8        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type Weatherlink struct {

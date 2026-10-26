@@ -39,6 +39,25 @@ definitions:
     required:
     - weather
     type: object
+  CompleteRegistrationParams:
+    properties:
+      confirm_password:
+        minLength: 6
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      token:
+        type: string
+    required:
+    - confirm_password
+    - password
+    - token
+    type: object
   CreateAccessRequestParams:
     properties:
       all_stations:
@@ -137,9 +156,6 @@ definitions:
         type: string
       full_name:
         type: string
-      password:
-        minLength: 6
-        type: string
       roles:
         items:
           type: string
@@ -147,10 +163,14 @@ definitions:
       username:
         type: string
     required:
-    - email
-    - full_name
-    - password
     - username
+    type: object
+  CreateUserResponse:
+    properties:
+      registration_url:
+        type: string
+      user:
+        $ref: '#/definitions/User'
     type: object
   GlobeLabsLoadResponse:
     properties:
@@ -253,6 +273,20 @@ definitions:
     - full_name
     - password
     - username
+    type: object
+  RegistrationInfo:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      username:
+        type: string
+    type: object
+  RegistrationLinkResponse:
+    properties:
+      registration_url:
+        type: string
     type: object
   RenewAccessTokenParams:
     properties:
@@ -575,6 +609,13 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  ValidateRegistrationParams:
+    properties:
+      token:
+        type: string
+    required:
+    - token
     type: object
   handlers.latestObsRes:
     properties:
@@ -1424,6 +1465,7 @@ paths:
         name: per_page
         type: integer
       - enum:
+        - invited
         - pending
         - active
         - rejected
@@ -1440,6 +1482,28 @@ paths:
       security:
       - BearerAuth: []
       summary: List users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create user parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CreateUserParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/CreateUserResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an invited user and generate a registration link
       tags:
       - users
   /users/{id}:
@@ -1481,28 +1545,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Get user
-      tags:
-      - users
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Create user parameters
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/CreateUserParams'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/User'
-      security:
-      - BearerAuth: []
-      summary: Create user
       tags:
       - users
     put:
@@ -1790,6 +1832,26 @@ paths:
       summary: Update my profile (requires current password)
       tags:
       - users
+  /users/{id}/registration-link:
+    post:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RegistrationLinkResponse'
+      security:
+      - BearerAuth: []
+      summary: Create or regenerate a user's registration link
+      tags:
+      - users
   /users/{id}/reject:
     post:
       consumes:
@@ -1831,6 +1893,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Auth User
+      tags:
+      - users
+  /users/complete-registration/accept:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration completion parameters
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/CompleteRegistrationParams'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Complete an invited user's registration
+      tags:
+      - users
+  /users/complete-registration/validate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration token
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/ValidateRegistrationParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RegistrationInfo'
+      summary: Validate a registration link
       tags:
       - users
   /users/login:

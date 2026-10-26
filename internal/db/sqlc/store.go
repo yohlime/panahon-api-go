@@ -13,6 +13,8 @@ type Store interface {
 	BulkDeleteUserRoles(ctx context.Context, arg []UserRolesParams) []error
 	CreateMisolStationTx(ctx context.Context, arg CreateMisolStationTxParams) (CreateMisolStationTxResult, error)
 	FirstOrCreateSimAccessTokenTx(ctx context.Context, arg FirstOrCreateSimAccessTokenTxParams) (FirstOrCreateSimAccessTokenTxResult, error)
+	CreateRegistrationTokenTx(ctx context.Context, arg CreateRegistrationTokenTxParams) (UserToken, error)
+	CompleteRegistrationTx(ctx context.Context, arg CompleteRegistrationTxParams) (User, error)
 }
 
 // SQLStore provides all functions to execute SQL queries and transactions

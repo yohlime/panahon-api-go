@@ -20,10 +20,13 @@ const (
 
 func newTestHandler(store db.Store, tokenMaker token.Maker) *DefaultHandler {
 	config := util.Config{
-		TokenSymmetricKey:   util.RandomString(32),
-		AccessTokenDuration: time.Minute,
-		EnableFileLogging:   false,
-		StationStatus:       util.StationStatusConfig{OnlineThreshold: time.Hour},
+		TokenSymmetricKey:         util.RandomString(32),
+		AccessTokenDuration:       time.Minute,
+		RefreshTokenDuration:      time.Hour,
+		FrontendBaseURL:           "http://localhost:8000",
+		RegistrationTokenDuration: time.Hour,
+		EnableFileLogging:         false,
+		StationStatus:             util.StationStatusConfig{OnlineThreshold: time.Hour},
 	}
 
 	logger := util.NewLogger(config)

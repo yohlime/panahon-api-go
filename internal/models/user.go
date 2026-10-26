@@ -8,6 +8,7 @@ import (
 
 // User statuses. Self-registered users start pending until an admin reviews them.
 const (
+	UserStatusInvited  = "invited"
 	UserStatusPending  = "pending"
 	UserStatusActive   = "active"
 	UserStatusRejected = "rejected"
@@ -18,7 +19,7 @@ type User struct {
 	Username          string     `json:"username" fake:"{username}"`
 	FullName          string     `json:"full_name" fake:"{name}"`
 	Email             string     `json:"email" fake:"{email}"`
-	Status            string     `json:"status" fake:"{randomstring:[pending,active,rejected]}"`
+	Status            string     `json:"status" fake:"{randomstring:[invited,pending,active,rejected]}"`
 	PasswordChangedAt time.Time  `json:"password_changed_at"`
 	CreatedAt         time.Time  `json:"created_at"`
 	ReviewedBy        *int64     `json:"reviewed_by,omitempty"`
@@ -33,9 +34,12 @@ func NewUser(user db.User, roleNames []string) User {
 		ID:         user.ID,
 		Username:   user.Username,
 		FullName:   user.FullName,
-		Email:      user.Email,
 		Status:     user.Status,
 		ReviewNote: user.ReviewNote.String,
+	}
+
+	if user.Email.Valid {
+		ret.Email = user.Email.String
 	}
 
 	if user.PasswordChangedAt.Valid {

@@ -118,7 +118,8 @@ func (ts *UserTestSuite) TestUpdateUser() {
 				oldUser = createRandomUser(t)
 				newEmail = util.RandomEmail()
 				return UpdateUserParams{
-					ID: oldUser.ID,
+					ID:       oldUser.ID,
+					SetEmail: true,
 					Email: pgtype.Text{
 						String: newEmail,
 						Valid:  true,
@@ -128,7 +129,7 @@ func (ts *UserTestSuite) TestUpdateUser() {
 			checkResult: func(updatedUser User, err error) {
 				require.NoError(t, err)
 				require.NotEqual(t, oldUser.Email, updatedUser.Email)
-				require.Equal(t, newEmail, updatedUser.Email)
+				require.Equal(t, newEmail, updatedUser.Email.String)
 				require.Equal(t, oldUser.FullName, updatedUser.FullName)
 				require.Equal(t, oldUser.Password, updatedUser.Password)
 			},
@@ -173,6 +174,7 @@ func (ts *UserTestSuite) TestUpdateUser() {
 						String: newFullName,
 						Valid:  true,
 					},
+					SetEmail: true,
 					Email: pgtype.Text{
 						String: newEmail,
 						Valid:  true,
@@ -188,7 +190,7 @@ func (ts *UserTestSuite) TestUpdateUser() {
 				require.NotEqual(t, oldUser.Password, updatedUser.Password)
 				require.Equal(t, newHashedPassword, updatedUser.Password)
 				require.NotEqual(t, oldUser.Email, updatedUser.Email)
-				require.Equal(t, newEmail, updatedUser.Email)
+				require.Equal(t, newEmail, updatedUser.Email.String)
 				require.NotEqual(t, oldUser.FullName, updatedUser.FullName)
 				require.Equal(t, newFullName, updatedUser.FullName)
 			},
@@ -225,7 +227,7 @@ func createRandomUser(t *testing.T) User {
 		Username: util.RandomString(12),
 		Password: hashedPassword,
 		FullName: util.RandomString(12),
-		Email:    util.RandomEmail(),
+		Email:    pgtype.Text{String: util.RandomEmail(), Valid: true},
 		Status:   "active",
 	}
 
@@ -236,7 +238,7 @@ func createRandomUser(t *testing.T) User {
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.Password, user.Password)
 	require.Equal(t, arg.FullName, user.FullName)
-	require.Equal(t, arg.Email, user.Email)
+	require.Equal(t, arg.Email.String, user.Email.String)
 	require.True(t, user.PasswordChangedAt.Time.IsZero())
 	require.True(t, user.CreatedAt.Valid)
 	require.NotZero(t, user.CreatedAt.Time)

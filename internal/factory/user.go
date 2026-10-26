@@ -50,7 +50,7 @@ func CreateUser(ctx context.Context, store db.Store, spec UserSpec) (db.User, bo
 		Username: spec.Username,
 		Password: hashedPassword,
 		FullName: spec.FullName,
-		Email:    spec.Email,
+		Email:    util.ToPgText(util.NormalizeEmail(spec.Email)),
 		Status:   models.UserStatusActive,
 	})
 	if err != nil {

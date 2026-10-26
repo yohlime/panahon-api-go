@@ -34,3 +34,18 @@ var validDateTimeStr validator.Func = func(fieldLevel validator.FieldLevel) bool
 	}
 	return false
 }
+
+var emailValidator = validator.New()
+
+// validateOptionalEmail accepts nil or an empty string (meaning "no email")
+// and validates the address when one is supplied.
+func validateOptionalEmail(email *string) error {
+	if email == nil {
+		return nil
+	}
+	normalized := util.NormalizeEmail(*email)
+	if normalized == "" {
+		return nil
+	}
+	return emailValidator.Var(normalized, "email")
+}

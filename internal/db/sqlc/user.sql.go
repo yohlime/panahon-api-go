@@ -11,6 +11,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeUserRegistration = `-- name: CompleteUserRegistration :one
+UPDATE users
+SET
+  password = $1,
+  full_name = COALESCE($2, full_name),
+  email = CASE WHEN $3::boolean THEN $4 ELSE email END,
+  email_verified_at = CASE
+    WHEN $3::boolean THEN '0001-01-01 00:00:00Z'::timestamptz
+    ELSE email_verified_at
+  END,
+  password_changed_at = now(),
+  status = 'active',
+  updated_at = now()
+WHERE id = $5 AND status = 'invited'
+RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note
+`
+
+type CompleteUserRegistrationParams struct {
+	Password string      `json:"password"`
+	FullName pgtype.Text `json:"full_name"`
+	SetEmail bool        `json:"set_email"`
+	Email    pgtype.Text `json:"email"`
+	ID       int64       `json:"id"`
+}
+
+func (q *Queries) CompleteUserRegistration(ctx context.Context, arg CompleteUserRegistrationParams) (User, error) {
+	row := q.db.QueryRow(ctx, completeUserRegistration,
+		arg.Password,
+		arg.FullName,
+		arg.SetEmail,
+		arg.Email,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.FullName,
+		&i.Email,
+		&i.Password,
+		&i.EmailVerifiedAt,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Status,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.ReviewNote,
+	)
+	return i, err
+}
+
 const countUsers = `-- name: CountUsers :one
 SELECT count(*) FROM users
 WHERE ($1::text IS NULL OR status = $1)
@@ -36,11 +88,11 @@ INSERT INTO users (
 `
 
 type CreateUserParams struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	FullName string `json:"full_name"`
-	Email    string `json:"email"`
-	Status   string `json:"status"`
+	Username string      `json:"username"`
+	Password string      `json:"password"`
+	FullName string      `json:"full_name"`
+	Email    pgtype.Text `json:"email"`
+	Status   string      `json:"status"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -107,11 +159,11 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note FROM users
-WHERE email = $1 LIMIT 1
+WHERE lower(email) = lower($1) AND email IS NOT NULL LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByEmail, email)
+func (q *Queries) GetUserByEmail(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, lower)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -257,10 +309,14 @@ SET
   password = COALESCE($2, password),
   password_changed_at = COALESCE($3, password_changed_at),
   full_name = COALESCE($4, full_name),
-  email = COALESCE($5, email),
+  email = CASE WHEN $5::boolean THEN $6 ELSE email END,
+  email_verified_at = CASE
+    WHEN $5::boolean THEN '0001-01-01 00:00:00Z'::timestamptz
+    ELSE email_verified_at
+  END,
   updated_at = now()
 WHERE
-  id = $6
+  id = $7
 RETURNING id, username, full_name, email, password, email_verified_at, password_changed_at, created_at, updated_at, status, reviewed_by, reviewed_at, review_note
 `
 
@@ -269,6 +325,7 @@ type UpdateUserParams struct {
 	Password          pgtype.Text        `json:"password"`
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	FullName          pgtype.Text        `json:"full_name"`
+	SetEmail          bool               `json:"set_email"`
 	Email             pgtype.Text        `json:"email"`
 	ID                int64              `json:"id"`
 }
@@ -279,6 +336,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Password,
 		arg.PasswordChangedAt,
 		arg.FullName,
+		arg.SetEmail,
 		arg.Email,
 		arg.ID,
 	)

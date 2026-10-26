@@ -15,7 +15,7 @@ WHERE id = $1 LIMIT 1;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email = $1 LIMIT 1;
+WHERE lower(email) = lower($1) AND email IS NOT NULL LIMIT 1;
 
 -- name: GetUserByUsername :one
 SELECT * FROM users
@@ -39,10 +39,30 @@ SET
   password = COALESCE(sqlc.narg(password), password),
   password_changed_at = COALESCE(sqlc.narg(password_changed_at), password_changed_at),
   full_name = COALESCE(sqlc.narg(full_name), full_name),
-  email = COALESCE(sqlc.narg(email), email),
+  email = CASE WHEN sqlc.arg(set_email)::boolean THEN sqlc.narg(email) ELSE email END,
+  email_verified_at = CASE
+    WHEN sqlc.arg(set_email)::boolean THEN '0001-01-01 00:00:00Z'::timestamptz
+    ELSE email_verified_at
+  END,
   updated_at = now()
 WHERE
   id = sqlc.arg(id)
+RETURNING *;
+
+-- name: CompleteUserRegistration :one
+UPDATE users
+SET
+  password = sqlc.arg(password),
+  full_name = COALESCE(sqlc.narg(full_name), full_name),
+  email = CASE WHEN sqlc.arg(set_email)::boolean THEN sqlc.narg(email) ELSE email END,
+  email_verified_at = CASE
+    WHEN sqlc.arg(set_email)::boolean THEN '0001-01-01 00:00:00Z'::timestamptz
+    ELSE email_verified_at
+  END,
+  password_changed_at = now(),
+  status = 'active',
+  updated_at = now()
+WHERE id = sqlc.arg(id) AND status = 'invited'
 RETURNING *;
 
 -- name: ReviewUser :one

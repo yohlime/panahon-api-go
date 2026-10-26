@@ -19,22 +19,26 @@ import (
 
 type createUserReq struct {
 	Username string   `json:"username" binding:"required,alphanum"`
-	Password string   `json:"password" binding:"required,min=6"`
-	FullName string   `json:"full_name" binding:"required,fullname"`
-	Email    string   `json:"email" binding:"required,email"`
+	FullName string   `json:"full_name" binding:"omitempty,fullname"`
+	Email    string   `json:"email" binding:"omitempty,email"`
 	Roles    []string `json:"roles"`
 } //@name CreateUserParams
 
+type createUserRes struct {
+	User            models.User `json:"user"`
+	RegistrationURL string      `json:"registration_url"`
+} //@name CreateUserResponse
+
 // CreateUser
 //
-//	@Summary	Create user
+//	@Summary	Create an invited user and generate a registration link
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
 //	@Param		req	body	createUserReq	true	"Create user parameters"
 //	@Security	BearerAuth
-//	@Success	200	{object}	models.User
-//	@Router		/users/{id} [post]
+//	@Success	200	{object}	createUserRes
+//	@Router		/users [post]
 func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 	var req createUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -47,7 +51,9 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := util.HashPassword(req.Password)
+	// Nobody knows this password: the user sets their own through the
+	// registration link. status=invited blocks login until then.
+	placeholderPassword, err := util.HashPassword(uuid.NewString())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -55,10 +61,10 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 
 	arg := db.CreateUserParams{
 		Username: req.Username,
-		Password: hashedPassword,
+		Password: placeholderPassword,
 		FullName: req.FullName,
-		Email:    req.Email,
-		Status:   models.UserStatusActive,
+		Email:    util.ToPgText(util.NormalizeEmail(req.Email)),
+		Status:   models.UserStatusInvited,
 	}
 
 	user, err := h.store.CreateUser(ctx, arg)
@@ -77,7 +83,7 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 		for _, roleName := range req.Roles {
 			createUserRolesArgs = append(createUserRolesArgs, db.UserRolesParams{
 				RoleName: strings.ToUpper(roleName),
-				Username: arg.Username,
+				Username: user.Username,
 			})
 		}
 		userRoles, _ := h.store.BulkCreateUserRoles(ctx, createUserRolesArgs)
@@ -87,13 +93,24 @@ func (h *DefaultHandler) CreateUser(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, models.NewUser(user, roleNames))
+	registrationURL, err := h.createRegistrationLink(ctx, user.ID)
+	if err != nil {
+		h.logger.Error().Err(err).Int64("user_id", user.ID).Msg("cannot create registration link")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(errors.New("user created but registration link could not be generated")))
+		return
+	}
+
+	ctx.Header("Cache-Control", "no-store")
+	ctx.JSON(http.StatusOK, createUserRes{
+		User:            models.NewUser(user, roleNames),
+		RegistrationURL: registrationURL,
+	})
 }
 
 type listUsersReq struct {
 	Page    int32  `form:"page,default=1" binding:"omitempty,min=1"`
 	PerPage int32  `form:"per_page,default=5" binding:"omitempty,min=1,max=30"`
-	Status  string `form:"status" binding:"omitempty,oneof=pending active rejected"`
+	Status  string `form:"status" binding:"omitempty,oneof=invited pending active rejected"`
 } //@name ListUsersParams
 
 type paginatedUsers = util.PaginatedList[models.User] //@name PaginatedUsers
@@ -205,7 +222,7 @@ type updateUserUri struct {
 type updateUserReq struct {
 	Password string   `json:"password" binding:"omitempty,min=6"`
 	FullName string   `json:"full_name" binding:"omitempty,fullname"`
-	Email    string   `json:"email" binding:"omitempty,email"`
+	Email    *string  `json:"email"`
 	Roles    []string `json:"roles"`
 } //@name UpdateUserParams
 
@@ -229,6 +246,11 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 
 	var req updateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	if err := validateOptionalEmail(req.Email); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -279,10 +301,10 @@ func (h *DefaultHandler) UpdateUser(ctx *gin.Context) {
 			String: req.FullName,
 			Valid:  len(req.FullName) > 0,
 		},
-		Email: pgtype.Text{
-			String: req.Email,
-			Valid:  len(req.Email) > 0,
-		},
+		SetEmail: req.Email != nil,
+	}
+	if req.Email != nil {
+		arg.Email = util.ToPgText(util.NormalizeEmail(*req.Email))
 	}
 
 	user, err := h.store.UpdateUser(ctx, arg)
@@ -397,7 +419,8 @@ func (h *DefaultHandler) UpdateProfile(ctx *gin.Context) {
 		Username:          pgtype.Text{String: req.Username, Valid: len(req.Username) > 0},
 		Password:          newPassword,
 		PasswordChangedAt: passwordChangedAt,
-		Email:             pgtype.Text{String: req.Email, Valid: len(req.Email) > 0},
+		SetEmail:          len(req.Email) > 0,
+		Email:             util.ToPgText(util.NormalizeEmail(req.Email)),
 	}
 
 	user, err := h.store.UpdateUser(ctx, arg)
@@ -573,7 +596,7 @@ func (h *DefaultHandler) RegisterUser(ctx *gin.Context) {
 		Username: req.Username,
 		Password: hashedPassword,
 		FullName: req.FullName,
-		Email:    req.Email,
+		Email:    util.ToPgText(util.NormalizeEmail(req.Email)),
 		Status:   models.UserStatusPending,
 	}
 
@@ -638,10 +661,13 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	// Self-registered users must be approved before they can log in.
+	// Self-registered users must be approved, and admin-created users must
+	// finish registration before they can log in.
 	if user.Status != models.UserStatusActive {
 		msg := "account is not active"
 		switch user.Status {
+		case models.UserStatusInvited:
+			msg = "account registration is not complete; use the registration link"
 		case models.UserStatusPending:
 			msg = "account is pending approval"
 		case models.UserStatusRejected:
@@ -651,6 +677,17 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		return
 	}
 
+	if err := h.startSession(ctx, user); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusNoContent, nil)
+}
+
+// startSession creates the server-side session and sets the auth cookies.
+// Login and complete-registration share this so both behave identically.
+func (h *DefaultHandler) startSession(ctx *gin.Context, user db.User) error {
 	roleNames, _ := h.store.ListUserRoles(ctx, user.ID)
 
 	payloadUser := token.User{
@@ -662,11 +699,10 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 	// so that deleting the session (logout/block) revokes the access token too.
 	refreshToken, refreshPayload, err := h.tokenMaker.CreateToken(payloadUser, uuid.Nil, h.config.RefreshTokenDuration)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+		return err
 	}
 
-	_, err = h.store.CreateSession(ctx, db.CreateSessionParams{
+	if _, err = h.store.CreateSession(ctx, db.CreateSessionParams{
 		ID:           refreshPayload.ID,
 		UserID:       user.ID,
 		RefreshToken: util.HashToken(refreshToken),
@@ -674,22 +710,19 @@ func (h *DefaultHandler) LoginUser(ctx *gin.Context) {
 		ClientIp:     ctx.ClientIP(),
 		IsBlocked:    false,
 		ExpiresAt:    pgtype.Timestamptz{Time: refreshPayload.ExpiresAt, Valid: true},
-	})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+	}); err != nil {
+		return err
 	}
 
 	accessToken, accessPayload, err := h.tokenMaker.CreateToken(payloadUser, refreshPayload.ID, h.config.AccessTokenDuration)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+		return err
 	}
 
 	h.setAuthCookie(ctx, models.AccessTokenCookieName, accessToken, accessPayload.ExpiresAt)
 	h.setAuthCookie(ctx, models.RefreshTokenCookieName, refreshToken, refreshPayload.ExpiresAt)
 
-	ctx.JSON(http.StatusNoContent, nil)
+	return nil
 }
 
 // LogoutUser

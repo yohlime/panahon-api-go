@@ -1215,6 +1215,7 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
+                            "invited",
                             "pending",
                             "active",
                             "rejected"
@@ -1229,6 +1230,42 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/PaginatedUsers"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create an invited user and generate a registration link",
+                "parameters": [
+                    {
+                        "description": "Create user parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateUserParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CreateUserResponse"
                         }
                     }
                 }
@@ -1256,6 +1293,69 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/complete-registration/accept": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Complete an invited user's registration",
+                "parameters": [
+                    {
+                        "description": "Registration completion parameters",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CompleteRegistrationParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/users/complete-registration/validate": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Validate a registration link",
+                "parameters": [
+                    {
+                        "description": "Registration token",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ValidateRegistrationParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RegistrationInfo"
                         }
                     }
                 }
@@ -1406,42 +1506,6 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/UpdateUserParams"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/User"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Create user",
-                "parameters": [
-                    {
-                        "description": "Create user parameters",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/CreateUserParams"
                         }
                     }
                 ],
@@ -1901,6 +1965,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{id}/registration-link": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create or regenerate a user's registration link",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RegistrationLinkResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}/reject": {
             "post": {
                 "security": [
@@ -2004,6 +2101,33 @@ const docTemplate = `{
             ],
             "properties": {
                 "weather": {
+                    "type": "string"
+                }
+            }
+        },
+        "CompleteRegistrationParams": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "password",
+                "token"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -2151,9 +2275,6 @@ const docTemplate = `{
         "CreateUserParams": {
             "type": "object",
             "required": [
-                "email",
-                "full_name",
-                "password",
                 "username"
             ],
             "properties": {
@@ -2163,10 +2284,6 @@ const docTemplate = `{
                 "full_name": {
                     "type": "string"
                 },
-                "password": {
-                    "type": "string",
-                    "minLength": 6
-                },
                 "roles": {
                     "type": "array",
                     "items": {
@@ -2175,6 +2292,17 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "CreateUserResponse": {
+            "type": "object",
+            "properties": {
+                "registration_url": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/User"
                 }
             }
         },
@@ -2326,6 +2454,28 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "RegistrationInfo": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "RegistrationLinkResponse": {
+            "type": "object",
+            "properties": {
+                "registration_url": {
                     "type": "string"
                 }
             }
@@ -2816,6 +2966,17 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "ValidateRegistrationParams": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
+                    "type": "string"
                 }
             }
         },

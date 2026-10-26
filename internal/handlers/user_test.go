@@ -269,7 +269,9 @@ func TestGetUserAPI(t *testing.T) {
 }
 
 func TestCreateUserAPI(t *testing.T) {
-	user, password, roleNames := randomUser(t)
+	user, _, roleNames := randomUser(t)
+	user.Status = models.UserStatusInvited
+	user.Email = pgtype.Text{String: "invited@example.com", Valid: true}
 
 	var userRoleParams []db.UserRolesParams
 	for _, r := range roleNames {
@@ -280,80 +282,104 @@ func TestCreateUserAPI(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name          string
-		body          gin.H
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(recoder *httptest.ResponseRecorder, store *mockdb.MockStore)
+		name             string
+		body             gin.H
+		expectCreateUser func(store *mockdb.MockStore)
+		checkResponse    func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore)
 	}{
 		{
 			name: "OK",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  password,
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
-					Return(user, nil)
+			expectCreateUser: func(store *mockdb.MockStore) {
+				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateUserParams) bool {
+					return arg.Status == models.UserStatusInvited &&
+						arg.Email.Valid && arg.Email.String == user.Email.String
+				})).Return(user, nil)
+				store.EXPECT().CreateRegistrationTokenTx(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.UserToken{}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, nil))
+				requireBodyMatchCreateUser(t, recorder.Body, models.NewUser(user, nil))
 			},
 		},
 		{
 			name: "WithRoles",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  password,
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 				"roles":     roleNames,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			expectCreateUser: func(store *mockdb.MockStore) {
 				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(user, nil)
 				store.EXPECT().BulkCreateUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(userRoleParams, nil)
+				store.EXPECT().CreateRegistrationTokenTx(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.UserToken{}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, roleNames))
+				requireBodyMatchCreateUser(t, recorder.Body, models.NewUser(user, roleNames))
 			},
 		},
 		{
 			name: "WithInvalidRoles",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  password,
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 				"roles":     roleNames,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			expectCreateUser: func(store *mockdb.MockStore) {
 				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(user, nil)
 				store.EXPECT().BulkCreateUserRoles(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return([]db.UserRolesParams{}, []error{db.ErrRecordNotFound})
+				store.EXPECT().CreateRegistrationTokenTx(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.UserToken{}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, []string{}))
+				requireBodyMatchCreateUser(t, recorder.Body, models.NewUser(user, []string{}))
+			},
+		},
+		{
+			name: "OptionalFullNameAndEmail",
+			body: gin.H{
+				"username":  user.Username,
+				"full_name": "",
+				"email":     "",
+			},
+			expectCreateUser: func(store *mockdb.MockStore) {
+				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.CreateUserParams) bool {
+					return arg.FullName == "" && !arg.Email.Valid
+				})).Return(user, nil)
+				store.EXPECT().CreateRegistrationTokenTx(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.UserToken{}, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchCreateUser(t, recorder.Body, models.NewUser(user, nil))
 			},
 		},
 		{
 			name: "InternalError",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  password,
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			expectCreateUser: func(store *mockdb.MockStore) {
 				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.User{}, sql.ErrConnDone)
 			},
@@ -366,11 +392,10 @@ func TestCreateUserAPI(t *testing.T) {
 			name: "DuplicateUsername",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  password,
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			expectCreateUser: func(store *mockdb.MockStore) {
 				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
 					Return(db.User{}, db.ErrUniqueViolation)
 			},
@@ -383,12 +408,10 @@ func TestCreateUserAPI(t *testing.T) {
 			name: "InvalidUsername",
 			body: gin.H{
 				"username":  "invalid-user#1",
-				"password":  password,
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
-			},
+			expectCreateUser: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertNotCalled(t, "CreateUser", mock.AnythingOfType("*gin.Context"), mock.Anything)
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -398,30 +421,31 @@ func TestCreateUserAPI(t *testing.T) {
 			name: "InvalidEmail",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  password,
 				"full_name": user.FullName,
 				"email":     "invalid-email",
 			},
-			buildStubs: func(store *mockdb.MockStore) {
-			},
+			expectCreateUser: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
 				store.AssertNotCalled(t, "CreateUser", mock.AnythingOfType("*gin.Context"), mock.Anything)
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
-			name: "TooShortPassword",
+			name: "RegistrationLinkError",
 			body: gin.H{
 				"username":  user.Username,
-				"password":  "123",
 				"full_name": user.FullName,
-				"email":     user.Email,
+				"email":     user.Email.String,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			expectCreateUser: func(store *mockdb.MockStore) {
+				store.EXPECT().CreateUser(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(user, nil)
+				store.EXPECT().CreateRegistrationTokenTx(mock.AnythingOfType("*gin.Context"), mock.Anything).
+					Return(db.UserToken{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
-				store.AssertNotCalled(t, "CreateUser", mock.AnythingOfType("*gin.Context"), mock.Anything)
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
@@ -431,7 +455,7 @@ func TestCreateUserAPI(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			store := mockdb.NewMockStore(t)
-			tc.buildStubs(store)
+			tc.expectCreateUser(store)
 
 			handler := newTestHandler(store, nil)
 
@@ -496,6 +520,60 @@ func TestUpdateUserAPI(t *testing.T) {
 				store.AssertExpectations(t)
 				require.Equal(t, http.StatusOK, recorder.Code)
 				requireBodyMatchUser(t, recorder.Body, models.NewUser(user, nil))
+			},
+		},
+		{
+			name:   "Email",
+			userID: user.ID,
+			body: gin.H{
+				"email": "New@Example.com",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				updated := user
+				updated.Email = pgtype.Text{String: "new@example.com", Valid: true}
+				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.UpdateUserParams) bool {
+					return arg.SetEmail && arg.Email.Valid && arg.Email.String == "new@example.com"
+				})).Return(updated, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				expected := models.NewUser(user, nil)
+				expected.Email = "new@example.com"
+				requireBodyMatchUser(t, recorder.Body, expected)
+			},
+		},
+		{
+			name:   "ClearEmail",
+			userID: user.ID,
+			body: gin.H{
+				"email": "",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				updated := user
+				updated.Email = pgtype.Text{}
+				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.UpdateUserParams) bool {
+					return arg.SetEmail && !arg.Email.Valid
+				})).Return(updated, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertExpectations(t)
+				require.Equal(t, http.StatusOK, recorder.Code)
+				expected := models.NewUser(user, nil)
+				expected.Email = ""
+				requireBodyMatchUser(t, recorder.Body, expected)
+			},
+		},
+		{
+			name:   "InvalidEmail",
+			userID: user.ID,
+			body: gin.H{
+				"email": "not-an-email",
+			},
+			buildStubs: func(store *mockdb.MockStore) {},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -1460,10 +1538,10 @@ func TestUpdateProfileAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				updated := user
-				updated.Email = "updated@example.com"
+				updated.Email = pgtype.Text{String: "updated@example.com", Valid: true}
 				store.EXPECT().GetUserByUsername(mock.Anything, "caller").Return(user, nil)
 				store.EXPECT().UpdateUser(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.UpdateUserParams) bool {
-					return arg.Email.Valid && arg.Email.String == "updated@example.com"
+					return arg.SetEmail && arg.Email.Valid && arg.Email.String == "updated@example.com"
 				})).Return(updated, nil)
 				store.EXPECT().ListUserRoles(mock.AnythingOfType("*gin.Context"), user.ID).Return([]string{"USER"}, nil)
 			},
@@ -1556,11 +1634,24 @@ func randomUser(t *testing.T) (user db.User, password string, roleNames []string
 		Username: u.Username,
 		Password: hashedPassword,
 		FullName: u.FullName,
-		Email:    u.Email,
+		Email:    pgtype.Text{String: u.Email, Valid: true},
 		Status:   models.UserStatusActive,
 	}
 	roleNames = u.Roles
 	return
+}
+
+func requireBodyMatchCreateUser(t *testing.T, body *bytes.Buffer, user models.User) {
+	data, err := io.ReadAll(body)
+	require.NoError(t, err)
+
+	var got createUserRes
+	require.NoError(t, json.Unmarshal(data, &got))
+	require.Equal(t, user.Username, got.User.Username)
+	require.Equal(t, user.FullName, got.User.FullName)
+	require.Equal(t, user.Email, got.User.Email)
+	require.Len(t, got.User.Roles, len(user.Roles))
+	require.Contains(t, got.RegistrationURL, "http://localhost:8000/complete-registration?token=")
 }
 
 func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user models.User) {
@@ -1599,6 +1690,10 @@ func requireBodyMatchUsers(t *testing.T, body *bytes.Buffer, users []db.User) {
 	for i, user := range users {
 		require.Equal(t, user.Username, gotUsers.Items[i].Username)
 		require.Equal(t, user.FullName, gotUsers.Items[i].FullName)
-		require.Equal(t, user.Email, gotUsers.Items[i].Email)
+		if user.Email.Valid {
+			require.Equal(t, user.Email.String, gotUsers.Items[i].Email)
+		} else {
+			require.Empty(t, gotUsers.Items[i].Email)
+		}
 	}
 }

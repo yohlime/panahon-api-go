@@ -37,6 +37,25 @@ and the Glabs keys.
   The same intersection is applied at read time, so narrowing an entitlement
   narrows existing tokens — but widening it does not widen keys created earlier.
 
+## User registration
+
+- Public self-registration (`POST /users/register`) creates a `pending` user and
+  waits for admin approval. It still requires email.
+- Admins create users without a password (`POST /users`). The response includes a
+  one-time `registration_url`; copy it and send it to the user.
+- The link opens `/complete-registration` on the frontend (production:
+  `https://panahon.observatory.ph/sensors/complete-registration`). There the
+  invited user confirms their username, optionally sets/corrects their full name
+  and email, and creates a password.
+- Links are hashed in the database, single-use, and expire after
+  `REGISTRATION_TOKEN_DURATION` (default `72h`). Regenerating a link invalidates
+  the previous one (`POST /users/{id}/registration-link`).
+- On completion the user becomes `active` and is logged in automatically.
+- Email is optional for admin-created users and can be changed immediately as
+  long as the new address is unique. It is format-checked only, not
+  inbox-verified, so do not use it for password recovery until verification is
+  added.
+
 ## Seeding dev data
 
 Dev data lives in `scripts/seed/` (stations, weather observations). All commands
@@ -98,6 +117,8 @@ templates first. Required production values:
 | `ACCESS_TOKEN_DURATION` / `REFRESH_TOKEN_DURATION` | e.g. `5m` / `24h` |
 | `CORS_ALLOW_ORIGINS` | comma-separated origins (empty = same-origin only) |
 | `COOKIE_DOMAIN` | cookie domain (host-only when empty) |
+| `FRONTEND_BASE_URL` | public frontend base, including Astro base (e.g. `https://panahon.observatory.ph/sensors`) |
+| `REGISTRATION_TOKEN_DURATION` | admin registration-link lifetime (default `72h`) |
 
 Migrations run automatically on start; the target database must already exist
 with PostGIS. For file logging, `LOG_DIRECTORY` must be writable in the
