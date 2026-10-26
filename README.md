@@ -56,6 +56,16 @@ and the Glabs keys.
   inbox-verified, so do not use it for password recovery until verification is
   added.
 
+## API docs
+
+- Full Swagger UI: `/api/v1/docs` (redirects to `index.html`).
+- Public Swagger UI: `/api/v1/public-docs`, backed by
+  `/api/v1/public-openapi.json`. It is filtered to read-only station and
+  observation endpoints and advertises `api_key` authentication only.
+- The full docs stay public for now. Neither docs route requires a session.
+- Set `SWAG_API_BASE_PATH` to the externally visible API prefix (`/data/api/v1`
+  in production) so Swagger's **Try it out** uses the reverse-proxied path.
+
 ## Seeding dev data
 
 Dev data lives in `scripts/seed/` (stations, weather observations). All commands

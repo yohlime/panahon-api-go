@@ -11,8 +11,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type DefaultRouter struct {
@@ -68,7 +66,7 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 
 	api.POST("/tokens/renew", r.handler.RenewAccessToken)
 
-	api.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	registerDocsRoutes(api)
 
 	return &r
 }
