@@ -54,10 +54,12 @@ func (h *DefaultHandler) LufftMsgLog(ctx *gin.Context) {
 		return
 	}
 
-	offset := (req.Page - 1) * req.PerPage
+	page := normalizePage(req.Page)
+	pageSize := normalizePageSize(req.PerPage, 5, 30)
+	offset := (page - 1) * pageSize
 	arg := db.ListLufftStationMsgParams{
 		StationID: uri.StationID,
-		Limit:     req.PerPage,
+		Limit:     pageSize,
 		Offset:    offset,
 	}
 
@@ -79,7 +81,7 @@ func (h *DefaultHandler) LufftMsgLog(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(page, pageSize, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }

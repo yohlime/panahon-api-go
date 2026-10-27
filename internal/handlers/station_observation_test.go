@@ -143,6 +143,8 @@ func TestListStationObservationsAPI(t *testing.T) {
 					Return(db.ObservationsStation{}, nil)
 				store.EXPECT().ListStationObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.ListStationObservationsParams")).
 					Run(func(ctx context.Context, args db.ListStationObservationsParams) {
+						require.True(t, args.Limit.Valid)
+						require.Equal(t, int32(100), args.Limit.Int32)
 						require.False(t, args.IsStartDate)
 						require.False(t, args.IsEndDate)
 					}).
@@ -170,6 +172,8 @@ func TestListStationObservationsAPI(t *testing.T) {
 					}, nil)
 				store.EXPECT().ListStationMOObservations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.ListStationMOObservationsParams")).
 					Run(func(ctx context.Context, args db.ListStationMOObservationsParams) {
+						require.True(t, args.Limit.Valid)
+						require.Equal(t, int32(100), args.Limit.Int32)
 						require.False(t, args.IsStartDate)
 						require.False(t, args.IsEndDate)
 					}).
@@ -274,6 +278,18 @@ func TestListStationObservationsAPI(t *testing.T) {
 			name: "InvalidLimit",
 			query: listStationObsReq{
 				PerPage: -10,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListStationObservations", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "LimitTooLarge",
+			query: listStationObsReq{
+				PerPage: 5001,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},
@@ -637,7 +653,7 @@ func TestListObservationsAPI(t *testing.T) {
 				store.EXPECT().ListObservations(
 					mock.AnythingOfType("*gin.Context"),
 					mock.MatchedBy(func(arg db.ListObservationsParams) bool {
-						return (arg.Limit.Int32 == 100) && (arg.Offset == 0) && (len(arg.StationIds) == n)
+						return arg.Limit.Valid && (arg.Limit.Int32 == 100) && (arg.Offset == 0) && (len(arg.StationIds) == n)
 					}),
 				).
 					Return(stnObsSlice, nil)

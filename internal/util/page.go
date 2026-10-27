@@ -45,3 +45,20 @@ func (p *PaginatedList[T]) setPrevPage() {
 		p.PrevPage = prevPage
 	}
 }
+
+// CursorList is the response envelope used when a client supplies a cursor.
+// It intentionally omits total counts: cursor consumers should not require a
+// COUNT(*) query for every page.
+type CursorList[T any] struct {
+	Items      []T    `json:"items"`
+	NextCursor string `json:"next_cursor,omitempty"`
+	HasMore    bool   `json:"has_more"`
+}
+
+func NewCursorList[T any](items []T, nextCursor string, hasMore bool) CursorList[T] {
+	return CursorList[T]{
+		Items:      items,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}
+}

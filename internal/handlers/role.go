@@ -75,9 +75,11 @@ func (h *DefaultHandler) ListRoles(ctx *gin.Context) {
 		return
 	}
 
-	offset := (req.Page - 1) * req.PerPage
+	page := normalizePage(req.Page)
+	pageSize := normalizePageSize(req.PerPage, 5, 30)
+	offset := (page - 1) * pageSize
 	arg := db.ListRolesParams{
-		Limit:  req.PerPage,
+		Limit:  pageSize,
 		Offset: offset,
 	}
 	roles, err := h.store.ListRoles(ctx, arg)
@@ -98,7 +100,7 @@ func (h *DefaultHandler) ListRoles(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(page, pageSize, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }

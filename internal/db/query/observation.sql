@@ -30,7 +30,12 @@ SELECT * FROM observations_observation
 WHERE station_id = @station_id
   AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
   AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END)
-ORDER BY timestamp DESC
+  AND (CASE
+    WHEN sqlc.narg('cursor_ts')::timestamptz IS NOT NULL
+      THEN (timestamp, id) < (sqlc.narg('cursor_ts')::timestamptz, sqlc.narg('cursor_id')::bigint)
+    ELSE TRUE
+  END)
+ORDER BY timestamp DESC, id DESC
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 
@@ -39,7 +44,12 @@ SELECT * FROM observations_observation
 WHERE station_id = ANY(@station_ids::bigint[])
   AND (CASE WHEN @is_start_date::bool THEN timestamp >= @start_date ELSE TRUE END)
   AND (CASE WHEN @is_end_date::bool THEN timestamp <= @end_date ELSE TRUE END)
-ORDER BY timestamp DESC
+  AND (CASE
+    WHEN sqlc.narg('cursor_ts')::timestamptz IS NOT NULL
+      THEN (timestamp, id) < (sqlc.narg('cursor_ts')::timestamptz, sqlc.narg('cursor_id')::bigint)
+    ELSE TRUE
+  END)
+ORDER BY timestamp DESC, id DESC
 LIMIT sqlc.narg('limit')
 OFFSET sqlc.arg('offset');
 

@@ -467,7 +467,9 @@ func (h *DefaultHandler) ListAccessRequests(ctx *gin.Context) {
 		return
 	}
 
-	offset := (req.Page - 1) * req.PerPage
+	page := normalizePage(req.Page)
+	pageSize := normalizePageSize(req.PerPage, 10, 100)
+	offset := (page - 1) * pageSize
 	var (
 		rows  []db.AccessRequest
 		count int64
@@ -476,7 +478,7 @@ func (h *DefaultHandler) ListAccessRequests(ctx *gin.Context) {
 	if req.Status != "" {
 		rows, err = h.store.ListAccessRequestsByStatus(ctx, db.ListAccessRequestsByStatusParams{
 			Status: req.Status,
-			Limit:  req.PerPage,
+			Limit:  pageSize,
 			Offset: offset,
 		})
 		if err == nil {
@@ -484,7 +486,7 @@ func (h *DefaultHandler) ListAccessRequests(ctx *gin.Context) {
 		}
 	} else {
 		rows, err = h.store.ListAccessRequests(ctx, db.ListAccessRequestsParams{
-			Limit:  req.PerPage,
+			Limit:  pageSize,
 			Offset: offset,
 		})
 		if err == nil {
@@ -501,7 +503,7 @@ func (h *DefaultHandler) ListAccessRequests(ctx *gin.Context) {
 		items[i] = models.NewAccessRequest(row)
 	}
 
-	ctx.JSON(http.StatusOK, util.NewPaginatedList(req.Page, req.PerPage, int32(count), items))
+	ctx.JSON(http.StatusOK, util.NewPaginatedList(page, pageSize, int32(count), items))
 }
 
 type reviewAccessRequestUri struct {

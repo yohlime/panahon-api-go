@@ -61,8 +61,10 @@ type listStationObsUri struct {
 }
 
 type listStationObsReq struct {
-	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
-	PerPage   int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
+	Page      int32  `form:"page,default=1" binding:"omitempty,min=1"`                // page number
+	PerPage   int32  `form:"per_page,default=100" binding:"omitempty,min=1,max=5000"` // page size
+	Limit     int32  `form:"limit" binding:"omitempty,min=1,max=5000"`                // cursor page size
+	Cursor    string `form:"cursor" binding:"omitempty"`                              // opaque cursor from next_cursor
 	StartDate string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate   string `form:"end_date" binding:"omitempty,date_time"`
 } //@name ListStationObservationsParams
@@ -71,16 +73,17 @@ type paginatedStationObservations = util.PaginatedList[models.StationObservation
 
 // ListStationObservations
 //
-//	@Summary	List station observations
-//	@Tags		observations
-//	@Accept		json
-//	@Produce	json
-//	@Param		station_id	path	int					true	"Station ID"
-//	@Param		req			query	listStationObsReq	false	"List station observations parameters"
-//	@Security	APITokenAuth
-//	@Security	BearerAuth
-//	@Success	200	{object}	paginatedStationObservations
-//	@Router		/stations/{station_id}/observations [get]
+//	@Summary		List station observations
+//	@Description	Returns a paginated envelope by default. Supply cursor to receive {items,next_cursor,has_more} without a COUNT query.
+//	@Tags			observations
+//	@Accept			json
+//	@Produce		json
+//	@Param			station_id	path	int					true	"Station ID"
+//	@Param			req			query	listStationObsReq	false	"List station observations parameters"
+//	@Security		APITokenAuth
+//	@Security		BearerAuth
+//	@Success		200	{object}	paginatedStationObservations
+//	@Router			/stations/{station_id}/observations [get]
 func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 	var uri listStationObsUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -103,7 +106,27 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 		startDate = cutoff
 		isStartDate = true
 	}
-	offset := (req.Page - 1) * req.PerPage
+	page := normalizePage(req.Page)
+	pageSize := observationPageSize(req.PerPage, req.Limit)
+	cursorMode := req.Cursor != ""
+
+	var cursorTs pgtype.Timestamptz
+	var cursorID pgtype.Int8
+	limit := pageSize
+	offset := int32(0)
+	if cursorMode {
+		ts, id, err := decodeObservationCursor(req.Cursor)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(err))
+			return
+		}
+		cursorTs = pgtype.Timestamptz{Time: ts, Valid: true}
+		cursorID = pgtype.Int8{Int64: id, Valid: true}
+		// Fetch one extra row so the handler can report has_more without COUNT.
+		limit++
+	} else {
+		offset = (page - 1) * pageSize
+	}
 
 	stn, err := h.store.GetStation(ctx, uri.StationID)
 	if err != nil {
@@ -113,12 +136,11 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 
 	var obsSlice []db.ObservationsObservation
 	arg := db.ListStationObservationsParams{
-		StationID: uri.StationID,
-		Limit: pgtype.Int4{
-			Int32: req.PerPage,
-			Valid: req.PerPage != 0,
-		},
+		StationID:   uri.StationID,
+		Limit:       pgtype.Int4{Int32: limit, Valid: true},
 		Offset:      offset,
+		CursorTs:    cursorTs,
+		CursorID:    cursorID,
 		IsStartDate: isStartDate,
 		StartDate: pgtype.Timestamptz{
 			Time:  startDate,
@@ -135,6 +157,8 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 			StationID:   uri.StationID,
 			Limit:       arg.Limit,
 			Offset:      arg.Offset,
+			CursorTs:    arg.CursorTs,
+			CursorID:    arg.CursorID,
 			IsStartDate: arg.IsStartDate,
 			StartDate:   arg.StartDate,
 			IsEndDate:   arg.IsEndDate,
@@ -155,6 +179,26 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
+	}
+
+	if cursorMode {
+		hasMore := len(obsSlice) > int(pageSize)
+		if hasMore {
+			obsSlice = obsSlice[:pageSize]
+		}
+		items := make([]models.StationObservation, len(obsSlice))
+		for i, obs := range obsSlice {
+			items[i] = models.NewStationObservation(obs, h.resolveAccessibleVariables(ctx))
+		}
+		nextCursor := ""
+		if hasMore && len(obsSlice) > 0 {
+			last := obsSlice[len(obsSlice)-1]
+			if last.Timestamp.Valid {
+				nextCursor = encodeObservationCursor(last.Timestamp.Time, last.ID)
+			}
+		}
+		ctx.JSON(http.StatusOK, util.NewCursorList(items, nextCursor, hasMore))
+		return
 	}
 
 	numObs := len(obsSlice)
@@ -190,7 +234,7 @@ func (h *DefaultHandler) ListStationObservations(ctx *gin.Context) {
 		}
 	}
 
-	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(page, pageSize, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }
@@ -328,8 +372,10 @@ func (h *DefaultHandler) DeleteStationObservation(ctx *gin.Context) {
 }
 
 type listObservationsReq struct {
-	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"`                 // page number
-	PerPage    int32  `form:"per_page,default=100" binding:"omitempty,min=5,max=50000"` // limit
+	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"`                // page number
+	PerPage    int32  `form:"per_page,default=100" binding:"omitempty,min=1,max=5000"` // page size
+	Limit      int32  `form:"limit" binding:"omitempty,min=1,max=5000"`                // cursor page size
+	Cursor     string `form:"cursor" binding:"omitempty"`                              // opaque cursor from next_cursor
 	StationIDs string `form:"station_ids" binding:"omitempty"`
 	StartDate  string `form:"start_date" binding:"omitempty,date_time"`
 	EndDate    string `form:"end_date" binding:"omitempty,date_time"`
@@ -337,14 +383,15 @@ type listObservationsReq struct {
 
 // ListObservations
 //
-//	@Summary	list station observation
-//	@Tags		observations
-//	@Produce	json
-//	@Param		req	query	listObservationsReq	false	"List observations parameters"
-//	@Security	APITokenAuth
-//	@Security	BearerAuth
-//	@Success	200	{object}	paginatedStationObservations
-//	@Router		/observations [get]
+//	@Summary		List station observations
+//	@Description	Returns a paginated envelope by default. Supply cursor to receive {items,next_cursor,has_more} without a COUNT query.
+//	@Tags			observations
+//	@Produce		json
+//	@Param			req	query	listObservationsReq	false	"List observations parameters"
+//	@Security		APITokenAuth
+//	@Security		BearerAuth
+//	@Success		200	{object}	paginatedStationObservations
+//	@Router			/observations [get]
 func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 	var req listObservationsReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -394,14 +441,33 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 		isStartDate = true
 	}
 
-	offset := (req.Page - 1) * req.PerPage
+	page := normalizePage(req.Page)
+	pageSize := observationPageSize(req.PerPage, req.Limit)
+	cursorMode := req.Cursor != ""
+
+	var cursorTs pgtype.Timestamptz
+	var cursorID pgtype.Int8
+	limit := pageSize
+	offset := int32(0)
+	if cursorMode {
+		ts, id, err := decodeObservationCursor(req.Cursor)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(err))
+			return
+		}
+		cursorTs = pgtype.Timestamptz{Time: ts, Valid: true}
+		cursorID = pgtype.Int8{Int64: id, Valid: true}
+		limit++
+	} else {
+		offset = (page - 1) * pageSize
+	}
+
 	arg := db.ListObservationsParams{
-		StationIds: stationIDs,
-		Limit: pgtype.Int4{
-			Int32: req.PerPage,
-			Valid: true,
-		},
+		StationIds:  stationIDs,
+		Limit:       pgtype.Int4{Int32: limit, Valid: true},
 		Offset:      offset,
+		CursorTs:    cursorTs,
+		CursorID:    cursorID,
 		IsStartDate: isStartDate,
 		StartDate: pgtype.Timestamptz{
 			Time:  startDate,
@@ -417,6 +483,26 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 	obs, err := h.store.ListObservations(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if cursorMode {
+		hasMore := len(obs) > int(pageSize)
+		if hasMore {
+			obs = obs[:pageSize]
+		}
+		items := make([]models.StationObservation, len(obs))
+		for i, observation := range obs {
+			items[i] = models.NewStationObservation(observation, h.resolveAccessibleVariables(ctx))
+		}
+		nextCursor := ""
+		if hasMore && len(obs) > 0 {
+			last := obs[len(obs)-1]
+			if last.Timestamp.Valid {
+				nextCursor = encodeObservationCursor(last.Timestamp.Time, last.ID)
+			}
+		}
+		ctx.JSON(http.StatusOK, util.NewCursorList(items, nextCursor, hasMore))
 		return
 	}
 
@@ -438,7 +524,7 @@ func (h *DefaultHandler) ListObservations(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(page, pageSize, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }

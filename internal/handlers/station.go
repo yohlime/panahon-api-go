@@ -48,9 +48,9 @@ type listStationsReq struct {
 	Circle     string `form:"circle" binding:"omitempty"`
 	BBox       string `form:"bbox" binding:"omitempty"`
 	Status     string `form:"status" binding:"omitempty"`
-	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"` // page number
-	PerPage    int32  `form:"per_page" binding:"omitempty,min=1"`       // limit
-	Accessible bool   `form:"accessible" binding:"omitempty"`           // restrict to the caller's entitlement
+	Page       int32  `form:"page,default=1" binding:"omitempty,min=1"`                // page number
+	PerPage    int32  `form:"per_page,default=100" binding:"omitempty,min=1,max=1000"` // limit
+	Accessible bool   `form:"accessible" binding:"omitempty"`                          // restrict to the caller's entitlement
 } //@name ListStationsParams
 
 type paginatedStations = util.PaginatedList[models.Station] //@name PaginatedStations
@@ -72,7 +72,9 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 		return
 	}
 
-	offset := (req.Page - 1) * req.PerPage
+	page := normalizePage(req.Page)
+	pageSize := normalizePageSize(req.PerPage, defaultStationPageSize, maxStationPageSize)
+	offset := (page - 1) * pageSize
 
 	// When requested, restrict the list to the caller's entitled stations.
 	var restrictedIDs []int64
@@ -115,7 +117,7 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 				Cy:     float32(cY),
 				R:      float32(cR),
 				Status: util.ToPgText(req.Status),
-				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
+				Limit:  pgtype.Int4{Int32: pageSize, Valid: true},
 				Offset: offset,
 			})
 	} else if len(req.BBox) > 0 {
@@ -150,19 +152,19 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 				Xmax:   float32(xMax),
 				Ymax:   float32(yMax),
 				Status: util.ToPgText(req.Status),
-				Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
+				Limit:  pgtype.Int4{Int32: pageSize, Valid: true},
 				Offset: offset,
 			})
 	} else if restrictedIDs != nil {
 		stations, err = h.store.ListStationsByIds(ctx, db.ListStationsByIdsParams{
 			StationIds: restrictedIDs,
-			Limit:      pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
+			Limit:      pgtype.Int4{Int32: pageSize, Valid: true},
 			Offset:     offset,
 		})
 	} else {
 		arg := db.ListStationsParams{
 			Status: util.ToPgText(req.Status),
-			Limit:  pgtype.Int4{Int32: req.PerPage, Valid: req.PerPage > 0},
+			Limit:  pgtype.Int4{Int32: pageSize, Valid: true},
 			Offset: offset,
 		}
 		stations, err = h.store.ListStations(ctx, arg)
@@ -216,7 +218,7 @@ func (h *DefaultHandler) ListStations(ctx *gin.Context) {
 		return
 	}
 
-	res := util.NewPaginatedList(req.Page, req.PerPage, int32(count), items)
+	res := util.NewPaginatedList(page, pageSize, int32(count), items)
 
 	ctx.JSON(http.StatusOK, res)
 }

@@ -130,8 +130,9 @@ func TestListStationsAPI(t *testing.T) {
 			name:  "Default",
 			query: listStationsReq{},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("db.ListStationsParams")).
-					Return(stations, nil)
+				store.EXPECT().ListStations(mock.AnythingOfType("*gin.Context"), mock.MatchedBy(func(arg db.ListStationsParams) bool {
+					return arg.Limit.Valid && arg.Limit.Int32 == 100 && arg.Offset == 0
+				})).Return(stations, nil)
 				store.EXPECT().CountStations(mock.AnythingOfType("*gin.Context"), mock.Anything).Return(int64(n), nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
@@ -252,6 +253,18 @@ func TestListStationsAPI(t *testing.T) {
 			name: "InvalidPerPage",
 			query: listStationsReq{
 				PerPage: -1,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder, store *mockdb.MockStore) {
+				store.AssertNotCalled(t, "ListStations", mock.AnythingOfType("*gin.Context"), mock.Anything)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "PerPageTooLarge",
+			query: listStationsReq{
+				PerPage: 1001,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 			},

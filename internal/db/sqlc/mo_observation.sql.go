@@ -310,9 +310,14 @@ SELECT id, pres, rr, rh, temp, td, wdir, wspd, wspdx, srad, hi, station_id, time
 WHERE station_id = $1
   AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
   AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
-ORDER BY timestamp DESC
-LIMIT $7
-OFFSET $6
+  AND (CASE
+    WHEN $6::timestamptz IS NOT NULL
+      THEN (timestamp, id) < ($6::timestamptz, $7::bigint)
+    ELSE TRUE
+  END)
+ORDER BY timestamp DESC, id DESC
+LIMIT $9
+OFFSET $8
 `
 
 type ListStationMOObservationsParams struct {
@@ -321,6 +326,8 @@ type ListStationMOObservationsParams struct {
 	StartDate   pgtype.Timestamptz `json:"start_date"`
 	IsEndDate   bool               `json:"is_end_date"`
 	EndDate     pgtype.Timestamptz `json:"end_date"`
+	CursorTs    pgtype.Timestamptz `json:"cursor_ts"`
+	CursorID    pgtype.Int8        `json:"cursor_id"`
 	Offset      int32              `json:"offset"`
 	Limit       pgtype.Int4        `json:"limit"`
 }
@@ -332,6 +339,8 @@ func (q *Queries) ListStationMOObservations(ctx context.Context, arg ListStation
 		arg.StartDate,
 		arg.IsEndDate,
 		arg.EndDate,
+		arg.CursorTs,
+		arg.CursorID,
 		arg.Offset,
 		arg.Limit,
 	)

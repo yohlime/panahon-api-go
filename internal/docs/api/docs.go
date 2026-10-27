@@ -322,17 +322,32 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Returns a paginated envelope by default. Supply cursor to receive {items,next_cursor,has_more} without a COUNT query.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "observations"
                 ],
-                "summary": "list station observation",
+                "summary": "List station observations",
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "opaque cursor from next_cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 5000,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "cursor page size",
+                        "name": "limit",
                         "in": "query"
                     },
                     {
@@ -343,10 +358,10 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "maximum": 50000,
-                        "minimum": 5,
+                        "maximum": 5000,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "limit",
+                        "description": "page size",
                         "name": "per_page",
                         "in": "query"
                     },
@@ -656,6 +671,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 1000,
                         "minimum": 1,
                         "type": "integer",
                         "description": "limit",
@@ -886,6 +902,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Returns a paginated envelope by default. Supply cursor to receive {items,next_cursor,has_more} without a COUNT query.",
                 "consumes": [
                     "application/json"
                 ],
@@ -906,7 +923,21 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "opaque cursor from next_cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 5000,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "cursor page size",
+                        "name": "limit",
                         "in": "query"
                     },
                     {
@@ -917,9 +948,10 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 5000,
                         "minimum": 1,
                         "type": "integer",
-                        "description": "limit",
+                        "description": "page size",
                         "name": "per_page",
                         "in": "query"
                     },

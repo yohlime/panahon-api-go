@@ -190,6 +190,45 @@ func (ts *ObservationTestSuite) TestListStationObservations() {
 	}
 }
 
+func (ts *ObservationTestSuite) TestListStationObservationsCursor() {
+	t := ts.T()
+	station := createRandomStation(t, false)
+	for j := 0; j < 6; j++ {
+		createRandomObservation(t, station.ID)
+	}
+
+	first, err := testStore.ListStationObservations(context.Background(), ListStationObservationsParams{
+		StationID: station.ID,
+		Limit:     pgtype.Int4{Int32: 3, Valid: true},
+	})
+	require.NoError(t, err)
+	require.Len(t, first, 3)
+
+	last := first[len(first)-1]
+	second, err := testStore.ListStationObservations(context.Background(), ListStationObservationsParams{
+		StationID: station.ID,
+		Limit:     pgtype.Int4{Int32: 3, Valid: true},
+		CursorTs:  last.Timestamp,
+		CursorID:  pgtype.Int8{Int64: last.ID, Valid: true},
+	})
+	require.NoError(t, err)
+	require.Len(t, second, 3)
+
+	seen := make(map[int64]bool, len(first))
+	for _, obs := range first {
+		seen[obs.ID] = true
+	}
+	for _, obs := range second {
+		require.False(t, seen[obs.ID], "cursor returned a duplicate observation")
+		require.True(
+			t,
+			obs.Timestamp.Time.Before(last.Timestamp.Time) ||
+				(obs.Timestamp.Time.Equal(last.Timestamp.Time) && obs.ID < last.ID),
+			"cursor rows must be older than the cursor",
+		)
+	}
+}
+
 func (ts *ObservationTestSuite) TestCountStationObservations() {
 	t := ts.T()
 	timeNow := time.Now()

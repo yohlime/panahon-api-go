@@ -214,9 +214,14 @@ SELECT id, pres, rr, rh, temp, td, wdir, wspd, wspdx, srad, mslp, hi, station_id
 WHERE station_id = ANY($1::bigint[])
   AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
   AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
-ORDER BY timestamp DESC
-LIMIT $7
-OFFSET $6
+  AND (CASE
+    WHEN $6::timestamptz IS NOT NULL
+      THEN (timestamp, id) < ($6::timestamptz, $7::bigint)
+    ELSE TRUE
+  END)
+ORDER BY timestamp DESC, id DESC
+LIMIT $9
+OFFSET $8
 `
 
 type ListObservationsParams struct {
@@ -225,6 +230,8 @@ type ListObservationsParams struct {
 	StartDate   pgtype.Timestamptz `json:"start_date"`
 	IsEndDate   bool               `json:"is_end_date"`
 	EndDate     pgtype.Timestamptz `json:"end_date"`
+	CursorTs    pgtype.Timestamptz `json:"cursor_ts"`
+	CursorID    pgtype.Int8        `json:"cursor_id"`
 	Offset      int32              `json:"offset"`
 	Limit       pgtype.Int4        `json:"limit"`
 }
@@ -236,6 +243,8 @@ func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsPara
 		arg.StartDate,
 		arg.IsEndDate,
 		arg.EndDate,
+		arg.CursorTs,
+		arg.CursorID,
 		arg.Offset,
 		arg.Limit,
 	)
@@ -283,9 +292,14 @@ SELECT id, pres, rr, rh, temp, td, wdir, wspd, wspdx, srad, mslp, hi, station_id
 WHERE station_id = $1
   AND (CASE WHEN $2::bool THEN timestamp >= $3 ELSE TRUE END)
   AND (CASE WHEN $4::bool THEN timestamp <= $5 ELSE TRUE END)
-ORDER BY timestamp DESC
-LIMIT $7
-OFFSET $6
+  AND (CASE
+    WHEN $6::timestamptz IS NOT NULL
+      THEN (timestamp, id) < ($6::timestamptz, $7::bigint)
+    ELSE TRUE
+  END)
+ORDER BY timestamp DESC, id DESC
+LIMIT $9
+OFFSET $8
 `
 
 type ListStationObservationsParams struct {
@@ -294,6 +308,8 @@ type ListStationObservationsParams struct {
 	StartDate   pgtype.Timestamptz `json:"start_date"`
 	IsEndDate   bool               `json:"is_end_date"`
 	EndDate     pgtype.Timestamptz `json:"end_date"`
+	CursorTs    pgtype.Timestamptz `json:"cursor_ts"`
+	CursorID    pgtype.Int8        `json:"cursor_id"`
 	Offset      int32              `json:"offset"`
 	Limit       pgtype.Int4        `json:"limit"`
 }
@@ -305,6 +321,8 @@ func (q *Queries) ListStationObservations(ctx context.Context, arg ListStationOb
 		arg.StartDate,
 		arg.IsEndDate,
 		arg.EndDate,
+		arg.CursorTs,
+		arg.CursorID,
 		arg.Offset,
 		arg.Limit,
 	)

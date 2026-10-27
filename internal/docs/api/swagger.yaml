@@ -911,19 +911,31 @@ paths:
       - lufft
   /observations:
     get:
+      description: Returns a paginated envelope by default. Supply cursor to receive
+        {items,next_cursor,has_more} without a COUNT query.
       parameters:
+      - description: opaque cursor from next_cursor
+        in: query
+        name: cursor
+        type: string
       - in: query
         name: end_date
         type: string
+      - description: cursor page size
+        in: query
+        maximum: 5000
+        minimum: 1
+        name: limit
+        type: integer
       - description: page number
         in: query
         minimum: 1
         name: page
         type: integer
-      - description: limit
+      - description: page size
         in: query
-        maximum: 50000
-        minimum: 5
+        maximum: 5000
+        minimum: 1
         name: per_page
         type: integer
       - in: query
@@ -942,7 +954,7 @@ paths:
       security:
       - APITokenAuth: []
       - BearerAuth: []
-      summary: list station observation
+      summary: List station observations
       tags:
       - observations
   /observations/latest:
@@ -1118,6 +1130,7 @@ paths:
         type: integer
       - description: limit
         in: query
+        maximum: 1000
         minimum: 1
         name: per_page
         type: integer
@@ -1228,22 +1241,35 @@ paths:
     get:
       consumes:
       - application/json
+      description: Returns a paginated envelope by default. Supply cursor to receive
+        {items,next_cursor,has_more} without a COUNT query.
       parameters:
       - description: Station ID
         in: path
         name: station_id
         required: true
         type: integer
+      - description: opaque cursor from next_cursor
+        in: query
+        name: cursor
+        type: string
       - in: query
         name: end_date
         type: string
+      - description: cursor page size
+        in: query
+        maximum: 5000
+        minimum: 1
+        name: limit
+        type: integer
       - description: page number
         in: query
         minimum: 1
         name: page
         type: integer
-      - description: limit
+      - description: page size
         in: query
+        maximum: 5000
         minimum: 1
         name: per_page
         type: integer

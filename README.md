@@ -66,6 +66,20 @@ and the Glabs keys.
 - Set `SWAG_API_BASE_PATH` to the externally visible API prefix (`/data/api/v1`
   in production) so Swagger's **Try it out** uses the reverse-proxied path.
 
+## Pagination
+
+- Station and observation lists default to 100 rows per page.
+- Station lists are capped at 1,000 rows; observation lists at 5,000 rows.
+- Other admin lists keep their existing defaults (users/roles/Lufft 5, access requests 10).
+- `GET /stations/{id}/observations` and `GET /observations` support cursor mode:
+  ```text
+  ?limit=1000&cursor=<next_cursor>
+  ```
+  Cursor responses are `{ "items": [...], "next_cursor": "...", "has_more": true }`
+  and skip the `COUNT(*)` query. Page and cursor modes use separate response shapes.
+- Cursor pagination is ordered by `timestamp DESC, id DESC`; keep the same
+  filters between pages.
+
 ## Seeding dev data
 
 Dev data lives in `scripts/seed/` (stations, weather observations). All commands
