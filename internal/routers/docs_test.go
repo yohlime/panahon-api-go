@@ -14,14 +14,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newDocsTestRouter(t *testing.T) *DefaultRouter {
+func newDocsTestRouter(t *testing.T, swagBasePath ...string) *DefaultRouter {
 	t.Helper()
+
+	basePath := "/api/v1"
+	if len(swagBasePath) > 0 {
+		basePath = swagBasePath[0]
+	}
 
 	gin.SetMode(gin.TestMode)
 	config := util.Config{
 		GinMode:                   gin.TestMode,
 		APIBasePath:               "/api/v1",
-		SwagAPIBasePath:           "/api/v1",
+		SwagAPIBasePath:           basePath,
 		TokenSymmetricKey:         util.RandomString(32),
 		AccessTokenDuration:       time.Minute,
 		RefreshTokenDuration:      time.Hour,
@@ -45,15 +50,29 @@ func serveDocsRequest(router *DefaultRouter, method, path string) *httptest.Resp
 func TestDocsRootRedirects(t *testing.T) {
 	router := newDocsTestRouter(t)
 
-	for _, path := range []string{
-		"/api/v1/docs",
-		"/api/v1/docs/",
-		"/api/v1/public-docs",
-		"/api/v1/public-docs/",
+	for path, location := range map[string]string{
+		"/api/v1/docs":         "/api/v1/docs/index.html",
+		"/api/v1/docs/":        "/api/v1/docs/index.html",
+		"/api/v1/public-docs":  "/api/v1/public-docs/index.html",
+		"/api/v1/public-docs/": "/api/v1/public-docs/index.html",
 	} {
 		recorder := serveDocsRequest(router, http.MethodGet, path)
 		require.Equal(t, http.StatusFound, recorder.Code, path)
-		require.Contains(t, recorder.Header().Get("Location"), "/index.html", path)
+		require.Equal(t, location, recorder.Header().Get("Location"), path)
+	}
+}
+
+func TestDocsRedirectsUseExternalBasePath(t *testing.T) {
+	router := newDocsTestRouter(t, "/data/api/v1")
+
+	for path, location := range map[string]string{
+		"/api/v1/docs":         "/data/api/v1/docs/index.html",
+		"/api/v1/public-docs":  "/data/api/v1/public-docs/index.html",
+		"/api/v1/public-docs/": "/data/api/v1/public-docs/index.html",
+	} {
+		recorder := serveDocsRequest(router, http.MethodGet, path)
+		require.Equal(t, http.StatusFound, recorder.Code, path)
+		require.Equal(t, location, recorder.Header().Get("Location"), path)
 	}
 }
 

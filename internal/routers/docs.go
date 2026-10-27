@@ -10,26 +10,31 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func redirectToDocsIndex(c *gin.Context) {
-	path := strings.TrimRight(c.Request.URL.Path, "/")
-	c.Redirect(http.StatusFound, path+"/index.html")
+func redirectTo(url string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Redirect(http.StatusFound, url)
+	}
 }
 
-func wrapDocsIndex(handler gin.HandlerFunc) gin.HandlerFunc {
+func wrapDocsIndex(handler gin.HandlerFunc, indexURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		switch c.Param("any") {
 		case "", "/":
-			redirectToDocsIndex(c)
+			c.Redirect(http.StatusFound, indexURL)
 		default:
 			handler(c)
 		}
 	}
 }
 
-func registerDocsRoutes(api *gin.RouterGroup) {
+func registerDocsRoutes(api *gin.RouterGroup, swagBasePath string) {
+	base := strings.TrimRight(swagBasePath, "/")
+	docsIndex := base + "/docs/index.html"
+	publicDocsIndex := base + "/public-docs/index.html"
+
 	fullDocs := ginSwagger.WrapHandler(swaggerFiles.Handler)
-	api.GET("/docs", redirectToDocsIndex)
-	api.GET("/docs/*any", wrapDocsIndex(fullDocs))
+	api.GET("/docs", redirectTo(docsIndex))
+	api.GET("/docs/*any", wrapDocsIndex(fullDocs, docsIndex))
 
 	publicDocs := ginSwagger.CustomWrapHandler(&ginSwagger.Config{
 		URL:          "../public-openapi.json",
@@ -37,8 +42,8 @@ func registerDocsRoutes(api *gin.RouterGroup) {
 		DocExpansion: "list",
 		DeepLinking:  true,
 	}, swaggerFiles.NewHandler())
-	api.GET("/public-docs", redirectToDocsIndex)
-	api.GET("/public-docs/*any", wrapDocsIndex(publicDocs))
+	api.GET("/public-docs", redirectTo(publicDocsIndex))
+	api.GET("/public-docs/*any", wrapDocsIndex(publicDocs, publicDocsIndex))
 
 	api.GET("/public-openapi.json", func(c *gin.Context) {
 		spec, err := docs.PublicSpec()

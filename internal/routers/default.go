@@ -66,7 +66,7 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 
 	api.POST("/tokens/renew", r.handler.RenewAccessToken)
 
-	registerDocsRoutes(api)
+	registerDocsRoutes(api, config.SwagAPIBasePath)
 
 	return &r
 }

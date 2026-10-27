@@ -64,7 +64,8 @@ and the Glabs keys.
   observation endpoints and advertises `api_key` authentication only.
 - The full docs stay public for now. Neither docs route requires a session.
 - Set `SWAG_API_BASE_PATH` to the externally visible API prefix (`/data/api/v1`
-  in production) so Swagger's **Try it out** uses the reverse-proxied path.
+  in production). It is used both for Swagger's **Try it out** and for the
+  `/docs` and `/public-docs` index redirects, so proxy prefixes are preserved.
 
 ## Pagination
 
