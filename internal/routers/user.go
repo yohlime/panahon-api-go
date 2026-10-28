@@ -13,6 +13,8 @@ func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 		users.POST("/register", r.handler.RegisterUser)
 		users.POST("/complete-registration/validate", r.handler.ValidateCompleteRegistration)
 		users.POST("/complete-registration/accept", r.handler.CompleteRegistration)
+		users.POST("/password-reset/validate", r.handler.ValidatePasswordReset)
+		users.POST("/password-reset/accept", r.handler.AcceptPasswordReset)
 
 		// API token routes: the user themselves or an admin.
 		tokens := addMiddleware(users,
@@ -38,6 +40,7 @@ func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 		admin.POST(":id/approve", r.handler.ApproveUser)
 		admin.POST(":id/reject", r.handler.RejectUser)
 		admin.POST(":id/registration-link", r.handler.CreateRegistrationLink)
+		admin.POST(":id/password-reset-link", r.handler.CreatePasswordResetLink)
 
 		// Auth user endpoint (requires authentication).
 		auth := addMiddleware(users, mw.AuthMiddleware(r.tokenMaker, r.store, false))

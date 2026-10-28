@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/emiliogozo/panahon-api-go/internal/util"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
@@ -105,6 +106,85 @@ func TestRegistrationTokenLifecycle(t *testing.T) {
 
 	// A consumed token cannot be reused.
 	_, err = testStore.CompleteRegistrationTx(ctx, CompleteRegistrationTxParams{
+		TokenHash: util.HashToken(secondRaw),
+		Password:  newPassword,
+	})
+	require.ErrorIs(t, err, ErrRecordNotFound)
+}
+
+func TestPasswordResetLifecycle(t *testing.T) {
+	require.NoError(t, testMigration.Up())
+	defer func() {
+		require.NoError(t, testMigration.Down())
+	}()
+
+	ctx := context.Background()
+
+	hashedPassword, err := util.HashPassword(util.RandomString(12))
+	require.NoError(t, err)
+
+	user, err := testStore.CreateUser(ctx, CreateUserParams{
+		Username: util.RandomString(12),
+		Password: hashedPassword,
+		FullName: "Reset User",
+		Email:    pgtype.Text{String: util.RandomEmail(), Valid: true},
+		Status:   "active",
+	})
+	require.NoError(t, err)
+
+	sess, err := testStore.CreateSession(ctx, CreateSessionParams{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+	})
+	require.NoError(t, err)
+
+	firstRaw := util.RandomString(32)
+	_, err = testStore.CreatePasswordResetTokenTx(ctx, CreatePasswordResetTokenTxParams{
+		UserID:    user.ID,
+		TokenHash: util.HashToken(firstRaw),
+		ExpiresAt: time.Now().Add(time.Hour),
+		CreatedBy: pgtype.Int8{Int64: user.ID, Valid: true},
+	})
+	require.NoError(t, err)
+
+	secondRaw := util.RandomString(32)
+	_, err = testStore.CreatePasswordResetTokenTx(ctx, CreatePasswordResetTokenTxParams{
+		UserID:    user.ID,
+		TokenHash: util.HashToken(secondRaw),
+		ExpiresAt: time.Now().Add(time.Hour),
+		CreatedBy: pgtype.Int8{Int64: user.ID, Valid: true},
+	})
+	require.NoError(t, err)
+
+	stale, err := testStore.GetUserTokenByHash(ctx, GetUserTokenByHashParams{
+		TokenHash: util.HashToken(firstRaw),
+		Purpose:   UserTokenPurposePasswordReset,
+	})
+	require.NoError(t, err)
+	require.True(t, stale.UsedAt.Valid)
+
+	newPassword, err := util.HashPassword(util.RandomString(12))
+	require.NoError(t, err)
+
+	_, err = testStore.ResetPasswordTx(ctx, ResetPasswordTxParams{
+		TokenHash: util.HashToken(firstRaw),
+		Password:  newPassword,
+	})
+	require.ErrorIs(t, err, ErrRecordNotFound)
+
+	updated, err := testStore.ResetPasswordTx(ctx, ResetPasswordTxParams{
+		TokenHash: util.HashToken(secondRaw),
+		Password:  newPassword,
+	})
+	require.NoError(t, err)
+	require.Equal(t, newPassword, updated.Password)
+	require.True(t, updated.PasswordChangedAt.Valid)
+
+	_, err = testStore.GetSession(ctx, sess.ID)
+	require.ErrorIs(t, err, ErrRecordNotFound)
+
+	_, err = testStore.ResetPasswordTx(ctx, ResetPasswordTxParams{
 		TokenHash: util.HashToken(secondRaw),
 		Password:  newPassword,
 	})

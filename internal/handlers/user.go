@@ -222,7 +222,7 @@ type updateUserUri struct {
 }
 
 type updateUserReq struct {
-	Password string   `json:"password" binding:"omitempty,min=6"`
+	Password string   `json:"password" binding:"omitempty,min=8"`
 	FullName string   `json:"full_name" binding:"omitempty,fullname"`
 	Email    *string  `json:"email"`
 	Roles    []string `json:"roles"`
@@ -360,7 +360,7 @@ type updateProfileReq struct {
 	CurrentPassword string `json:"current_password" binding:"required,min=6"`
 	Username        string `json:"username" binding:"omitempty,alphanum"`
 	Email           string `json:"email" binding:"omitempty,email"`
-	Password        string `json:"password" binding:"omitempty,min=6"`
+	Password        string `json:"password" binding:"omitempty,min=8"`
 } //@name UpdateProfileParams
 
 // UpdateProfile
@@ -566,8 +566,8 @@ func (h *DefaultHandler) reviewUser(ctx *gin.Context, status string) {
 
 type registerUserReq struct {
 	Username        string `json:"username" binding:"required,alphanum"`
-	Password        string `json:"password" binding:"required,min=6,eqfield=ConfirmPassword"`
-	ConfirmPassword string `json:"confirm_password" binding:"required,min=6"`
+	Password        string `json:"password" binding:"required,min=8,eqfield=ConfirmPassword"`
+	ConfirmPassword string `json:"confirm_password" binding:"required,min=8"`
 	FullName        string `json:"full_name" binding:"required"`
 	Email           string `json:"email" binding:"required,email"`
 } //@name RegisterUserParams

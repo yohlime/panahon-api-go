@@ -192,8 +192,8 @@ type completeRegistrationReq struct {
 	Token           string  `json:"token" binding:"required"`
 	FullName        *string `json:"full_name" binding:"omitempty"`
 	Email           *string `json:"email"`
-	Password        string  `json:"password" binding:"required,min=6,eqfield=ConfirmPassword"`
-	ConfirmPassword string  `json:"confirm_password" binding:"required,min=6"`
+	Password        string  `json:"password" binding:"required,min=8,eqfield=ConfirmPassword"`
+	ConfirmPassword string  `json:"confirm_password" binding:"required,min=8"`
 } //@name CompleteRegistrationParams
 
 // CompleteRegistration

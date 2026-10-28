@@ -1802,6 +1802,72 @@ func (_c *MockStore_CreateMisolStationTx_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// CreatePasswordResetTokenTx provides a mock function for the type MockStore
+func (_mock *MockStore) CreatePasswordResetTokenTx(ctx context.Context, arg db.CreatePasswordResetTokenTxParams) (db.UserToken, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreatePasswordResetTokenTx")
+	}
+
+	var r0 db.UserToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.CreatePasswordResetTokenTxParams) (db.UserToken, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.CreatePasswordResetTokenTxParams) db.UserToken); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.UserToken)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.CreatePasswordResetTokenTxParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_CreatePasswordResetTokenTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreatePasswordResetTokenTx'
+type MockStore_CreatePasswordResetTokenTx_Call struct {
+	*mock.Call
+}
+
+// CreatePasswordResetTokenTx is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.CreatePasswordResetTokenTxParams
+func (_e *MockStore_Expecter) CreatePasswordResetTokenTx(ctx any, arg any) *MockStore_CreatePasswordResetTokenTx_Call {
+	return &MockStore_CreatePasswordResetTokenTx_Call{Call: _e.mock.On("CreatePasswordResetTokenTx", ctx, arg)}
+}
+
+func (_c *MockStore_CreatePasswordResetTokenTx_Call) Run(run func(ctx context.Context, arg db.CreatePasswordResetTokenTxParams)) *MockStore_CreatePasswordResetTokenTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.CreatePasswordResetTokenTxParams
+		if args[1] != nil {
+			arg1 = args[1].(db.CreatePasswordResetTokenTxParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_CreatePasswordResetTokenTx_Call) Return(userToken db.UserToken, err error) *MockStore_CreatePasswordResetTokenTx_Call {
+	_c.Call.Return(userToken, err)
+	return _c
+}
+
+func (_c *MockStore_CreatePasswordResetTokenTx_Call) RunAndReturn(run func(ctx context.Context, arg db.CreatePasswordResetTokenTxParams) (db.UserToken, error)) *MockStore_CreatePasswordResetTokenTx_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateRegistrationTokenTx provides a mock function for the type MockStore
 func (_mock *MockStore) CreateRegistrationTokenTx(ctx context.Context, arg db.CreateRegistrationTokenTxParams) (db.UserToken, error) {
 	ret := _mock.Called(ctx, arg)
@@ -6522,6 +6588,72 @@ func (_c *MockStore_MarkStaleStationsOffline_Call) Return(n int64, err error) *M
 }
 
 func (_c *MockStore_MarkStaleStationsOffline_Call) RunAndReturn(run func(ctx context.Context, staleAfterSeconds float64) (int64, error)) *MockStore_MarkStaleStationsOffline_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResetPasswordTx provides a mock function for the type MockStore
+func (_mock *MockStore) ResetPasswordTx(ctx context.Context, arg db.ResetPasswordTxParams) (db.User, error) {
+	ret := _mock.Called(ctx, arg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResetPasswordTx")
+	}
+
+	var r0 db.User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ResetPasswordTxParams) (db.User, error)); ok {
+		return returnFunc(ctx, arg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, db.ResetPasswordTxParams) db.User); ok {
+		r0 = returnFunc(ctx, arg)
+	} else {
+		r0 = ret.Get(0).(db.User)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, db.ResetPasswordTxParams) error); ok {
+		r1 = returnFunc(ctx, arg)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockStore_ResetPasswordTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResetPasswordTx'
+type MockStore_ResetPasswordTx_Call struct {
+	*mock.Call
+}
+
+// ResetPasswordTx is a helper method to define mock.On call
+//   - ctx context.Context
+//   - arg db.ResetPasswordTxParams
+func (_e *MockStore_Expecter) ResetPasswordTx(ctx any, arg any) *MockStore_ResetPasswordTx_Call {
+	return &MockStore_ResetPasswordTx_Call{Call: _e.mock.On("ResetPasswordTx", ctx, arg)}
+}
+
+func (_c *MockStore_ResetPasswordTx_Call) Run(run func(ctx context.Context, arg db.ResetPasswordTxParams)) *MockStore_ResetPasswordTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 db.ResetPasswordTxParams
+		if args[1] != nil {
+			arg1 = args[1].(db.ResetPasswordTxParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockStore_ResetPasswordTx_Call) Return(user db.User, err error) *MockStore_ResetPasswordTx_Call {
+	_c.Call.Return(user, err)
+	return _c
+}
+
+func (_c *MockStore_ResetPasswordTx_Call) RunAndReturn(run func(ctx context.Context, arg db.ResetPasswordTxParams) (db.User, error)) *MockStore_ResetPasswordTx_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -1,4 +1,19 @@
 definitions:
+  AcceptPasswordResetParams:
+    properties:
+      confirm_password:
+        minLength: 8
+        type: string
+      password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - confirm_password
+    - password
+    - token
+    type: object
   AccessRequest:
     properties:
       all_stations:
@@ -42,14 +57,14 @@ definitions:
   CompleteRegistrationParams:
     properties:
       confirm_password:
-        minLength: 6
+        minLength: 8
         type: string
       email:
         type: string
       full_name:
         type: string
       password:
-        minLength: 6
+        minLength: 8
         type: string
       token:
         type: string
@@ -253,17 +268,31 @@ definitions:
     type: object
   PaginatedUsers:
     type: object
+  PasswordResetInfo:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      username:
+        type: string
+    type: object
+  PasswordResetLinkResponse:
+    properties:
+      reset_url:
+        type: string
+    type: object
   RegisterUserParams:
     properties:
       confirm_password:
-        minLength: 6
+        minLength: 8
         type: string
       email:
         type: string
       full_name:
         type: string
       password:
-        minLength: 6
+        minLength: 8
         type: string
       username:
         type: string
@@ -454,7 +483,7 @@ definitions:
       email:
         type: string
       password:
-        minLength: 6
+        minLength: 8
         type: string
       username:
         type: string
@@ -559,7 +588,7 @@ definitions:
       full_name:
         type: string
       password:
-        minLength: 6
+        minLength: 8
         type: string
       roles:
         items:
@@ -609,6 +638,13 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  ValidatePasswordResetParams:
+    properties:
+      token:
+        type: string
+    required:
+    - token
     type: object
   ValidateRegistrationParams:
     properties:
@@ -1830,6 +1866,26 @@ paths:
       summary: Approve a pending registration
       tags:
       - users
+  /users/{id}/password-reset-link:
+    post:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PasswordResetLinkResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a password reset link for an active user
+      tags:
+      - users
   /users/{id}/profile:
     put:
       consumes:
@@ -1990,6 +2046,46 @@ paths:
         "204":
           description: No Content
       summary: User logout
+      tags:
+      - users
+  /users/password-reset/accept:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New password
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/AcceptPasswordResetParams'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Set a new password using a reset link
+      tags:
+      - users
+  /users/password-reset/validate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Password reset token
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/ValidatePasswordResetParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PasswordResetInfo'
+      summary: Validate a password reset link
       tags:
       - users
   /users/register:

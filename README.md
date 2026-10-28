@@ -53,8 +53,20 @@ and the Glabs keys.
 - On completion the user becomes `active` and is logged in automatically.
 - Email is optional for admin-created users and can be changed immediately as
   long as the new address is unique. It is format-checked only, not
-  inbox-verified, so do not use it for password recovery until verification is
-  added.
+  inbox-verified, so password recovery uses admin-issued reset links instead.
+
+## Password reset
+
+- Admins generate a single-use reset link for an active user with
+  `POST /users/{id}/password-reset-link`; copy the returned `reset_url` and send
+  it to the user. No email is sent.
+- The link opens `/reset-password` on the frontend (production:
+  `https://panahon.observatory.ph/sensors/reset-password`). Links are hashed,
+  single-use, and expire after `PASSWORD_RESET_TOKEN_DURATION` (default `1h`).
+  Regenerating a link invalidates the previous one.
+- Accepting the link sets the new password, revokes every existing session, and
+  logs the user in. Password reset and account creation require at least 8
+  characters; login still accepts older 6-character passwords.
 
 ## API docs
 
@@ -144,6 +156,7 @@ templates first. Required production values:
 | `COOKIE_DOMAIN` | cookie domain (host-only when empty) |
 | `FRONTEND_BASE_URL` | public frontend base, including Astro base (e.g. `https://panahon.observatory.ph/sensors`) |
 | `REGISTRATION_TOKEN_DURATION` | admin registration-link lifetime (default `72h`) |
+| `PASSWORD_RESET_TOKEN_DURATION` | admin password-reset-link lifetime (default `1h`) |
 
 Migrations run automatically on start; the target database must already exist
 with PostGIS. For file logging, `LOG_DIRECTORY` must be writable in the

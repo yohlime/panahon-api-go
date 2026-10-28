@@ -15,6 +15,8 @@ type Store interface {
 	FirstOrCreateSimAccessTokenTx(ctx context.Context, arg FirstOrCreateSimAccessTokenTxParams) (FirstOrCreateSimAccessTokenTxResult, error)
 	CreateRegistrationTokenTx(ctx context.Context, arg CreateRegistrationTokenTxParams) (UserToken, error)
 	CompleteRegistrationTx(ctx context.Context, arg CompleteRegistrationTxParams) (User, error)
+	CreatePasswordResetTokenTx(ctx context.Context, arg CreatePasswordResetTokenTxParams) (UserToken, error)
+	ResetPasswordTx(ctx context.Context, arg ResetPasswordTxParams) (User, error)
 }
 
 // SQLStore provides all functions to execute SQL queries and transactions

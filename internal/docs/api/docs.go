@@ -1442,6 +1442,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/password-reset/accept": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Set a new password using a reset link",
+                "parameters": [
+                    {
+                        "description": "New password",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AcceptPasswordResetParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/users/password-reset/validate": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Validate a password reset link",
+                "parameters": [
+                    {
+                        "description": "Password reset token",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ValidatePasswordResetParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PasswordResetInfo"
+                        }
+                    }
+                }
+            }
+        },
         "/users/register": {
             "post": {
                 "consumes": [
@@ -1952,6 +2015,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{id}/password-reset-link": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create a password reset link for an active user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PasswordResetLinkResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}/profile": {
             "put": {
                 "security": [
@@ -2076,6 +2172,27 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "AcceptPasswordResetParams": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "password",
+                "token"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "AccessRequest": {
             "type": "object",
             "properties": {
@@ -2147,7 +2264,7 @@ const docTemplate = `{
             "properties": {
                 "confirm_password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "email": {
                     "type": "string"
@@ -2157,7 +2274,7 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "token": {
                     "type": "string"
@@ -2461,6 +2578,28 @@ const docTemplate = `{
         "PaginatedUsers": {
             "type": "object"
         },
+        "PasswordResetInfo": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "PasswordResetLinkResponse": {
+            "type": "object",
+            "properties": {
+                "reset_url": {
+                    "type": "string"
+                }
+            }
+        },
         "RegisterUserParams": {
             "type": "object",
             "required": [
@@ -2473,7 +2612,7 @@ const docTemplate = `{
             "properties": {
                 "confirm_password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "email": {
                     "type": "string"
@@ -2483,7 +2622,7 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "username": {
                     "type": "string"
@@ -2768,7 +2907,7 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "username": {
                     "type": "string"
@@ -2924,7 +3063,7 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "roles": {
                     "type": "array",
@@ -2998,6 +3137,17 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "ValidatePasswordResetParams": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
+                    "type": "string"
                 }
             }
         },
