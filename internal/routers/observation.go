@@ -15,6 +15,7 @@ func (r *DefaultRouter) observationRouter(gr *gin.RouterGroup) {
 		// validated, scoped API token).
 		gated := addMiddleware(observations,
 			mw.AuthMiddleware(r.tokenMaker, r.store, true),
+			r.apiKeyRateLimit(),
 			mw.APITokenMiddleware(r.store, true),
 			mw.RequireAuthOrAPIToken(),
 		)

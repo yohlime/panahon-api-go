@@ -1,6 +1,8 @@
 package routers
 
 import (
+	"time"
+
 	mw "github.com/emiliogozo/panahon-api-go/internal/middlewares"
 	"github.com/gin-gonic/gin"
 )
@@ -8,13 +10,13 @@ import (
 func (r *DefaultRouter) userRouter(gr *gin.RouterGroup) {
 	users := gr.Group("/users")
 	{
-		users.POST("/login", r.handler.LoginUser)
+		users.POST("/login", r.rateLimit("login", r.config.RateLimit.LoginPerMinute, time.Minute), r.handler.LoginUser)
 		users.POST("/logout", r.handler.LogoutUser)
-		users.POST("/register", r.handler.RegisterUser)
-		users.POST("/complete-registration/validate", r.handler.ValidateCompleteRegistration)
-		users.POST("/complete-registration/accept", r.handler.CompleteRegistration)
-		users.POST("/password-reset/validate", r.handler.ValidatePasswordReset)
-		users.POST("/password-reset/accept", r.handler.AcceptPasswordReset)
+		users.POST("/register", r.rateLimit("registration", r.config.RateLimit.RegistrationPerHour, time.Hour), r.handler.RegisterUser)
+		users.POST("/complete-registration/validate", r.rateLimit("registration", r.config.RateLimit.RegistrationPerHour, time.Hour), r.handler.ValidateCompleteRegistration)
+		users.POST("/complete-registration/accept", r.rateLimit("registration", r.config.RateLimit.RegistrationPerHour, time.Hour), r.handler.CompleteRegistration)
+		users.POST("/password-reset/validate", r.rateLimit("password_reset", r.config.RateLimit.ResetPerMinute, time.Minute), r.handler.ValidatePasswordReset)
+		users.POST("/password-reset/accept", r.rateLimit("password_reset", r.config.RateLimit.ResetPerMinute, time.Minute), r.handler.AcceptPasswordReset)
 
 		// API token routes: the user themselves or an admin.
 		tokens := addMiddleware(users,

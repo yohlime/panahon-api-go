@@ -2,10 +2,12 @@ package routers
 
 import (
 	"strings"
+	"time"
 
 	db "github.com/emiliogozo/panahon-api-go/internal/db/sqlc"
 	"github.com/emiliogozo/panahon-api-go/internal/handlers"
 	mw "github.com/emiliogozo/panahon-api-go/internal/middlewares"
+	"github.com/emiliogozo/panahon-api-go/internal/ratelimit"
 	"github.com/emiliogozo/panahon-api-go/internal/token"
 	"github.com/emiliogozo/panahon-api-go/internal/util"
 	"github.com/gin-contrib/cors"
@@ -17,12 +19,28 @@ type DefaultRouter struct {
 	handler    *handlers.DefaultHandler
 	tokenMaker token.Maker
 	store      db.Store
+	config     util.Config
+	limiter    *ratelimit.Limiter
 	*gin.Engine
 }
 
 func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, tokenMaker token.Maker, store db.Store, logger *zerolog.Logger) *DefaultRouter {
 	gin.SetMode(config.GinMode)
 	g := gin.New()
+
+	// Ignore forwarded headers unless the immediate peer is a configured
+	// proxy. Otherwise clients could spoof X-Forwarded-For and bypass per-IP
+	// limits.
+	trustedProxies, err := util.ParseTrustedProxies(config.TrustedProxies)
+	if err != nil {
+		logger.Error().Err(err).Msg("invalid TRUSTED_PROXIES; ignoring forwarded headers")
+		trustedProxies = nil
+	}
+	if err := g.SetTrustedProxies(trustedProxies); err != nil {
+		logger.Error().Err(err).Msg("cannot set trusted proxies; ignoring forwarded headers")
+		_ = g.SetTrustedProxies(nil)
+	}
+
 	g.Use(mw.Zerologger(logger), gin.Recovery())
 
 	corsConfig := cors.DefaultConfig()
@@ -51,6 +69,8 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 		handler:    handler,
 		tokenMaker: tokenMaker,
 		store:      store,
+		config:     config,
+		limiter:    ratelimit.New(),
 		Engine:     g,
 	}
 
@@ -80,4 +100,19 @@ func addMiddleware(r *gin.RouterGroup, m ...gin.HandlerFunc) gin.IRoutes {
 	}
 
 	return r
+}
+
+func (r *DefaultRouter) rateLimit(name string, limit int, window time.Duration) gin.HandlerFunc {
+	if !r.config.RateLimit.Enabled {
+		limit = 0
+	}
+	return mw.RateLimit(r.limiter, name, limit, window)
+}
+
+func (r *DefaultRouter) apiKeyRateLimit() gin.HandlerFunc {
+	limit := r.config.RateLimit.APIKeyPerMinute
+	if !r.config.RateLimit.Enabled {
+		limit = 0
+	}
+	return mw.APIKeyRateLimit(r.limiter, limit, time.Minute)
 }

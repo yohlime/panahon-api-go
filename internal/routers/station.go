@@ -14,7 +14,7 @@ func (r *DefaultRouter) stationRouter(gr *gin.RouterGroup) {
 		stations.GET("/nearest/observations/latest", r.handler.GetNearestLatestStationObservation)
 
 		stnObs := stations.Group(":station_id/observations")
-		stnObsWithGuard := addMiddleware(stnObs, mw.AuthMiddleware(r.tokenMaker, r.store, true), mw.APITokenMiddleware(r.store, true), mw.StationMiddleware(""))
+		stnObsWithGuard := addMiddleware(stnObs, mw.AuthMiddleware(r.tokenMaker, r.store, true), r.apiKeyRateLimit(), mw.APITokenMiddleware(r.store, true), mw.StationMiddleware(""))
 		{
 			stnObsWithGuard.GET("", r.handler.ListStationObservations)
 			stnObsWithGuard.GET("/latest", r.handler.GetLatestStationObservation)

@@ -26,6 +26,7 @@ type Config struct {
 	APIBasePath                string              `mapstructure:"API_BASE_PATH"`
 	SwagAPIBasePath            string              `mapstructure:"SWAG_API_BASE_PATH"`
 	CorsAllowOrigins           string              `mapstructure:"CORS_ALLOW_ORIGINS"`
+	TrustedProxies             string              `mapstructure:"TRUSTED_PROXIES"`
 	GlabsAppID                 string              `mapstructure:"GLABS_APP_ID"`
 	GlabsAppSecret             string              `mapstructure:"GLABS_APP_SECRET"`
 	EnableConsoleLogging       bool                `mapstructure:"ENABLE_CONSOLE_LOGGING"`
@@ -38,6 +39,7 @@ type Config struct {
 	LogMaxAge                  int                 `mapstructure:"LOG_MAX_AGE"`
 	CronJobs                   []CronJob           `mapstructure:"-"`
 	StationStatus              StationStatusConfig `mapstructure:"-"`
+	RateLimit                  RateLimitConfig     `mapstructure:"-"`
 	DockerTestPGRepo           string              `mapstructure:"DOCKERTEST_PG_REPO"`
 	DockerTestPGTag            string              `mapstructure:"DOCKERTEST_PG_TAG"`
 }
@@ -50,6 +52,16 @@ type CronJob struct {
 // StationStatusConfig controls the online/offline freshness window.
 type StationStatusConfig struct {
 	OnlineThreshold time.Duration `mapstructure:"online_threshold"`
+}
+
+// RateLimitConfig controls the in-memory per-IP limits. A zero value in a
+// category disables that category.
+type RateLimitConfig struct {
+	Enabled             bool
+	LoginPerMinute      int
+	RegistrationPerHour int
+	ResetPerMinute      int
+	APIKeyPerMinute     int
 }
 
 // LoadConfig read configuration from file or environment variables.
@@ -71,6 +83,12 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("REFRESH_TOKEN_DURATION", 24*time.Hour)
 	viper.SetDefault("REGISTRATION_TOKEN_DURATION", 72*time.Hour)
 	viper.SetDefault("PASSWORD_RESET_TOKEN_DURATION", time.Hour)
+	viper.SetDefault("TRUSTED_PROXIES", "")
+	viper.SetDefault("RATE_LIMIT_ENABLED", true)
+	viper.SetDefault("RATE_LIMIT_LOGIN_PER_MINUTE", 10)
+	viper.SetDefault("RATE_LIMIT_REGISTRATION_PER_HOUR", 10)
+	viper.SetDefault("RATE_LIMIT_RESET_PER_MINUTE", 10)
+	viper.SetDefault("RATE_LIMIT_API_KEY_PER_MINUTE", 120)
 	viper.SetDefault("station_status.online_threshold", "1h")
 
 	viper.AutomaticEnv()
@@ -82,6 +100,14 @@ func LoadConfig(path string) (config Config, err error) {
 
 	if err = viper.Unmarshal(&config); err != nil {
 		return
+	}
+
+	config.RateLimit = RateLimitConfig{
+		Enabled:             viper.GetBool("RATE_LIMIT_ENABLED"),
+		LoginPerMinute:      viper.GetInt("RATE_LIMIT_LOGIN_PER_MINUTE"),
+		RegistrationPerHour: viper.GetInt("RATE_LIMIT_REGISTRATION_PER_HOUR"),
+		ResetPerMinute:      viper.GetInt("RATE_LIMIT_RESET_PER_MINUTE"),
+		APIKeyPerMinute:     viper.GetInt("RATE_LIMIT_API_KEY_PER_MINUTE"),
 	}
 
 	viper.SetConfigName("app_conf")

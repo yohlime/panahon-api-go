@@ -157,6 +157,17 @@ templates first. Required production values:
 | `FRONTEND_BASE_URL` | public frontend base, including Astro base (e.g. `https://panahon.observatory.ph/sensors`) |
 | `REGISTRATION_TOKEN_DURATION` | admin registration-link lifetime (default `72h`) |
 | `PASSWORD_RESET_TOKEN_DURATION` | admin password-reset-link lifetime (default `1h`) |
+| `TRUSTED_PROXIES` | comma-separated proxy IPs/CIDRs allowed to supply `X-Forwarded-For`; empty ignores forwarded headers |
+| `RATE_LIMIT_ENABLED` | in-memory per-IP rate limits (default `1`); `0` disables all |
+| `RATE_LIMIT_LOGIN_PER_MINUTE` | login attempts per IP per minute (default `10`) |
+| `RATE_LIMIT_REGISTRATION_PER_HOUR` | registration/registration-token requests per IP per hour (default `10`) |
+| `RATE_LIMIT_RESET_PER_MINUTE` | password-reset requests per IP per minute (default `10`) |
+| `RATE_LIMIT_API_KEY_PER_MINUTE` | API-key requests per IP per minute (default `120`) |
+
+Rate limits are in-memory and per process, so they reset on restart and are
+enforced separately by each replica. Set `TRUSTED_PROXIES` to the reverse
+proxy's IP/CIDR in production; with an empty value forwarded headers are
+ignored and every client behind the proxy shares one bucket.
 
 Migrations run automatically on start; the target database must already exist
 with PostGIS. For file logging, `LOG_DIRECTORY` must be writable in the
