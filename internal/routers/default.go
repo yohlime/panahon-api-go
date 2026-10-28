@@ -74,6 +74,11 @@ func NewDefaultRouter(config util.Config, handler *handlers.DefaultHandler, toke
 		Engine:     g,
 	}
 
+	// Probes live outside the API prefix so orchestrators can reach them
+	// regardless of how the public API is mounted.
+	g.GET("/healthz", r.handler.Healthz)
+	g.GET("/readyz", r.handler.Readyz)
+
 	r.userRouter(api)
 	r.accessRouter(api)
 	r.roleRouter(api)

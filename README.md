@@ -68,6 +68,14 @@ and the Glabs keys.
   logs the user in. Password reset and account creation require at least 8
   characters; login still accepts older 6-character passwords.
 
+## Health and readiness
+
+- `GET /healthz` is a liveness probe: `200` while the HTTP process is running.
+- `GET /readyz` is a readiness probe: it pings the database with a 2-second
+  timeout and returns `200`, or `503` when the database is unreachable.
+- Both live at the server root, outside `API_BASE_PATH`, require no auth, and
+  send `Cache-Control: no-store`.
+
 ## API docs
 
 - Full Swagger UI: `/api/v1/docs` (redirects to `index.html`).

@@ -9,6 +9,7 @@ import (
 // Store provides all functions to execute db queries and transaction
 type Store interface {
 	Querier
+	Ping(ctx context.Context) error
 	BulkCreateUserRoles(ctx context.Context, arg []UserRolesParams) (ret []UserRolesParams, errs []error)
 	BulkDeleteUserRoles(ctx context.Context, arg []UserRolesParams) []error
 	CreateMisolStationTx(ctx context.Context, arg CreateMisolStationTxParams) (CreateMisolStationTxResult, error)
@@ -31,4 +32,9 @@ func NewStore(connPool *pgxpool.Pool) Store {
 		connPool: connPool,
 		Queries:  New(connPool),
 	}
+}
+
+// Ping verifies that the database connection is usable.
+func (store *SQLStore) Ping(ctx context.Context) error {
+	return store.connPool.Ping(ctx)
 }
