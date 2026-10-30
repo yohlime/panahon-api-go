@@ -148,7 +148,9 @@ func requireLufftEqual(t *testing.T, l, l2 Lufft) {
 	require.InDelta(t, *l.Obs.Srad, *l2.Obs.Srad, 0.01, "Srad value mismatch")
 	require.InDelta(t, *l.Obs.Td, *l2.Obs.Td, 0.01, "Td value mismatch")
 	require.InDelta(t, *l.Obs.Wchill, *l2.Obs.Wchill, 0.01, "Wchill value mismatch")
-	require.InDelta(t, *l.Obs.Rr, *l2.Obs.Rr, 1, "Rr value mismatch")
+	// Rain is encoded as integer tips of 0.2 mm * 6, so the round-trip
+	// truncation error can approach 1.2 mm.
+	require.InDelta(t, *l.Obs.Rr, *l2.Obs.Rr, 1.25, "Rr value mismatch")
 	require.InDelta(t, *l.Health.Vb1, *l2.Health.Vb1, 0.01, "Vb1 value mismatch")
 	require.InDelta(t, *l.Health.Bp1, *l2.Health.Bp1, 0.01, "Bp1 value mismatch")
 	require.Equal(t, *l.Health.Ss, *l2.Health.Ss, "Ss value mismatch")
