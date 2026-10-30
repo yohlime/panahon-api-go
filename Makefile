@@ -42,7 +42,10 @@ swag:
 	swag init -o internal/docs/api -d cmd/server,internal/handlers,internal/models
 
 test:
-	go test -v -cover ./...
+	go test -p 1 -v -cover ./...
+
+e2e:
+	go test -v -count=1 ./internal/db/e2e
 
 short_test:
 	go test $(shell go list ./... | grep -v /db/) -cover -short 
@@ -51,4 +54,4 @@ build:
 	go build -o main main.go
 
 
-.PHONY: createdb dropdb migrateup migratedown migratenew sqlc server mock swag test short_test build
+.PHONY: createdb dropdb migrateup migratedown migratenew sqlc server mock swag test e2e short_test build

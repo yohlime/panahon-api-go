@@ -133,8 +133,14 @@ The old random generator is `go run ./cmd/testcli seed random-stations`.
 
 ```sh
 make short_test   # unit tests only (no Docker)
-make test         # everything; needs Docker/Podman (testcontainers + PostGIS)
+make e2e          # auth/invite/API-key smoke flow; needs Docker/Podman
+make test         # all unit, database, and E2E tests; needs Docker/Podman
 ```
+
+CI runs `go build ./...` and `make test` on the backend, and `pnpm build` plus
+`vitest run` on the frontend. The E2E smoke test starts PostGIS in a
+testcontainer, logs in as a seeded admin, invites a user, completes
+registration and login, then creates and uses an API key.
 
 ## Code generation
 
