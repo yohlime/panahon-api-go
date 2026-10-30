@@ -76,6 +76,18 @@ and the Glabs keys.
 - Both live at the server root, outside `API_BASE_PATH`, require no auth, and
   send `Cache-Control: no-store`.
 
+## Backup and restore
+
+- `./scripts/backup-db.sh --output /var/backups/panahon --keep 14` writes a
+  compressed `pg_dump -Fc` archive with a SHA-256 sidecar.
+- `./scripts/restore-db.sh --source FILE --target DSN` restores into a new
+  database, verifying the checksum and refusing a non-empty target unless
+  `--clean` is given.
+- Full procedure, retention, off-host copies, verification queries, rollback,
+  and disaster recovery: [docs/backup-restore.md](docs/backup-restore.md).
+- `backups/` is gitignored. Dumps contain password hashes and hashed tokens, so
+  store them encrypted.
+
 ## API docs
 
 - Full Swagger UI: `/api/v1/docs` (redirects to `index.html`).

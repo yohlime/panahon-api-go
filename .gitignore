@@ -48,3 +48,6 @@ devenv.local.nix
 # pre-commit
 .pre-commit-config.yaml
 .opencode/
+
+# Database backups (scripts/backup-db.sh)
+backups/
