@@ -13,7 +13,11 @@ func TestLufft(t *testing.T) {
 		t.Skip()
 	}
 
-	lufft := RandomLufft(time.Now())
+	// Lufft timestamps are interpreted as Asia/Manila, so generate the sample
+	// in that zone instead of relying on the host timezone (CI runners use UTC).
+	loc, err := time.LoadLocation("Asia/Manila")
+	require.NoError(t, err)
+	lufft := RandomLufft(time.Now().In(loc))
 
 	testCases := []struct {
 		name        string
